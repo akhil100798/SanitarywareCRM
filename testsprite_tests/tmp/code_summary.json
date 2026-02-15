@@ -1,0 +1,280 @@
+{
+  "tech_stack": [
+    "Java",
+    "Spring Boot",
+    "Spring Security",
+    "JWT",
+    "React",
+    "Vite",
+    "Tailwind CSS"
+  ],
+  "features": [
+    {
+      "name": "Authentication API",
+      "description": "Handles user authentication, registration, and fetching current user details for the Sanitaryware CRM application.",
+      "files": [
+        "backend/src/main/java/com/sanitaryware/crm/controller/AuthController.java",
+        "backend/src/main/java/com/sanitaryware/crm/dto/LoginRequest.java",
+        "backend/src/main/java/com/sanitaryware/crm/dto/RegisterRequest.java",
+        "backend/src/main/java/com/sanitaryware/crm/dto/AuthResponse.java",
+        "backend/src/main/java/com/sanitaryware/crm/dto/MessageResponse.java",
+        "backend/src/main/java/com/sanitaryware/crm/entity/User.java",
+        "backend/src/main/java/com/sanitaryware/crm/repository/UserRepository.java",
+        "backend/src/main/java/com/sanitaryware/crm/security/JwtTokenProvider.java",
+        "backend/src/main/java/com/sanitaryware/crm/config/SecurityConfig.java",
+        "backend/src/main/java/com/sanitaryware/crm/config/ApplicationConfig.java"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Sanitaryware CRM Authentication API",
+          "version": "1.0.0",
+          "description": "Authentication endpoints for login, registration, test connectivity, and fetching the current authenticated user."
+        },
+        "paths": {
+          "/api/auth/test": {
+            "get": {
+              "summary": "Health test endpoint",
+              "description": "Simple endpoint to verify that the authentication API is reachable.",
+              "responses": {
+                "200": {
+                  "description": "API is reachable",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MessageResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/auth/login": {
+            "post": {
+              "summary": "User login",
+              "description": "Authenticates a user using username and password and returns a JWT token and user details.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/LoginRequest"
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Successful authentication",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/AuthResponse"
+                      }
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Invalid username or password",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MessageResponse"
+                      }
+                    }
+                  }
+                },
+                "403": {
+                  "description": "Account is deactivated",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MessageResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/auth/register": {
+            "post": {
+              "summary": "User registration",
+              "description": "Registers a new user if the username and email are not already taken.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RegisterRequest"
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": {
+                  "description": "User registered successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MessageResponse"
+                      }
+                    }
+                  }
+                },
+                "400": {
+                  "description": "Username or email already exists",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MessageResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/auth/me": {
+            "get": {
+              "summary": "Get current authenticated user",
+              "description": "Returns details of the currently authenticated user based on the JWT token.",
+              "responses": {
+                "200": {
+                  "description": "Current user details",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/AuthResponse"
+                      }
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Unauthorized",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MessageResponse"
+                      }
+                    }
+                  }
+                }
+              },
+              "security": [
+                {
+                  "bearerAuth": []
+                }
+              ]
+            }
+          }
+        },
+        "components": {
+          "schemas": {
+            "LoginRequest": {
+              "type": "object",
+              "properties": {
+                "username": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password"
+                }
+              },
+              "required": [
+                "username",
+                "password"
+              ]
+            },
+            "RegisterRequest": {
+              "type": "object",
+              "properties": {
+                "username": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password"
+                },
+                "fullName": {
+                  "type": "string"
+                },
+                "phoneNumber": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "description": "Role of the user (e.g., ADMIN, USER)."
+                }
+              },
+              "required": [
+                "username",
+                "email",
+                "password",
+                "fullName",
+                "role"
+              ]
+            },
+            "AuthResponse": {
+              "type": "object",
+              "properties": {
+                "token": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "fullName": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "username",
+                "email",
+                "fullName",
+                "role"
+              ]
+            },
+            "MessageResponse": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
+            }
+          },
+          "securitySchemes": {
+            "bearerAuth": {
+              "type": "http",
+              "scheme": "bearer",
+              "bearerFormat": "JWT"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+﻿
+============================================================
+SANITARYWARE CRM - COMPREHENSIVE API TEST SUITE
+============================================================
+Base URL: http://localhost:8080/api
+Started at: 2026-02-03 12:01:47
+============================================================
+
+≡ƒôï [1/9] AUTHENTICATION TESTS
+----------------------------------------
+  Γ£à PASSED: GET /api/auth/test - Health check
+  Γ£à PASSED: POST /api/auth/register - Register user
+  Γ£à PASSED: POST /api/auth/register - Duplicate username
+  Γ£à PASSED: POST /api/auth/login - Valid credentials
+  Γ£à PASSED: POST /api/auth/login - Invalid credentials
+  Γ£à PASSED: GET /api/auth/me - With token
+  Γ£à PASSED: GET /api/auth/me - Without token
+
+≡ƒôï [2/9] BRAND TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/brands - Create brand
+  Γ£à PASSED: GET /api/brands/{id} - Get by ID
+  Γ£à PASSED: GET /api/brands/{id} - Nonexistent ID
+  Γ£à PASSED: PUT /api/brands/{id} - Update brand
+  Γ£à PASSED: GET /api/brands - Get all brands
+  Γ£à PASSED: GET /api/brands/active - Get active brands
+
+≡ƒôï [3/9] CATEGORY TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/categories - Create category
+  Γ£à PASSED: POST /api/categories - Create subcategory
+  Γ£à PASSED: GET /api/categories/{id} - Get by ID
+  Γ£à PASSED: PUT /api/categories/{id} - Update category
+  Γ£à PASSED: GET /api/categories - Get all categories
+  Γ£à PASSED: GET /api/categories/active - Get active categories
+  Γ£à PASSED: GET /api/categories/roots - Get root categories
+  Γ£à PASSED: GET /api/categories/{id}/subs - Get subcategories
+
+≡ƒôï [4/9] CUSTOMER TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/customers - Create customer
+  Γ£à PASSED: GET /api/customers/{id} - Get by ID
+  Γ£à PASSED: PUT /api/customers/{id} - Update customer
+  Γ£à PASSED: GET /api/customers - Get all (paginated)
+  Γ£à PASSED: GET /api/customers/search - Search
+  Γ£à PASSED: GET /api/customers/active - Get active
+  Γ£à PASSED: GET /api/customers/type/{type} - Get by type
+
+≡ƒôï [5/9] PRODUCT TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/products - Create product
+  Γ£à PASSED: GET /api/products/{id} - Get by ID
+  Γ£à PASSED: PUT /api/products/{id} - Update product
+  Γ£à PASSED: GET /api/products - Get all (paginated)
+  Γ£à PASSED: GET /api/products/search - Search
+  Γ£à PASSED: GET /api/products/category/{id} - Get by category
+  Γ£à PASSED: GET /api/products/brand/{id} - Get by brand
+  Γ£à PASSED: GET /api/products/low-stock - Get low stock
+  Γ£à PASSED: GET /api/products/featured - Get featured
+  Γ£à PASSED: PATCH /api/products/{id}/stock - Update stock
+
+≡ƒôï [6/9] QUOTATION TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/quotations - Create quotation
+  Γ£à PASSED: GET /api/quotations/{id} - Get by ID
+  Γ£à PASSED: PUT /api/quotations/{id} - Update quotation
+  Γ£à PASSED: GET /api/quotations - Get all (paginated)
+  Γ£à PASSED: PATCH /api/quotations/{id}/status - Update status
+  Γ£à PASSED: GET /api/quotations/customer/{id} - Get by customer
+
+≡ƒôï [7/9] ORDER TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/orders/from-quotation/{id} - Create from quotation
+  Γ£à PASSED: GET /api/orders/{id} - Get by ID
+  Γ£à PASSED: PUT /api/orders/{id} - Update order
+  Γ£à PASSED: GET /api/orders - Get all (paginated)
+  Γ£à PASSED: PATCH /api/orders/{id}/status - Update status
+  Γ£à PASSED: PATCH /api/orders/{id}/payment-status - Update payment status
+  Γ£à PASSED: GET /api/orders/customer/{id} - Get by customer
+  Γ£à PASSED: POST /api/orders - Create direct order
+
+≡ƒôï [8/9] PAYMENT TESTS
+----------------------------------------
+  Γ£à PASSED: POST /api/payments - Record payment
+  Γ£à PASSED: GET /api/payments/{id} - Get by ID
+  Γ£à PASSED: GET /api/payments/order/{id} - Get by order
+  Γ£à PASSED: GET /api/payments - Get all
+
+≡ƒôï [9/9] DASHBOARD TESTS
+----------------------------------------
+  Γ£à PASSED: GET /api/dashboard/stats - Get statistics
+
+≡ƒôï CLEANUP - DELETE TESTS
+----------------------------------------
+  Γ£à PASSED: DELETE /api/payments/{id} - Delete payment
+  Γ£à PASSED: DELETE /api/orders/{id} - Delete order
+  Γ£à PASSED: DELETE /api/quotations/{id} - Delete quotation
+  Γ£à PASSED: DELETE /api/products/{id} - Delete product
+  Γ£à PASSED: DELETE /api/customers/{id} - Delete customer
+  Γ£à PASSED: DELETE /api/categories/{id} - Delete category
+  Γ£à PASSED: DELETE /api/brands/{id} - Delete brand
+
+============================================================
+TEST SUMMARY
+============================================================
+Total Tests: 64
+  Γ£à Passed:  64
+  Γ¥î Failed:  0
+  ΓÅ¡∩╕Å  Skipped: 0
+============================================================
+
+Completed at: 2026-02-03 12:01:50
+============================================================
