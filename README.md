@@ -2,6 +2,16 @@
 
 Enterprise-level Customer Relationship Management system built specifically for sanitaryware retail businesses.
 
+## Project Preview
+
+| Dashboard | Products |
+|-----------|----------|
+| ![Dashboard](screenshots/dashboard.png) | ![Products](screenshots/products.png) |
+
+| Orders | Quotations |
+|--------|------------|
+| ![Orders](screenshots/orders.png) | ![Quotations](screenshots/quotations.png) |
+
 ## Technology Stack
 
 ### Backend
