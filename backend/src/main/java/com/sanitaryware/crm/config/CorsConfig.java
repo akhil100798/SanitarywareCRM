@@ -15,12 +15,14 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Allow origins from Vite dev server
-        configuration.setAllowedOrigins(Arrays.asList(
+        // Allow origins from Vite dev server and production deployments
+        configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:5173",
             "http://localhost:5174",
             "http://localhost:5180",
-            "http://localhost:3000"
+            "http://localhost:3000",
+            "https://*-*.vercel.app",
+            "https://*.vercel.app"
         ));
         
         // Allow all HTTP methods
