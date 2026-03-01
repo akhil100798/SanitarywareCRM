@@ -109,7 +109,7 @@ public class AuthController {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setFullName(request.getFullName());
             user.setPhoneNumber(request.getPhoneNumber());
-            user.setRole(request.getRole());
+            user.setRole(User.UserRole.SALES); // Hardcoded to prevent privilege escalation
             user.setIsActive(true);
 
             userRepository.save(user);

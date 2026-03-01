@@ -2,6 +2,7 @@ package com.sanitaryware.crm.controller;
 
 import com.sanitaryware.crm.dto.PaymentDTO;
 import com.sanitaryware.crm.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,8 +18,8 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SALES')")
-    public ResponseEntity<PaymentDTO> recordPayment(@RequestBody PaymentDTO paymentDTO) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<PaymentDTO> recordPayment(@Valid @RequestBody PaymentDTO paymentDTO) {
         return ResponseEntity.ok(paymentService.recordPayment(paymentDTO));
     }
 
@@ -38,7 +39,7 @@ public class PaymentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
         paymentService.deletePayment(id);
         return ResponseEntity.noContent().build();

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
 import {
     LayoutDashboard,
     Users,
@@ -11,7 +12,10 @@ import {
     Settings,
     LogOut,
     Menu,
-    X
+    X,
+    Truck,
+    ShoppingCart as ShoppingCartIcon, // Alias to avoid conflict if needed, used ShoppingCart earlier.
+    CreditCard
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -20,6 +24,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     const handleLogout = () => {
         logout();
+        toast.success('Logged out successfully');
         navigate('/login');
     };
 
@@ -27,6 +32,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Users, label: 'Customers', path: '/customers' },
         { icon: Package, label: 'Products', path: '/products' },
+        { icon: Truck, label: 'Distributors', path: '/distributors' },
+        { icon: ShoppingCartIcon, label: 'Purchase Orders', path: '/purchase-orders' },
+        { icon: CreditCard, label: 'Distributor Payments', path: '/distributor-payments' },
         { icon: FileText, label: 'Quotations', path: '/quotations' },
         { icon: ShoppingCart, label: 'Orders', path: '/orders' },
         { icon: BarChart3, label: 'Reports', path: '/reports' },

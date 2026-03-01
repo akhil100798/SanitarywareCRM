@@ -5,6 +5,7 @@ import orderService from '../../services/orderService';
 import quotationService from '../../services/quotationService';
 import customerService from '../../services/customerService';
 import { productService } from '../../services/productService';
+import fileUploadService from '../../services/fileUploadService';
 import toast from 'react-hot-toast';
 
 const OrderFormPage = () => {
@@ -17,6 +18,7 @@ const OrderFormPage = () => {
     const [loading, setLoading] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [products, setProducts] = useState([]);
+    const [uploadingFile, setUploadingFile] = useState(false);
     const [formData, setFormData] = useState({
         customerId: '',
         orderDate: new Date().toISOString().split('T')[0],
@@ -28,6 +30,7 @@ const OrderFormPage = () => {
         shippingCharge: 0,
         shippingAddress: '',
         notes: '',
+        billPadImageUrl: '',
         items: []
     });
 
@@ -131,13 +134,58 @@ const OrderFormPage = () => {
                 item.unitPrice = product.sellingPrice;
                 item.productName = product.name;
                 item.productSku = product.sku;
+                item.mrp = product.mrp; // Store MRP for our local calculation
             }
         }
 
-        const sub = item.unitPrice * item.quantity;
-        item.lineTotal = sub - (sub * item.discountPercentage) / 100;
+        // Auto-calculate discount percentage locally based on MRP vs selling price
+        if (field === 'unitPrice' || field === 'productId') {
+            const mrp = item.mrp || 0;
+            const currentPrice = field === 'unitPrice' ? parseFloat(value) || 0 : item.unitPrice;
+
+            if (mrp > 0 && currentPrice <= mrp) {
+                item.discountPercentage = parseFloat(((mrp - currentPrice) * 100 / mrp).toFixed(2));
+            } else {
+                item.discountPercentage = 0;
+            }
+        }
+
+        // If user manually changes discount percentage, update unit price
+        if (field === 'discountPercentage') {
+            const mrp = item.mrp || 0;
+            const disc = parseFloat(value) || 0;
+            if (mrp > 0) {
+                item.unitPrice = parseFloat((mrp - (mrp * disc / 100)).toFixed(2));
+            }
+        }
+
+        // Line total is simply unit price * quantity (unitPrice is already discounted)
+        item.lineTotal = (item.unitPrice || 0) * (item.quantity || 0);
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Optional: Image Validation
+        if (!file.type.startsWith('image/')) {
+            toast.error('Only image files are allowed for bill pads.');
+            return;
+        }
+
+        try {
+            setUploadingFile(true);
+            const response = await fileUploadService.uploadFile(file, 'billpads');
+            setFormData({ ...formData, billPadImageUrl: response.fileName });
+            toast.success('Bill Pad uploaded successfully');
+        } catch (error) {
+            toast.error('Failed to upload image');
+        } finally {
+            setUploadingFile(false);
+            e.target.value = null;
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -299,14 +347,32 @@ const OrderFormPage = () => {
                                                 onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
                                             />
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-sm">₹{item.unitPrice}</td>
                                         <td className="px-4 py-3">
-                                            <input
-                                                type="number" min="0" max="100"
-                                                className="w-full p-2 text-sm border rounded outline-none"
-                                                value={item.discountPercentage}
-                                                onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
-                                            />
+                                            <div className="flex bg-gray-50 rounded border items-center">
+                                                <span className="text-gray-500 px-2 font-medium">₹</span>
+                                                <input
+                                                    type="number" min="0" step="0.01"
+                                                    className="w-full py-2 bg-transparent outline-none"
+                                                    value={item.unitPrice}
+                                                    onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                />
+                                            </div>
+                                            {item.mrp > 0 && (
+                                                <div className="text-[10px] text-gray-500 mt-1">MRP: ₹{item.mrp}</div>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex bg-gray-50 rounded border items-center">
+                                                <input
+                                                    type="number" min="0" max="100" step="0.01"
+                                                    className="w-full px-2 py-2 bg-transparent text-gray-400 outline-none"
+                                                    value={item.discountPercentage}
+                                                    readOnly
+                                                    disabled
+                                                    title="Auto-calculated from MRP"
+                                                />
+                                                <span className="text-gray-400 font-medium px-2">%</span>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 font-bold text-sm">₹{(item.lineTotal || 0).toLocaleString()}</td>
                                         <td className="px-4 py-3 text-right">
@@ -341,6 +407,44 @@ const OrderFormPage = () => {
                                 value={formData.notes}
                                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Bill Pad Image</label>
+                            <div className="flex items-center space-x-2">
+                                <label className={`flex-1 flex justify-center items-center px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${uploadingFile ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    <span className="text-sm text-gray-600 mr-2 flex items-center">
+                                        <Plus size={16} className="mr-1" />
+                                        {uploadingFile ? 'Uploading...' : 'Upload Image'}
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                        disabled={uploadingFile}
+                                    />
+                                </label>
+                                {formData.billPadImageUrl && (
+                                    <a
+                                        href={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 rounded border border-blue-200"
+                                        title="View Image"
+                                    >
+                                        <Plus size={20} className="transform rotate-45" /> {/* Use plus rotated as alternative to icon if missing eye/download */}
+                                    </a>
+                                )}
+                            </div>
+                            {formData.billPadImageUrl && (
+                                <div className="mt-2">
+                                    <img
+                                        src={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
+                                        alt="Bill Pad"
+                                        className="h-20 w-auto rounded border border-gray-200 object-cover"
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 

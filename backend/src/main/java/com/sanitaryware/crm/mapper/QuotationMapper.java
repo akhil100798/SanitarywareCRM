@@ -81,9 +81,6 @@ public class QuotationMapper {
 
         quotation.setQuotationDate(dto.getQuotationDate());
         quotation.setValidUntil(dto.getValidUntil());
-        if (dto.getStatus() != null) {
-            quotation.setStatus(Quotation.QuotationStatus.valueOf(dto.getStatus()));
-        }
         if (dto.getTaxPercentage() != null) quotation.setTaxPercentage(dto.getTaxPercentage());
         if (dto.getDiscount() != null) quotation.setDiscount(dto.getDiscount());
         quotation.setNotes(dto.getNotes());

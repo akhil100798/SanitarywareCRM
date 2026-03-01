@@ -46,11 +46,19 @@ public class OrderItem {
     public void calculateLineTotal() {
         if (this.unitPrice == null) this.unitPrice = BigDecimal.ZERO;
         if (this.quantity == null) this.quantity = 0;
-        if (this.discountPercentage == null) this.discountPercentage = BigDecimal.ZERO;
+        if (this.product != null && this.product.getMrp() != null && this.product.getMrp().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal mrp = this.product.getMrp();
+            if (this.unitPrice.compareTo(mrp) <= 0) {
+                this.discountPercentage = mrp.subtract(this.unitPrice)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(mrp, 2, java.math.RoundingMode.HALF_UP);
+            } else {
+                this.discountPercentage = BigDecimal.ZERO;
+            }
+        } else if (this.discountPercentage == null) {
+            this.discountPercentage = BigDecimal.ZERO;
+        }
 
-        BigDecimal sub = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        BigDecimal disc = sub.multiply(this.discountPercentage)
-                .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-        this.lineTotal = sub.subtract(disc);
+        this.lineTotal = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
     }
 }

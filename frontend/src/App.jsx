@@ -18,6 +18,15 @@ import PaymentFormPage from './pages/payments/PaymentFormPage';
 import BrandListPage from './pages/brands/BrandListPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
+
+// Distributor Module Imports
+import DistributorListPage from './pages/distributors/DistributorListPage';
+import DistributorFormPage from './pages/distributors/DistributorFormPage';
+import PurchaseOrderListPage from './pages/purchase-orders/PurchaseOrderListPage';
+import PurchaseOrderFormPage from './pages/purchase-orders/PurchaseOrderFormPage';
+import DistributorPaymentListPage from './pages/distributor-payments/DistributorPaymentListPage';
+import DistributorPaymentFormPage from './pages/distributor-payments/DistributorPaymentFormPage';
+
 import './index.css';
 
 function App() {
@@ -77,14 +86,6 @@ function App() {
                     />
                     <Route
                         path="/products/new"
-                        element={
-                            <ProtectedRoute>
-                                <ProductFormPage />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/products/edit/:id"
                         element={
                             <ProtectedRoute>
                                 <ProductFormPage />
@@ -171,6 +172,20 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+
+                    {/* Distributor Module Routes */}
+                    <Route path="/distributors" element={<ProtectedRoute><DistributorListPage /></ProtectedRoute>} />
+                    <Route path="/distributors/new" element={<ProtectedRoute><DistributorFormPage /></ProtectedRoute>} />
+                    <Route path="/distributors/edit/:id" element={<ProtectedRoute><DistributorFormPage /></ProtectedRoute>} />
+
+                    <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrderListPage /></ProtectedRoute>} />
+                    <Route path="/purchase-orders/new" element={<ProtectedRoute><PurchaseOrderFormPage /></ProtectedRoute>} />
+                    <Route path="/purchase-orders/edit/:id" element={<ProtectedRoute><PurchaseOrderFormPage /></ProtectedRoute>} />
+
+                    <Route path="/distributor-payments" element={<ProtectedRoute><DistributorPaymentListPage /></ProtectedRoute>} />
+                    <Route path="/distributor-payments/new" element={<ProtectedRoute><DistributorPaymentFormPage /></ProtectedRoute>} />
+                    <Route path="/distributor-payments/edit/:id" element={<ProtectedRoute><DistributorPaymentFormPage /></ProtectedRoute>} />
+
                     <Route
                         path="/profile"
                         element={

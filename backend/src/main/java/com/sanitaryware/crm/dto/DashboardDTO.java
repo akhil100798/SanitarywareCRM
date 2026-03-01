@@ -19,6 +19,9 @@ public class DashboardDTO {
     private long pendingOrders;
     private long totalCustomers;
     private long lowStockProducts;
+    private BigDecimal distributorPaymentsTotal;
+    private BigDecimal totalPayables;
+    private BigDecimal totalReceivables;
     
     private List<OrderDTO> recentOrders;
     private List<ProductSalesDTO> topProducts;

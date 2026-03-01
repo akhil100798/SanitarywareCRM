@@ -47,8 +47,11 @@ public class OrderMapper {
         dto.setDiscount(order.getDiscount());
         dto.setShippingCharge(order.getShippingCharge());
         dto.setTotal(order.getTotal());
+        dto.setPaidAmount(order.getPaidAmount());
+        dto.setBalanceAmount(order.getBalanceAmount());
         dto.setShippingAddress(order.getShippingAddress());
         dto.setNotes(order.getNotes());
+        dto.setBillPadImageUrl(order.getBillPadImageUrl());
 
         if (order.getItems() != null) {
             dto.setItems(order.getItems().stream()
@@ -89,17 +92,12 @@ public class OrderMapper {
 
         order.setOrderDate(dto.getOrderDate());
         order.setDeliveryDate(dto.getDeliveryDate());
-        if (dto.getStatus() != null) {
-            order.setStatus(Order.OrderStatus.valueOf(dto.getStatus()));
-        }
-        if (dto.getPaymentStatus() != null) {
-            order.setPaymentStatus(Order.PaymentStatus.valueOf(dto.getPaymentStatus()));
-        }
         if (dto.getTaxPercentage() != null) order.setTaxPercentage(dto.getTaxPercentage());
         if (dto.getDiscount() != null) order.setDiscount(dto.getDiscount());
         if (dto.getShippingCharge() != null) order.setShippingCharge(dto.getShippingCharge());
         order.setShippingAddress(dto.getShippingAddress());
         order.setNotes(dto.getNotes());
+        order.setBillPadImageUrl(dto.getBillPadImageUrl());
 
         if (dto.getCustomerId() != null) {
             customerRepository.findById(dto.getCustomerId())

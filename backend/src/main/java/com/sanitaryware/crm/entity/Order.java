@@ -83,6 +83,9 @@ public class Order {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(length = 500)
+    private String billPadImageUrl;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 

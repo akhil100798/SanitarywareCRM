@@ -113,6 +113,8 @@ public class OrderServiceImpl implements OrderService {
         Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
+        verifyOrderOwnership(existingOrder);
+
         orderMapper.updateEntity(existingOrder, orderDTO);
 
         if (orderDTO.getItems() != null) {
@@ -132,6 +134,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO getOrderById(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        verifyOrderOwnership(order);
         return orderMapper.toDTO(order);
     }
 
@@ -142,9 +145,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void deleteOrder(Long id) {
-        if (!orderRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Order not found with id: " + id);
-        }
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        verifyOrderOwnership(order);
         orderRepository.deleteById(id);
     }
 
@@ -152,6 +155,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO updateStatus(Long id, String statusString) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        verifyOrderOwnership(order);
         
         Order.OrderStatus newStatus = Order.OrderStatus.valueOf(statusString.toUpperCase());
         
@@ -170,6 +174,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO updatePaymentStatus(Long id, String paymentStatus) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        verifyOrderOwnership(order);
         
         order.setPaymentStatus(Order.PaymentStatus.valueOf(paymentStatus.toUpperCase()));
         return orderMapper.toDTO(orderRepository.save(order));
@@ -192,6 +197,9 @@ public class OrderServiceImpl implements OrderService {
 
     private void deductStock(List<OrderItem> items) {
         for (OrderItem item : items) {
+            if (item.getQuantity() <= 0) {
+                continue; // Skip invalid quantities to prevent stock inflation
+            }
             Product product = item.getProduct();
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
             productRepository.save(product);
@@ -200,9 +208,24 @@ public class OrderServiceImpl implements OrderService {
 
     private void restoreStock(List<OrderItem> items) {
         for (OrderItem item : items) {
+            if (item.getQuantity() <= 0) {
+                continue; // Skip invalid quantities
+            }
             Product product = item.getProduct();
             product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
             productRepository.save(product);
+        }
+    }
+
+    private void verifyOrderOwnership(Order order) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        if (currentUser.getRole() == User.UserRole.SALES && 
+            order.getCreatedBy() != null && 
+            !order.getCreatedBy().getUsername().equals(username)) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access or modify this order.");
         }
     }
 }

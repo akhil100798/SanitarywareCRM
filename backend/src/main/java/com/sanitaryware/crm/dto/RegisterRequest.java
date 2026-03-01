@@ -28,6 +28,4 @@ public class RegisterRequest {
     
     @Size(max = 15, message = "Phone number must not exceed 15 characters")
     private String phoneNumber;
-    
-    private User.UserRole role = User.UserRole.SALES;
 }

@@ -32,6 +32,11 @@ public class GlobalExceptionHandler {
                 .body(new MessageResponse("Invalid username or password"));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<MessageResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(new MessageResponse(ex.getMessage()));
+    }
+
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ResponseEntity<MessageResponse> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
         String message = "Database error: " + ex.getMostSpecificCause().getMessage();

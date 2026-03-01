@@ -1,0 +1,12 @@
+# Root gitignore
+backend_log.txt
+frontend_log.txt
+.gemini/
+/brain/
+
+# Standard exclusions
+node_modules/
+dist/
+target/
+.idea/
+*.log

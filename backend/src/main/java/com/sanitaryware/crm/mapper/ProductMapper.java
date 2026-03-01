@@ -24,6 +24,7 @@ public class ProductMapper {
                 .brandName(product.getBrand() != null ? product.getBrand().getName() : null)
                 .mrp(product.getMrp())
                 .sellingPrice(product.getSellingPrice())
+                .purchasePrice(product.getPurchasePrice())
                 .stockQuantity(product.getStockQuantity())
                 .reorderLevel(product.getReorderLevel())
                 .unit(product.getUnit())
@@ -52,6 +53,7 @@ public class ProductMapper {
         product.setBrand(brand);
         product.setMrp(dto.getMrp());
         product.setSellingPrice(dto.getSellingPrice());
+        product.setPurchasePrice(dto.getPurchasePrice());
         product.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
         product.setReorderLevel(dto.getReorderLevel() != null ? dto.getReorderLevel() : 10);
         product.setUnit(dto.getUnit() != null ? dto.getUnit() : "Piece");
@@ -75,6 +77,7 @@ public class ProductMapper {
         product.setBrand(brand);
         product.setMrp(dto.getMrp());
         product.setSellingPrice(dto.getSellingPrice());
+        product.setPurchasePrice(dto.getPurchasePrice());
         product.setStockQuantity(dto.getStockQuantity());
         product.setReorderLevel(dto.getReorderLevel());
         product.setUnit(dto.getUnit());

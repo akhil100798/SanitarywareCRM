@@ -3,12 +3,14 @@ package com.sanitaryware.crm.service;
 import com.sanitaryware.crm.dto.DashboardDTO;
 import com.sanitaryware.crm.dto.OrderDTO;
 import com.sanitaryware.crm.entity.Order;
+import com.sanitaryware.crm.entity.PurchaseOrder;
 import com.sanitaryware.crm.mapper.OrderMapper;
 import com.sanitaryware.crm.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import com.sanitaryware.crm.entity.DistributorPayment;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,9 +24,11 @@ import java.util.stream.Collectors;
 public class DashboardServiceImpl implements DashboardService {
 
     private final OrderRepository orderRepository;
+    private final PurchaseOrderRepository purchaseOrderRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final PaymentRepository paymentRepository;
+    private final DistributorPaymentRepository distributorPaymentRepository;
     private final OrderMapper orderMapper;
 
     @Override
@@ -40,6 +44,23 @@ public class DashboardServiceImpl implements DashboardService {
         long pendingOrders = orderRepository.findByStatus(Order.OrderStatus.PENDING, PageRequest.of(0, 1)).getTotalElements();
         long totalCustomers = customerRepository.count();
         long lowStockProducts = productRepository.findAll().stream().filter(p -> p.getStockQuantity() < 10).count();
+
+        // Calculate distributor payments for the month
+        BigDecimal distributorPaymentsTotal = distributorPaymentRepository.findAll().stream()
+                .filter(dp -> !dp.getPaymentDate().isBefore(startOfMonth) && !dp.getPaymentDate().isAfter(endOfMonth))
+                .map(DistributorPayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate payables and receivables
+        BigDecimal totalReceivables = orderRepository.findAll().stream()
+                .map(Order::getBalanceAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPayables = purchaseOrderRepository.findAll().stream()
+                .map(PurchaseOrder::getBalanceAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<OrderDTO> recentOrders = orderRepository.findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .stream()
@@ -59,6 +80,9 @@ public class DashboardServiceImpl implements DashboardService {
                 .pendingOrders(pendingOrders)
                 .totalCustomers(totalCustomers)
                 .lowStockProducts(lowStockProducts)
+                .distributorPaymentsTotal(distributorPaymentsTotal)
+                .totalPayables(totalPayables)
+                .totalReceivables(totalReceivables)
                 .recentOrders(recentOrders)
                 .orderStatusBreakdown(orderStatusBreakdown)
                 .build();

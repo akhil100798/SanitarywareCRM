@@ -46,9 +46,16 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaymentDate(LocalDate.now());
         }
 
+        // Validate Order balance and amount
+        if (payment.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Payment amount must be greater than zero");
+        }
+        if (order.getBalanceAmount().compareTo(payment.getAmount()) < 0) {
+            throw new IllegalArgumentException("Payment amount ₹" + payment.getAmount() + " exceeds the balance due ₹" + order.getBalanceAmount());
+        }
+
         Payment savedPayment = paymentRepository.save(payment);
 
-        // Update Order balance and status
         order.setPaidAmount(order.getPaidAmount().add(payment.getAmount()));
         order.calculateBalance();
         

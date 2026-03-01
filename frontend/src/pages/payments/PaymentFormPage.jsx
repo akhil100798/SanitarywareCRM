@@ -42,6 +42,11 @@ const PaymentFormPage = () => {
             return;
         }
 
+        if (order && formData.amount > order.balanceAmount) {
+            toast.error(`Amount cannot exceed the balance due (₹${order.balanceAmount.toLocaleString()})`);
+            return;
+        }
+
         try {
             setLoading(true);
             await paymentService.create(formData);
@@ -66,15 +71,27 @@ const PaymentFormPage = () => {
                     Record Payment
                 </h2>
 
+                {orderId && !order && !loading && (
+                    <div className="bg-yellow-50 p-4 rounded-lg text-sm text-yellow-700">
+                        Order details not found or failed to load.
+                    </div>
+                )}
+
+                {loading && (
+                    <div className="bg-gray-50 p-4 rounded-lg flex justify-center items-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                )}
+
                 {order && (
                     <div className="bg-blue-50 p-4 rounded-lg flex justify-between items-center text-sm">
                         <div>
                             <p className="text-blue-800 font-semibold">{order.orderNumber}</p>
-                            <p className="text-blue-600">Total: ₹{order.total.toLocaleString()}</p>
+                            <p className="text-blue-600">Total: ₹{(order.total || 0).toLocaleString()}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-blue-800 font-semibold">Balance Due</p>
-                            <p className="text-lg font-bold text-blue-900">₹{order.balanceAmount.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-blue-900">₹{(order.balanceAmount || 0).toLocaleString()}</p>
                         </div>
                     </div>
                 )}

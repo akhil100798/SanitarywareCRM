@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const login = useAuthStore((state) => state.login);
@@ -13,13 +14,16 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setErrorMsg('');
 
         try {
             await login(username, password);
             toast.success('Login successful!');
             navigate('/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Login failed');
+            const msg = error.response?.data?.message || 'Invalid username or password';
+            setErrorMsg(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
@@ -32,6 +36,12 @@ const LoginPage = () => {
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">Sanitaryware CRM</h1>
                     <p className="text-gray-600">Sign in to your account</p>
                 </div>
+
+                {errorMsg && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-center text-sm">
+                        {errorMsg}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
