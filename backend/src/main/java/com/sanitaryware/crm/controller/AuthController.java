@@ -90,6 +90,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registering new user: {}", request.getUsername());
+        boolean firstUser = userRepository.count() == 0;
+        if (!firstUser && !isCurrentUserAdminOrManager()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new MessageResponse("Only administrators and managers can register users"));
+        }
+
         if (userRepository.existsByUsername(request.getUsername())) {
             log.warn("Username already exists: {}", request.getUsername());
             return ResponseEntity.badRequest()
@@ -109,7 +115,7 @@ public class AuthController {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setFullName(request.getFullName());
             user.setPhoneNumber(request.getPhoneNumber());
-            user.setRole(User.UserRole.SALES); // Hardcoded to prevent privilege escalation
+            user.setRole(firstUser ? User.UserRole.ADMIN : User.UserRole.SALES);
             user.setIsActive(true);
 
             userRepository.save(user);
@@ -121,6 +127,14 @@ public class AuthController {
             log.error("Error during user registration: ", e);
             throw e; // Let global handler take it
         }
+    }
+
+    private boolean isCurrentUserAdminOrManager() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getAuthorities().stream().anyMatch(authority ->
+                        "ROLE_ADMIN".equals(authority.getAuthority()) || "ROLE_MANAGER".equals(authority.getAuthority()));
     }
 
     @GetMapping("/me")

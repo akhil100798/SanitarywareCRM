@@ -29,6 +29,12 @@ Enterprise-level Customer Relationship Management system built specifically for 
 - **HTTP Client**: Axios
 - **UI Components**: Shadcn/ui
 
+### Mobile
+- **Framework**: React Native with Expo
+- **Navigation**: React Navigation
+- **Authentication Storage**: AsyncStorage-backed JWT session
+- **API Client**: Axios against the same Spring Boot REST API
+
 ## Features
 
 - ✅ **User Management**: Role-based access control (Admin, Manager, Sales, Warehouse)
@@ -76,12 +82,19 @@ cd backend
 mvn clean install
 ```
 
-3. Run the application:
+3. Run the application locally with the development profile:
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 The backend will start on `http://localhost:8080`
+
+For local QA without MySQL credentials, run the in-memory H2 profile:
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=qa
+```
+
+The QA profile is intended for manual/mobile endpoint testing only. It starts with an empty in-memory database each run.
 
 ### Frontend Setup
 
@@ -101,6 +114,48 @@ npm run dev
 ```
 
 The frontend will start on `http://localhost:5173`
+
+### Mobile Android Setup
+
+The mobile app lives in `mobile/` and reuses the existing Spring Boot API.
+It is scaffolded on Expo SDK 55, which targets React Native 0.83 and requires Node.js 20.19.x or newer.
+
+1. Navigate to the mobile directory:
+```bash
+cd mobile
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Copy the mobile environment file and set the API URL:
+```bash
+copy .env.example .env
+```
+
+For Android Emulator, use:
+```env
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8080/api
+```
+
+For a real Android phone on the same Wi-Fi, replace the host with your computer LAN IP:
+```env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:8080/api
+```
+
+For production, use your deployed HTTPS backend URL.
+
+4. Start Expo:
+```bash
+npm start
+```
+
+5. Run Android:
+```bash
+npm run android
+```
 
 ## Default User Credentials
 
@@ -199,9 +254,18 @@ twilio.whatsapp.number=whatsapp:+14155238886
 ```
 
 ### JWT Secret
-**Important**: Change the JWT secret in production:
-```properties
-jwt.secret=your-secure-256-bit-secret-key
+**Important**: Production requires `JWT_SECRET` to be provided as an environment variable. It must be at least 32 characters.
+
+## Production Readiness
+
+- Copy `backend/.env.example` and `frontend/.env.example` into your deployment environment and set real values there. Do not commit production secrets.
+- The default backend profile uses `spring.jpa.hibernate.ddl-auto=validate`; manage schema changes with migrations or controlled SQL scripts.
+- Public self-registration is disabled after the first bootstrap user. The first registered user becomes `ADMIN`; later registrations require an authenticated `ADMIN` or `MANAGER` and create `SALES` users.
+- Set `CORS_ALLOWED_ORIGIN_PATTERNS` to the exact production frontend origin.
+- Build checks:
+```bash
+cd backend && mvn test
+cd frontend && npm run build
 ```
 
 ## License

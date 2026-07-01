@@ -1,0 +1,14 @@
+[
+  {
+    "customerId": 1,
+    "validUntil": "2026-08-30",
+    "status": "DRAFT",
+    "items": [
+      {
+        "productId": 1,
+        "quantity": 10,
+        "unitPrice": 220.00
+      }
+    ]
+  }
+]

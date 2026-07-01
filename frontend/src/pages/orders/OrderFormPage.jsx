@@ -134,11 +134,10 @@ const OrderFormPage = () => {
                 item.unitPrice = product.sellingPrice;
                 item.productName = product.name;
                 item.productSku = product.sku;
-                item.mrp = product.mrp; // Store MRP for our local calculation
+                item.mrp = product.mrp;
             }
         }
 
-        // Auto-calculate discount percentage locally based on MRP vs selling price
         if (field === 'unitPrice' || field === 'productId') {
             const mrp = item.mrp || 0;
             const currentPrice = field === 'unitPrice' ? parseFloat(value) || 0 : item.unitPrice;
@@ -150,7 +149,6 @@ const OrderFormPage = () => {
             }
         }
 
-        // If user manually changes discount percentage, update unit price
         if (field === 'discountPercentage') {
             const mrp = item.mrp || 0;
             const disc = parseFloat(value) || 0;
@@ -159,7 +157,6 @@ const OrderFormPage = () => {
             }
         }
 
-        // Line total is simply unit price * quantity (unitPrice is already discounted)
         item.lineTotal = (item.unitPrice || 0) * (item.quantity || 0);
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
@@ -169,7 +166,6 @@ const OrderFormPage = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Optional: Image Validation
         if (!file.type.startsWith('image/')) {
             toast.error('Only image files are allowed for bill pads.');
             return;
@@ -213,20 +209,33 @@ const OrderFormPage = () => {
         }
     };
 
+    if (loading && isEditMode) {
+        return (
+            <div className="flex flex-col justify-center items-center h-96 space-y-4">
+                <div className="w-10 h-10 border-4 border-teal border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-500 font-semibold text-sm">Assembling customer order parameters...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
-                <button onClick={() => navigate('/orders')} className="flex items-center text-gray-600 hover:text-gray-900 font-medium">
-                    <ArrowLeft size={20} className="mr-2" /> Back to List
+                <button
+                    onClick={() => navigate('/orders')}
+                    className="flex items-center text-slate-500 hover:text-slate-900 transition-colors font-semibold text-sm group"
+                >
+                    <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                    Back to Orders
                 </button>
                 <div className="flex space-x-2">
                     {isEditMode && formData.paymentStatus !== 'PAID' && (
                         <button
                             type="button"
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center shadow-md active:scale-95"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center shadow-md active:scale-95 duration-150"
                             onClick={() => navigate(`/payments/new?orderId=${id}`)}
                         >
-                            <CreditCard size={18} className="mr-2" />
+                            <CreditCard size={16} className="mr-2" />
                             Record Payment
                         </button>
                     )}
@@ -234,17 +243,18 @@ const OrderFormPage = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 pb-12">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-xl font-bold mb-6 flex items-center">
-                        <ShoppingCart size={24} className="mr-2 text-blue-600" />
-                        {isEditMode ? 'Edit' : 'New'} Order
+                {/* Meta Settings */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-5 flex items-center">
+                        <ShoppingCart size={22} className="mr-2 text-teal" />
+                        {isEditMode ? 'Edit Customer Order' : 'New Customer Order'}
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-medium">Customer *</label>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-xs font-semibold text-slate-500">Customer *</label>
                             <select
                                 required
-                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="input-field text-sm font-medium"
                                 value={formData.customerId}
                                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                             >
@@ -252,31 +262,31 @@ const OrderFormPage = () => {
                                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Order Date</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Order Date</label>
                             <input
                                 type="date"
-                                className="w-full p-2 border rounded-lg outline-none"
+                                className="input-field text-sm"
                                 value={formData.orderDate}
                                 onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Expected Delivery</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Expected Delivery</label>
                             <input
                                 type="date"
-                                className="w-full p-2 border rounded-lg outline-none"
+                                className="input-field text-sm"
                                 value={formData.deliveryDate || ''}
                                 onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
                             />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Order Status</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Order Status</label>
                             <select
-                                className="w-full p-2 border rounded-lg outline-none"
+                                className="input-field text-sm font-medium animate-fade-in"
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                             >
@@ -288,12 +298,12 @@ const OrderFormPage = () => {
                                 <option value="CANCELLED">Cancelled</option>
                             </select>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center">
-                                <CreditCard size={16} className="mr-1" /> Payment Status
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500 flex items-center">
+                                <CreditCard size={14} className="mr-1" /> Payment Status
                             </label>
                             <select
-                                className="w-full p-2 border rounded-lg outline-none"
+                                className="input-field text-sm font-medium"
                                 value={formData.paymentStatus}
                                 onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
                             >
@@ -305,116 +315,138 @@ const OrderFormPage = () => {
                     </div>
                 </div>
 
-                {/* Items Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 className="font-semibold text-gray-700">Order Items</h3>
-                        <button type="button" onClick={addItem} className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium">
-                            <Plus size={16} className="mr-1" /> Add Product
+                {/* Items Container */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="text-sm font-bold text-slate-700">Order Items</h3>
+                        <button
+                            type="button"
+                            onClick={addItem}
+                            className="text-teal hover:text-teal-800 flex items-center text-xs font-bold transition-colors"
+                        >
+                            <Plus size={16} className="mr-1" /> Add Product Item
                         </button>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
-                                <tr>
-                                    <th className="px-4 py-3 min-w-[250px]">Product</th>
-                                    <th className="px-4 py-3 w-24">Qty</th>
-                                    <th className="px-4 py-3 w-32">Unit Price</th>
-                                    <th className="px-4 py-3 w-24">Disc %</th>
-                                    <th className="px-4 py-3 w-32">Total</th>
-                                    <th className="px-4 py-3 w-16"></th>
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
+                                    <th className="px-4 py-3 min-w-[280px]">Product SKU / Name</th>
+                                    <th className="px-4 py-3 w-28">Quantity</th>
+                                    <th className="px-4 py-3 w-36">Selling Price</th>
+                                    <th className="px-4 py-3 w-28">Calculated Disc %</th>
+                                    <th className="px-4 py-3 w-36">Line Total</th>
+                                    <th className="px-4 py-3 w-16 text-right"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {formData.items.map((item, index) => (
-                                    <tr key={index}>
-                                        <td className="px-4 py-3">
-                                            <select
-                                                required
-                                                className="w-full p-2 text-sm border rounded focus:ring-1 focus:ring-blue-500 outline-none"
-                                                value={item.productId}
-                                                onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                                            >
-                                                <option value="">Select Product</option>
-                                                {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <input
-                                                type="number" min="1"
-                                                className="w-full p-2 text-sm border rounded outline-none"
-                                                value={item.quantity}
-                                                onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                                            />
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex bg-gray-50 rounded border items-center">
-                                                <span className="text-gray-500 px-2 font-medium">₹</span>
-                                                <input
-                                                    type="number" min="0" step="0.01"
-                                                    className="w-full py-2 bg-transparent outline-none"
-                                                    value={item.unitPrice}
-                                                    onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                                />
-                                            </div>
-                                            {item.mrp > 0 && (
-                                                <div className="text-[10px] text-gray-500 mt-1">MRP: ₹{item.mrp}</div>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex bg-gray-50 rounded border items-center">
-                                                <input
-                                                    type="number" min="0" max="100" step="0.01"
-                                                    className="w-full px-2 py-2 bg-transparent text-gray-400 outline-none"
-                                                    value={item.discountPercentage}
-                                                    readOnly
-                                                    disabled
-                                                    title="Auto-calculated from MRP"
-                                                />
-                                                <span className="text-gray-400 font-medium px-2">%</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 font-bold text-sm">₹{(item.lineTotal || 0).toLocaleString()}</td>
-                                        <td className="px-4 py-3 text-right">
-                                            <button type="button" onClick={() => removeItem(index)} className="text-red-400 hover:text-red-600">
-                                                <Trash2 size={18} />
-                                            </button>
+                            <tbody className="divide-y divide-slate-100">
+                                {formData.items.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-8 text-center text-slate-400 text-xs font-medium">
+                                            No products added yet. Click 'Add Product Item' above.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    formData.items.map((item, index) => (
+                                        <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <select
+                                                    required
+                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
+                                                    value={item.productId}
+                                                    onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
+                                                >
+                                                    <option value="">Select Product</option>
+                                                    {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
+                                                </select>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
+                                                    value={item.quantity}
+                                                    onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex bg-slate-50 border border-slate-200 rounded-xl items-center px-2">
+                                                    <span className="text-slate-400 text-xs font-semibold">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        className="w-full py-2 bg-transparent outline-none pl-1 text-sm text-slate-800 font-bold"
+                                                        value={item.unitPrice}
+                                                        onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </div>
+                                                {item.mrp > 0 && (
+                                                    <div className="text-[10px] text-slate-400 font-medium mt-1 pl-1">MRP: ₹{item.mrp.toLocaleString()}</div>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex bg-slate-100 border border-slate-200 rounded-xl items-center px-2">
+                                                    <input
+                                                        type="number"
+                                                        className="w-full py-2 bg-transparent text-slate-500 outline-none text-center text-xs font-semibold"
+                                                        value={item.discountPercentage}
+                                                        readOnly
+                                                        disabled
+                                                        title="Auto-calculated from MRP"
+                                                    />
+                                                    <span className="text-slate-400 text-xs font-semibold">%</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 font-extrabold text-slate-900">
+                                                ₹{(item.lineTotal || 0).toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeItem(index)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
+                {/* Shipping and Totals */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium flex items-center">
-                                <Truck size={16} className="mr-1" /> Shipping Address
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500 flex items-center">
+                                <Truck size={14} className="mr-1" /> Shipping Address
                             </label>
                             <textarea
-                                className="w-full p-2 border rounded-lg h-24 outline-none focus:ring-1 focus:ring-blue-500"
-                                placeholder="Enter full delivery address..."
+                                className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal h-24 text-sm resize-none"
+                                placeholder="Enter full delivery dispatch details..."
                                 value={formData.shippingAddress}
                                 onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Order Notes</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Order Internal Notes</label>
                             <textarea
-                                className="w-full p-2 border rounded-lg h-24 outline-none"
+                                className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal h-24 text-sm resize-none"
                                 value={formData.notes}
                                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Bill Pad Image</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Physical Bill Pad Reference Image</label>
                             <div className="flex items-center space-x-2">
-                                <label className={`flex-1 flex justify-center items-center px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${uploadingFile ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                    <span className="text-sm text-gray-600 mr-2 flex items-center">
-                                        <Plus size={16} className="mr-1" />
-                                        {uploadingFile ? 'Uploading...' : 'Upload Image'}
+                                <label className={`flex-1 flex justify-center items-center px-4 py-3 border border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors ${uploadingFile ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    <span className="text-xs text-slate-600 font-semibold flex items-center">
+                                        <Plus size={16} className="mr-1 text-slate-400" />
+                                        {uploadingFile ? 'Uploading file...' : 'Upload Reference Image'}
                                     </span>
                                     <input
                                         type="file"
@@ -424,78 +456,78 @@ const OrderFormPage = () => {
                                         disabled={uploadingFile}
                                     />
                                 </label>
-                                {formData.billPadImageUrl && (
-                                    <a
-                                        href={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 rounded border border-blue-200"
-                                        title="View Image"
-                                    >
-                                        <Plus size={20} className="transform rotate-45" /> {/* Use plus rotated as alternative to icon if missing eye/download */}
-                                    </a>
-                                )}
                             </div>
                             {formData.billPadImageUrl && (
-                                <div className="mt-2">
+                                <div className="mt-3 flex items-center gap-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
                                     <img
                                         src={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
                                         alt="Bill Pad"
-                                        className="h-20 w-auto rounded border border-gray-200 object-cover"
+                                        className="h-16 w-16 rounded-xl border border-slate-200 object-cover"
                                     />
+                                    <div>
+                                        <a
+                                            href={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-teal hover:underline font-extrabold"
+                                        >
+                                            View uploaded reference pad
+                                        </a>
+                                        <div className="text-[10px] text-slate-400 mt-0.5 font-mono">{formData.billPadImageUrl}</div>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4 h-fit">
-                        <div className="flex justify-between text-gray-600 text-sm">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4 h-fit">
+                        <div className="flex justify-between text-slate-500 font-semibold text-sm">
                             <span>Subtotal</span>
-                            <span>₹{totals.subtotal.toLocaleString()}</span>
+                            <span className="text-slate-900">₹{totals.subtotal.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <div className="flex items-center">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center text-slate-500 font-semibold text-sm">
                                 <span>Tax (GST %)</span>
                                 <input
                                     type="number"
-                                    className="w-16 p-1 border rounded ml-2 text-center"
+                                    className="w-16 p-1.5 border border-slate-200 rounded-lg ml-2 text-center text-xs"
                                     value={formData.taxPercentage}
                                     onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
                                 />
                             </div>
-                            <span>₹{totals.taxAmount.toLocaleString()}</span>
+                            <span className="text-slate-900 font-semibold text-sm">₹{totals.taxAmount.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <div className="flex items-center text-blue-600 font-medium">
-                                <Truck size={14} className="mr-1" /> Shipping Charge
+                        <div className="flex justify-between items-center text-slate-500 font-semibold text-sm">
+                            <div className="flex items-center text-teal">
+                                <Truck size={14} className="mr-1" /> Shipping Charges
                             </div>
                             <input
                                 type="number"
-                                className="w-32 p-1 border rounded text-right outline-none"
+                                className="w-32 p-1.5 border border-slate-200 rounded-lg text-right text-xs"
                                 value={formData.shippingCharge}
                                 onChange={(e) => setFormData({ ...formData, shippingCharge: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span>Discount</span>
+                        <div className="flex justify-between items-center text-slate-500 font-semibold text-sm">
+                            <span>Extra Discount</span>
                             <input
                                 type="number"
-                                className="w-32 p-1 border rounded text-right text-red-600 outline-none"
+                                className="w-32 p-1.5 border border-slate-200 rounded-lg text-right text-xs text-rose-600 font-bold"
                                 value={formData.discount}
                                 onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
-                        <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
-                            <span className="text-xl font-bold">Total Payable</span>
-                            <span className="text-2xl font-bold text-blue-600">₹{totals.total.toLocaleString()}</span>
+                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <span className="text-base font-bold text-slate-900">Total Net Value</span>
+                            <span className="text-2xl font-extrabold text-teal">₹{totals.total.toLocaleString()}</span>
                         </div>
                         <button
                             type="submit"
                             disabled={loading}
-                            className={`w-full ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold py-3 rounded-lg flex justify-center items-center transition-colors shadow-lg active:scale-[0.98]`}
+                            className="w-full btn-primary py-3.5 mt-2"
                         >
-                            <Save size={20} className="mr-2" />
-                            {loading ? 'Processing...' : (isEditMode ? 'Update Order' : 'Place Order')}
+                            <Save size={18} />
+                            <span>{loading ? 'Processing...' : (isEditMode ? 'Update Order' : 'Place Order')}</span>
                         </button>
                     </div>
                 </div>

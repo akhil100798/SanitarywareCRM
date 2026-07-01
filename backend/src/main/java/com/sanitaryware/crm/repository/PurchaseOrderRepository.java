@@ -10,9 +10,11 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Long> {
+    Optional<PurchaseOrder> findByPoNumber(String poNumber);
     Page<PurchaseOrder> findByStatus(PurchaseOrder.POStatus status, Pageable pageable);
     List<PurchaseOrder> findByDistributorId(Long distributorId);
 

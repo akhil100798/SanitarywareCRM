@@ -17,4 +17,5 @@ public interface OrderService {
     OrderDTO updatePaymentStatus(Long id, String paymentStatus);
     List<OrderDTO> getOrdersByCustomer(Long customerId);
     String generateOrderNumber();
+    byte[] getOrderInvoicePdf(Long id);
 }

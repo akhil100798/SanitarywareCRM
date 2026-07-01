@@ -2,8 +2,8 @@ package com.sanitaryware.crm.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -23,6 +23,16 @@ public class JwtTokenProvider {
 
     @Value("${jwt.expiration}")
     private Long expiration;
+
+    @PostConstruct
+    void validateConfiguration() {
+        if (secret == null || secret.trim().length() < 32) {
+            throw new IllegalStateException("JWT_SECRET must be set to at least 32 characters");
+        }
+        if (expiration == null || expiration <= 0) {
+            throw new IllegalStateException("JWT_EXPIRATION_MS must be greater than zero");
+        }
+    }
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));

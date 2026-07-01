@@ -12,7 +12,9 @@ import java.util.List;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
+    java.util.Optional<Payment> findByPaymentNumber(String paymentNumber);
     List<Payment> findByOrderId(Long orderId);
+    List<Payment> findByOrderCreatedByUsername(String username);
     
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.paymentDate BETWEEN :startDate AND :endDate")
     BigDecimal getTotalPaymentsBetweenDates(@Param("startDate") LocalDate startDate, 

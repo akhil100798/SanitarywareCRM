@@ -1,0 +1,16 @@
+{
+  "admin": {
+    "fullName": "QA Admin User",
+    "username": "qaadmin",
+    "email": "qaadmin@test.com",
+    "phoneNumber": "9000000001",
+    "password": "Password@123"
+  },
+  "sales": {
+    "fullName": "QA Sales User",
+    "username": "qasales",
+    "email": "qasales@test.com",
+    "phoneNumber": "9000000002",
+    "password": "Password@123"
+  }
+}

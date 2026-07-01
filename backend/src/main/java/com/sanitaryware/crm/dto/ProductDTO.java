@@ -26,8 +26,10 @@ public class ProductDTO {
     @NotBlank(message = "Product name is required")
     private String name;
     private String description;
+    @NotNull(message = "Category ID is required")
     private Long categoryId;
     private String categoryName;
+    @NotNull(message = "Brand ID is required")
     private Long brandId;
     private String brandName;
     @NotNull(message = "MRP is required")

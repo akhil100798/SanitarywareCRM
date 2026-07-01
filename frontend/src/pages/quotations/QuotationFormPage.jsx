@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, Search, Calculator, ShoppingCart } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Save, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import quotationService from '../../services/quotationService';
 import orderService from '../../services/orderService';
 import customerService from '../../services/customerService';
@@ -145,21 +145,34 @@ const QuotationFormPage = () => {
         }
     };
 
+    if (loading && isEditMode) {
+        return (
+            <div className="flex flex-col justify-center items-center h-96 space-y-4">
+                <div className="w-10 h-10 border-4 border-teal border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-500 font-semibold text-sm">Assembling quotation parameters...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
-                <button onClick={() => navigate('/quotations')} className="flex items-center text-gray-600 hover:text-gray-900">
-                    <ArrowLeft size={20} className="mr-2" /> Back to List
+                <button
+                    onClick={() => navigate('/quotations')}
+                    className="flex items-center text-slate-500 hover:text-slate-900 transition-colors font-semibold text-sm group"
+                >
+                    <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                    Back to Quotations
                 </button>
                 <div className="flex space-x-2">
                     {isEditMode && formData.status !== 'CONVERTED' && (
                         <button
                             type="button"
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center shadow-md active:scale-95"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center shadow-md active:scale-95 duration-150"
                             onClick={handleConvertToOrder}
                             disabled={loading}
                         >
-                            <ShoppingCart size={18} className="mr-2" />
+                            <ShoppingCart size={16} className="mr-2" />
                             {loading ? 'Converting...' : 'Convert to Order'}
                         </button>
                     )}
@@ -167,14 +180,17 @@ const QuotationFormPage = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-xl font-bold mb-6">{isEditMode ? 'Edit' : 'New'} Quotation</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Customer *</label>
+                {/* Meta details */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-5">
+                        {isEditMode ? 'Edit Sales Quotation' : 'Create Sales Quotation'}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Customer *</label>
                             <select
                                 required
-                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="input-field text-sm font-medium"
                                 value={formData.customerId}
                                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                             >
@@ -182,20 +198,20 @@ const QuotationFormPage = () => {
                                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Date</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Quotation Date</label>
                             <input
                                 type="date"
-                                className="w-full p-2 border rounded-lg"
+                                className="input-field text-sm"
                                 value={formData.quotationDate}
                                 onChange={(e) => setFormData({ ...formData, quotationDate: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Valid Until</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Valid Until</label>
                             <input
                                 type="date"
-                                className="w-full p-2 border rounded-lg"
+                                className="input-field text-sm"
                                 value={formData.validUntil}
                                 onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
                             />
@@ -203,140 +219,150 @@ const QuotationFormPage = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 className="font-semibold text-gray-700">Items</h3>
+                {/* Items Canvas */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="text-sm font-bold text-slate-700">Estimate Items Line</h3>
                         <button
                             type="button"
                             onClick={addItem}
-                            className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium"
+                            className="text-teal hover:text-teal-800 flex items-center text-xs font-bold transition-colors"
                         >
-                            <Plus size={16} className="mr-1" /> Add Item
+                            <Plus size={16} className="mr-1" /> Add Line Item
                         </button>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
-                                <tr>
-                                    <th className="px-4 py-3 min-w-[250px]">Product</th>
-                                    <th className="px-4 py-3 w-24">Qty</th>
-                                    <th className="px-4 py-3 w-32">Unit Price</th>
-                                    <th className="px-4 py-3 w-24">Disc %</th>
-                                    <th className="px-4 py-3 w-32">Total</th>
-                                    <th className="px-4 py-3 w-16"></th>
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
+                                    <th className="px-4 py-3 min-w-[280px]">Product SKU / Name</th>
+                                    <th className="px-4 py-3 w-28">Quantity</th>
+                                    <th className="px-4 py-3 w-36">Unit Price</th>
+                                    <th className="px-4 py-3 w-28">Discount %</th>
+                                    <th className="px-4 py-3 w-36">Line Total</th>
+                                    <th className="px-4 py-3 w-16 text-right"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
-                                {formData.items.map((item, index) => (
-                                    <tr key={index}>
-                                        <td className="px-4 py-3">
-                                            <select
-                                                required
-                                                className="w-full p-2 text-sm border rounded"
-                                                value={item.productId}
-                                                onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                                            >
-                                                <option value="">Select Product</option>
-                                                {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="w-full p-2 text-sm border rounded"
-                                                value={item.quantity}
-                                                onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                                            />
-                                        </td>
-                                        <td className="px-4 py-3 font-mono text-sm">
-                                            ₹{item.unitPrice}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <input
-                                                type="number"
-                                                min="0" max="100"
-                                                className="w-full p-2 text-sm border rounded"
-                                                value={item.discountPercentage}
-                                                onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
-                                            />
-                                        </td>
-                                        <td className="px-4 py-3 font-bold text-sm">
-                                            ₹{(item.lineTotal || 0).toLocaleString()}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <button
-                                                type="button"
-                                                onClick={() => removeItem(index)}
-                                                className="text-red-400 hover:text-red-600"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
+                            <tbody className="divide-y divide-slate-100">
+                                {formData.items.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-8 text-center text-slate-400 text-xs font-medium">
+                                            No line items added yet. Click 'Add Line Item' above.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    formData.items.map((item, index) => (
+                                        <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <select
+                                                    required
+                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
+                                                    value={item.productId}
+                                                    onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
+                                                >
+                                                    <option value="">Select Product</option>
+                                                    {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
+                                                </select>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
+                                                    value={item.quantity}
+                                                    onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 font-bold text-slate-800">
+                                                ₹{(item.unitPrice || 0).toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="number"
+                                                    min="0" max="100"
+                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
+                                                    value={item.discountPercentage}
+                                                    onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 font-extrabold text-slate-900">
+                                                ₹{(item.lineTotal || 0).toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeItem(index)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
+                {/* Terms and Invoice Summary */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Notes</label>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Internal Memo Notes</label>
                             <textarea
-                                className="w-full p-2 border rounded-lg h-24"
+                                className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal h-24 text-sm resize-none"
                                 value={formData.notes}
                                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Terms & Conditions</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500">Terms & Conditions</label>
                             <textarea
-                                className="w-full p-2 border rounded-lg h-32"
+                                className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal h-28 text-sm resize-none"
                                 value={formData.termsAndConditions}
                                 onChange={(e) => setFormData({ ...formData, termsAndConditions: e.target.value })}
                             />
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4 h-fit">
-                        <div className="flex justify-between text-gray-600">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4 h-fit">
+                        <div className="flex justify-between text-slate-500 font-semibold text-sm">
                             <span>Subtotal</span>
-                            <span>₹{totals.subtotal.toLocaleString()}</span>
+                            <span className="text-slate-900">₹{totals.subtotal.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <div className="flex items-center">
+                            <div className="flex items-center text-slate-500 font-semibold text-sm">
                                 <span>Tax (%)</span>
                                 <input
                                     type="number"
-                                    className="w-16 p-1 border rounded ml-2 text-sm"
+                                    className="w-16 p-1.5 border border-slate-200 rounded-lg ml-2 text-center text-xs"
                                     value={formData.taxPercentage}
                                     onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
                                 />
                             </div>
-                            <span>₹{totals.taxAmount.toLocaleString()}</span>
+                            <span className="text-slate-900 font-semibold text-sm">₹{totals.taxAmount.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <span>Total Discount</span>
+                        <div className="flex justify-between items-center text-slate-500 font-semibold text-sm">
+                            <span>Manual Deduction Discount</span>
                             <input
                                 type="number"
-                                className="w-32 p-1 border rounded text-right"
+                                className="w-32 p-1.5 border border-slate-200 rounded-lg text-right text-xs"
                                 value={formData.discount}
                                 onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
-                        <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
-                            <span className="text-xl font-bold">Total Amount</span>
-                            <span className="text-2xl font-bold text-blue-600">₹{totals.total.toLocaleString()}</span>
+                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <span className="text-base font-bold text-slate-900">Net Estimated Amount</span>
+                            <span className="text-2xl font-extrabold text-teal">₹{totals.total.toLocaleString()}</span>
                         </div>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg flex justify-center items-center"
+                            className="w-full btn-primary py-3.5 mt-2"
                         >
-                            <Save size={20} className="mr-2" />
-                            {loading ? 'Saving...' : 'Save Quotation'}
+                            <Save size={18} />
+                            <span>{loading ? 'Saving...' : 'Save Sales Quotation'}</span>
                         </button>
                     </div>
                 </div>

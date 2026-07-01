@@ -16,6 +16,7 @@ import OrderFormPage from './pages/orders/OrderFormPage';
 import PaymentListPage from './pages/payments/PaymentListPage';
 import PaymentFormPage from './pages/payments/PaymentFormPage';
 import BrandListPage from './pages/brands/BrandListPage';
+import CategoryListPage from './pages/categories/CategoryListPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -169,6 +170,14 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <SettingsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/categories"
+                        element={
+                            <ProtectedRoute>
+                                <CategoryListPage />
                             </ProtectedRoute>
                         }
                     />

@@ -15,8 +15,10 @@ import java.util.Optional;
 @Repository
 public interface QuotationRepository extends JpaRepository<Quotation, Long> {
     Optional<Quotation> findByQuotationNumber(String quotationNumber);
+    Page<Quotation> findByCreatedByUsername(String username, Pageable pageable);
     Page<Quotation> findByCustomerId(Long customerId, Pageable pageable);
     List<Quotation> findByCustomerId(Long customerId);
+    List<Quotation> findByCustomerIdAndCreatedByUsername(Long customerId, String username);
     Page<Quotation> findByStatus(Quotation.QuotationStatus status, Pageable pageable);
     
     @Query("SELECT q FROM Quotation q WHERE q.validUntil < :today AND q.status = 'SENT'")

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building2, Globe, Phone, Mail, MapPin } from 'lucide-react';
+import { Save, Building2, Phone, MapPin } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
 import toast from 'react-hot-toast';
 
@@ -73,67 +73,72 @@ const SettingsPage = () => {
     };
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Loading settings...</div>;
+        return (
+            <div className="flex flex-col justify-center items-center h-96 space-y-4">
+                <div className="w-10 h-10 border-4 border-teal border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-500 font-semibold text-sm">Assembling configurations...</p>
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
-                <p className="text-gray-500">Manage your company profile and system preferences.</p>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System Settings</h1>
+                <p className="text-slate-500 text-sm">Manage invoice template details, GST parameters, and metadata preferences.</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <form onSubmit={handleSubmit} className="p-6 space-y-8">
                     {/* Company Information */}
-                    <section>
-                        <div className="flex items-center space-x-2 mb-6">
-                            <Building2 className="text-blue-600" size={24} />
-                            <h2 className="text-lg font-semibold text-gray-900">Company Profile</h2>
+                    <section className="space-y-4">
+                        <div className="flex items-center space-x-2 border-b border-slate-50 pb-3">
+                            <Building2 className="text-teal" size={20} />
+                            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Company Profile</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Company Name *</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Company Name *</label>
                                 <input
                                     type="text"
                                     name="companyName"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.companyName}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">GST / Tax Number</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">GST / Tax Number</label>
                                 <input
                                     type="text"
                                     name="gstNumber"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.gstNumber}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Logo URL</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Logo Image Link URL</label>
                                 <input
                                     type="text"
                                     name="logoUrl"
                                     placeholder="https://example.com/logo.png"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.logoUrl}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Currency Symbol</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Currency Symbol</label>
                                 <input
                                     type="text"
                                     name="currencySymbol"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm font-medium"
                                     value={formData.currencySymbol}
                                     onChange={handleChange}
                                 />
@@ -141,44 +146,42 @@ const SettingsPage = () => {
                         </div>
                     </section>
 
-                    <hr className="border-gray-100" />
-
                     {/* Contact Information */}
-                    <section>
-                        <div className="flex items-center space-x-2 mb-6">
-                            <Phone className="text-blue-600" size={24} />
-                            <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+                    <section className="space-y-4">
+                        <div className="flex items-center space-x-2 border-b border-slate-50 pb-3">
+                            <Phone className="text-teal" size={20} />
+                            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Contact & Website</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Email Address</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Email Address</label>
                                 <input
                                     type="email"
                                     name="email"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.email}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Phone Number</label>
                                 <input
                                     type="text"
                                     name="phone"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.phone}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-sm font-medium text-gray-700">Website</label>
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-xs font-semibold text-slate-500">Website URL</label>
                                 <input
                                     type="text"
                                     name="website"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.website}
                                     onChange={handleChange}
                                 />
@@ -186,55 +189,53 @@ const SettingsPage = () => {
                         </div>
                     </section>
 
-                    <hr className="border-gray-100" />
-
                     {/* Address Information */}
-                    <section>
-                        <div className="flex items-center space-x-2 mb-6">
-                            <MapPin className="text-blue-600" size={24} />
-                            <h2 className="text-lg font-semibold text-gray-900">Address</h2>
+                    <section className="space-y-4">
+                        <div className="flex items-center space-x-2 border-b border-slate-50 pb-3">
+                            <MapPin className="text-teal" size={20} />
+                            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Address Details</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-sm font-medium text-gray-700">Street Address</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-xs font-semibold text-slate-500">Street Address</label>
                                 <input
                                     type="text"
                                     name="address"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.address}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">City</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">City</label>
                                 <input
                                     type="text"
                                     name="city"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.city}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">State / Province</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">State / Province</label>
                                 <input
                                     type="text"
                                     name="state"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.state}
                                     onChange={handleChange}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Zip / Postal Code</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Zip / Postal Code</label>
                                 <input
                                     type="text"
                                     name="pincode"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.pincode}
                                     onChange={handleChange}
                                 />
@@ -242,14 +243,14 @@ const SettingsPage = () => {
                         </div>
                     </section>
 
-                    <div className="flex justify-end pt-6 border-t border-gray-100">
+                    <div className="flex justify-end pt-6 border-t border-slate-100">
                         <button
                             type="submit"
                             disabled={saving}
-                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            className="btn-primary text-sm px-8"
                         >
-                            <Save size={20} />
-                            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                            <Save size={16} />
+                            <span>{saving ? 'Saving...' : 'Save Settings'}</span>
                         </button>
                     </div>
                 </form>

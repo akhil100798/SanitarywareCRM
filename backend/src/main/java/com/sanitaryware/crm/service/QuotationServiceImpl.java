@@ -11,10 +11,10 @@ import com.sanitaryware.crm.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -28,13 +28,22 @@ public class QuotationServiceImpl implements QuotationService {
     private QuotationRepository quotationRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private PdfGeneratorService pdfGeneratorService;
 
     @Autowired
     private QuotationMapper quotationMapper;
 
+    @Autowired
+    private AccessControlService accessControlService;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     @Override
     public QuotationDTO createQuotation(QuotationDTO quotationDTO) {
+        if (quotationDTO.getItems() == null || quotationDTO.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Quotation must contain at least one item");
+        }
+        
         Quotation quotation = quotationMapper.toEntity(quotationDTO);
         
         // Set quotation number if not provided
@@ -43,8 +52,7 @@ public class QuotationServiceImpl implements QuotationService {
         }
 
         // Set creator
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        userRepository.findByUsername(username).ifPresent(quotation::setCreatedBy);
+        quotation.setCreatedBy(accessControlService.currentUser());
 
         // Map items
         if (quotationDTO.getItems() != null) {
@@ -61,8 +69,13 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public QuotationDTO updateQuotation(Long id, QuotationDTO quotationDTO) {
+        if (quotationDTO.getItems() == null || quotationDTO.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Quotation must contain at least one item");
+        }
+
         Quotation existingQuotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        accessControlService.requireQuotationAccess(existingQuotation);
 
         quotationMapper.updateEntity(existingQuotation, quotationDTO);
 
@@ -84,26 +97,32 @@ public class QuotationServiceImpl implements QuotationService {
     public QuotationDTO getQuotationById(Long id) {
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        accessControlService.requireQuotationAccess(quotation);
         return quotationMapper.toDTO(quotation);
     }
 
     @Override
     public Page<QuotationDTO> getAllQuotations(Pageable pageable) {
+        User currentUser = accessControlService.currentUser();
+        if (accessControlService.isSales(currentUser)) {
+            return quotationRepository.findByCreatedByUsername(currentUser.getUsername(), pageable).map(quotationMapper::toDTO);
+        }
         return quotationRepository.findAll(pageable).map(quotationMapper::toDTO);
     }
 
     @Override
     public void deleteQuotation(Long id) {
-        if (!quotationRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Quotation not found with id: " + id);
-        }
-        quotationRepository.deleteById(id);
+        Quotation quotation = quotationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        accessControlService.requireQuotationAccess(quotation);
+        quotationRepository.delete(quotation);
     }
 
     @Override
     public QuotationDTO updateStatus(Long id, String status) {
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        accessControlService.requireQuotationAccess(quotation);
         
         quotation.setStatus(Quotation.QuotationStatus.valueOf(status.toUpperCase()));
         return quotationMapper.toDTO(quotationRepository.save(quotation));
@@ -111,7 +130,11 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public List<QuotationDTO> getQuotationsByCustomer(Long customerId) {
-        return quotationRepository.findByCustomerId(customerId).stream()
+        User currentUser = accessControlService.currentUser();
+        List<Quotation> quotations = accessControlService.isSales(currentUser)
+                ? quotationRepository.findByCustomerIdAndCreatedByUsername(customerId, currentUser.getUsername())
+                : quotationRepository.findByCustomerId(customerId);
+        return quotations.stream()
                 .map(quotationMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -120,7 +143,22 @@ public class QuotationServiceImpl implements QuotationService {
     public String generateQuotationNumber() {
         LocalDateTime now = LocalDateTime.now();
         String prefix = "QTN-" + now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String random = String.format("%04d", new java.util.Random().nextInt(10000));
-        return prefix + "-" + random;
+        for (int attempts = 0; attempts < 10; attempts++) {
+            String random = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+            String candidate = prefix + "-" + random;
+            if (quotationRepository.findByQuotationNumber(candidate).isEmpty()) {
+                return candidate;
+            }
+        }
+        return prefix + "-" + now.format(DateTimeFormatter.ofPattern("HHmmssSSS"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] getQuotationPdf(Long id) {
+        Quotation quotation = quotationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        accessControlService.requireQuotationAccess(quotation);
+        return pdfGeneratorService.generateQuotationPdf(quotation);
     }
 }

@@ -1,0 +1,8 @@
+[
+  {
+    "orderId": 1,
+    "amount": 500.00,
+    "paymentMethod": "CASH",
+    "referenceNumber": "TXN-E2E"
+  }
+]

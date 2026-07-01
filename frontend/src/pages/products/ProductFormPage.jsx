@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Package } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { productService, brandService, categoryService } from '../../services/productService';
 import toast from 'react-hot-toast';
 
@@ -93,72 +93,77 @@ const ProductFormPage = () => {
     };
 
     if (loading && isEditMode) {
-        return <div className="flex justify-center items-center h-64">Loading...</div>;
+        return (
+            <div className="flex flex-col justify-center items-center h-96 space-y-4">
+                <div className="w-10 h-10 border-4 border-teal border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-500 font-semibold text-sm">Assembling product configuration...</p>
+            </div>
+        );
     }
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center">
                 <button
                     onClick={() => navigate('/products')}
-                    className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                    className="flex items-center text-slate-500 hover:text-slate-900 transition-colors font-semibold text-sm group"
                 >
-                    <ArrowLeft size={20} className="mr-2" />
-                    Back to List
+                    <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                    Back to Catalog
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-gray-50">
-                    <h2 className="text-xl font-bold text-gray-900">
-                        {isEditMode ? 'Edit Product' : 'Add New Product'}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                        {isEditMode ? 'Edit Catalog Item' : 'Add New Product'}
                     </h2>
-                    <p className="text-sm text-gray-500">Fill in the product specifications and inventory details.</p>
+                    <p className="text-xs text-slate-500 mt-1">Configure stock thresholds, branding, categories, and technical variables.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-8">
                     {/* Basic Info */}
-                    <section>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Basic Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Product SKU *</label>
+                    <section className="space-y-4">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Basic Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Product SKU *</label>
                                 <input
                                     type="text"
                                     name="sku"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.sku}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Product Name *</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Product Name *</label>
                                 <input
                                     type="text"
                                     name="name"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.name}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Description</label>
+                            <div className="md:col-span-2 space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Description</label>
                                 <textarea
                                     name="description"
                                     rows="3"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                    className="input-field text-sm resize-none"
                                     value={formData.description}
                                     onChange={handleChange}
                                 ></textarea>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Category *</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Category *</label>
                                 <select
                                     name="categoryId"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.categoryId}
                                     onChange={handleChange}
                                 >
@@ -168,12 +173,12 @@ const ProductFormPage = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Brand *</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Brand *</label>
                                 <select
                                     name="brandId"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.brandId}
                                     onChange={handleChange}
                                 >
@@ -187,57 +192,57 @@ const ProductFormPage = () => {
                     </section>
 
                     {/* Pricing & Inventory */}
-                    <section>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Pricing & Inventory</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">MRP *</label>
+                    <section className="space-y-4">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pricing & Inventory</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">MRP *</label>
                                 <input
                                     type="number"
                                     name="mrp"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.mrp}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Selling Price *</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Selling Price *</label>
                                 <input
                                     type="number"
                                     name="sellingPrice"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.sellingPrice}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Unit</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Unit</label>
                                 <input
                                     type="text"
                                     name="unit"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.unit}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Stock Quantity</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Stock Quantity</label>
                                 <input
                                     type="number"
                                     name="stockQuantity"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.stockQuantity}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Reorder Level</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Reorder Level</label>
                                 <input
                                     type="number"
                                     name="reorderLevel"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.reorderLevel}
                                     onChange={handleChange}
                                 />
@@ -246,35 +251,35 @@ const ProductFormPage = () => {
                     </section>
 
                     {/* Attributes */}
-                    <section>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Product Attributes</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Color</label>
+                    <section className="space-y-4">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Product Attributes</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Color</label>
                                 <input
                                     type="text"
                                     name="color"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.color}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Material</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Material</label>
                                 <input
                                     type="text"
                                     name="material"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.material}
                                     onChange={handleChange}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Size</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-slate-500">Size</label>
                                 <input
                                     type="text"
                                     name="size"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="input-field text-sm"
                                     value={formData.size}
                                     onChange={handleChange}
                                 />
@@ -282,45 +287,45 @@ const ProductFormPage = () => {
                         </div>
                     </section>
 
-                    <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-6 border-t border-slate-50 pt-6">
                         <div className="flex items-center space-x-2">
                             <input
                                 type="checkbox"
                                 id="isActive"
                                 name="isActive"
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-teal border-slate-300 rounded focus:ring-teal"
                                 checked={formData.isActive}
                                 onChange={handleChange}
                             />
-                            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Active</label>
+                            <label htmlFor="isActive" className="text-xs font-semibold text-slate-700">Active</label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <input
                                 type="checkbox"
                                 id="isFeatured"
                                 name="isFeatured"
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-teal border-slate-300 rounded focus:ring-teal"
                                 checked={formData.isFeatured}
                                 onChange={handleChange}
                             />
-                            <label htmlFor="isFeatured" className="text-sm font-medium text-gray-700">Featured</label>
+                            <label htmlFor="isFeatured" className="text-xs font-semibold text-slate-700">Featured</label>
                         </div>
                     </div>
 
-                    <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+                    <div className="flex justify-end space-x-3 pt-6 border-t border-slate-100">
                         <button
                             type="button"
                             onClick={() => navigate('/products')}
-                            className="px-6 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="btn-secondary text-sm px-6"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            className="btn-primary text-sm px-8"
                         >
-                            <Save size={20} />
+                            <Save size={16} />
                             <span>{loading ? 'Saving...' : 'Save Product'}</span>
                         </button>
                     </div>

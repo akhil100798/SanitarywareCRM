@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Ramesh Sharma",
+    "email": "ramesh.sharma@test.com",
+    "phoneNumber": "9123456789",
+    "billingAddress": "456 Test Gali, New Delhi",
+    "shippingAddress": "456 Test Gali, New Delhi",
+    "customerType": "RETAIL"
+  }
+]

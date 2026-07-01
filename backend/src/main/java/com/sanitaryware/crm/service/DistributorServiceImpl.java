@@ -2,6 +2,7 @@ package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.DistributorDTO;
 import com.sanitaryware.crm.entity.Distributor;
+import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.DistributorMapper;
 import com.sanitaryware.crm.repository.DistributorRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class DistributorServiceImpl implements DistributorService {
     @Transactional
     public DistributorDTO updateDistributor(Long id, DistributorDTO dto) {
         Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Distributor not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
         
         distributorMapper.updateEntity(distributor, dto);
         distributor = distributorRepository.save(distributor);
@@ -42,7 +43,7 @@ public class DistributorServiceImpl implements DistributorService {
     @Override
     public DistributorDTO getDistributorById(Long id) {
         Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Distributor not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
         return distributorMapper.toDTO(distributor);
     }
 

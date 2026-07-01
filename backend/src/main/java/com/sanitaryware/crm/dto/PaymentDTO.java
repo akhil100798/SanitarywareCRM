@@ -30,6 +30,7 @@ public class PaymentDTO {
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private BigDecimal amount;
 
+    @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
     private String referenceNumber;
     private String notes;

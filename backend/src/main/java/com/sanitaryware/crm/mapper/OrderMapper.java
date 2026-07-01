@@ -3,6 +3,7 @@ package com.sanitaryware.crm.mapper;
 import com.sanitaryware.crm.dto.OrderDTO;
 import com.sanitaryware.crm.entity.Order;
 import com.sanitaryware.crm.entity.OrderItem;
+import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.repository.CustomerRepository;
 import com.sanitaryware.crm.repository.ProductRepository;
 import com.sanitaryware.crm.repository.QuotationRepository;
@@ -100,13 +101,13 @@ public class OrderMapper {
         order.setBillPadImageUrl(dto.getBillPadImageUrl());
 
         if (dto.getCustomerId() != null) {
-            customerRepository.findById(dto.getCustomerId())
-                    .ifPresent(order::setCustomer);
+            order.setCustomer(customerRepository.findById(dto.getCustomerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + dto.getCustomerId())));
         }
 
         if (dto.getQuotationId() != null) {
-            quotationRepository.findById(dto.getQuotationId())
-                    .ifPresent(order::setQuotation);
+            order.setQuotation(quotationRepository.findById(dto.getQuotationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + dto.getQuotationId())));
         }
     }
 
@@ -121,8 +122,10 @@ public class OrderMapper {
         item.setNotes(dto.getNotes());
 
         if (dto.getProductId() != null) {
-            productRepository.findById(dto.getProductId())
-                    .ifPresent(item::setProduct);
+            item.setProduct(productRepository.findById(dto.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId())));
+        } else {
+            throw new IllegalArgumentException("Order item product is required");
         }
 
         item.calculateLineTotal();

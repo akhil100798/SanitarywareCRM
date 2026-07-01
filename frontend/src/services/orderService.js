@@ -10,6 +10,7 @@ const orderService = {
     updateStatus: (id, status) => api.patch(`/orders/${id}/status`, null, { params: { status } }),
     updatePaymentStatus: (id, status) => api.patch(`/orders/${id}/payment-status`, null, { params: { status } }),
     getByCustomer: (customerId) => api.get(`/orders/customer/${customerId}`),
+    downloadInvoicePdf: (id) => api.get(`/orders/${id}/invoice/pdf`, { responseType: 'blob' }),
 };
 
 export default orderService;

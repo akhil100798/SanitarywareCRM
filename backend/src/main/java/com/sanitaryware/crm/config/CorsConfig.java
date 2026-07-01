@@ -1,5 +1,6 @@
 package com.sanitaryware.crm.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -11,19 +12,17 @@ import java.util.Arrays;
 @Configuration
 public class CorsConfig {
 
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:5173,http://localhost:5174,http://localhost:5180,http://localhost:3000}")
+    private String allowedOriginPatterns;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Allow origins from Vite dev server and production deployments
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5180",
-            "http://localhost:3000",
-            "https://*-*.vercel.app",
-            "https://*.vercel.app"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList());
         
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList(

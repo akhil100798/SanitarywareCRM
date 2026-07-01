@@ -61,4 +61,14 @@ public class QuotationController {
     public ResponseEntity<List<QuotationDTO>> getQuotationsByCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(quotationService.getQuotationsByCustomer(customerId));
     }
+
+    @GetMapping("/{id}/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<byte[]> getQuotationPdf(@PathVariable Long id) {
+        byte[] pdf = quotationService.getQuotationPdf(id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=\"quotation-" + id + ".pdf\"")
+                .body(pdf);
+    }
 }

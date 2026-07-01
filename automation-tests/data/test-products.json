@@ -1,0 +1,13 @@
+[
+  {
+    "sku": "E2E-TEST-SKU",
+    "name": "E2E Automated Pipe",
+    "description": "Standard test PVC conduit",
+    "mrp": 250.00,
+    "sellingPrice": 220.00,
+    "stockQuantity": 100,
+    "reorderLevel": 5,
+    "categoryId": 1,
+    "brandId": 1
+  }
+]

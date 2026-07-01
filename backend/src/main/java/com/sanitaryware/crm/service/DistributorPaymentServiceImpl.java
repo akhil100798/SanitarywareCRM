@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +32,8 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     private final DistributorRepository distributorRepository;
     private final UserRepository userRepository;
     private final DistributorPaymentMapper paymentMapper;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
     @Transactional
@@ -127,7 +130,13 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     public String generatePaymentNumber() {
         LocalDateTime now = LocalDateTime.now();
         String prefix = "DPAY-" + now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String random = String.format("%04d", new java.util.Random().nextInt(10000));
-        return prefix + "-" + random;
+        for (int attempts = 0; attempts < 10; attempts++) {
+            String random = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+            String candidate = prefix + "-" + random;
+            if (paymentRepository.findByPaymentNumber(candidate).isEmpty()) {
+                return candidate;
+            }
+        }
+        return prefix + "-" + now.format(DateTimeFormatter.ofPattern("HHmmssSSS"));
     }
 }

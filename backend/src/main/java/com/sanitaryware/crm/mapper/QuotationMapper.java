@@ -3,6 +3,7 @@ package com.sanitaryware.crm.mapper;
 import com.sanitaryware.crm.dto.QuotationDTO;
 import com.sanitaryware.crm.entity.Quotation;
 import com.sanitaryware.crm.entity.QuotationItem;
+import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.entity.Customer;
 import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.repository.CustomerRepository;
@@ -87,8 +88,8 @@ public class QuotationMapper {
         quotation.setTermsAndConditions(dto.getTermsAndConditions());
 
         if (dto.getCustomerId() != null) {
-            customerRepository.findById(dto.getCustomerId())
-                    .ifPresent(quotation::setCustomer);
+            quotation.setCustomer(customerRepository.findById(dto.getCustomerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + dto.getCustomerId())));
         }
 
         // Items mapping would typically be handled in the service layer 
@@ -106,8 +107,10 @@ public class QuotationMapper {
         item.setNotes(dto.getNotes());
 
         if (dto.getProductId() != null) {
-            productRepository.findById(dto.getProductId())
-                    .ifPresent(item::setProduct);
+            item.setProduct(productRepository.findById(dto.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId())));
+        } else {
+            throw new IllegalArgumentException("Quotation item product is required");
         }
 
         item.calculateLineTotal();

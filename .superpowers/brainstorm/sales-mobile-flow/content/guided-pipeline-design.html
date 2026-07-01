@@ -1,0 +1,49 @@
+<h2>Guided Pipeline: First Mobile Sales Phase</h2>
+<p class="subtitle">This phase turns the mobile app into a field-sales workflow, not just a smaller copy of the web app.</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Primary Flow</div>
+    <div class="mockup-body">
+      <div class="placeholder">1. Customer List</div>
+      <div class="placeholder">2. Customer Detail: contact, balance, recent quotes/orders</div>
+      <button class="mock-button">Create Quotation</button>
+      <div class="placeholder">3. Quotation Form: customer, products, quantities, totals</div>
+      <button class="mock-button">Convert To Order</button>
+      <div class="placeholder">4. Order Detail: status, items, payment summary</div>
+      <button class="mock-button">Record Payment</button>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Supporting Screens</div>
+    <div class="mockup-body">
+      <div class="placeholder">Product picker with search and stock visibility</div>
+      <div class="placeholder">Line item editor: quantity, price, discount</div>
+      <div class="placeholder">Payment form: amount, method, reference, date</div>
+      <div class="placeholder">Reusable detail sections for customers, quotes, orders</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Phase 1 Scope</h3>
+  <div class="options" data-multiselect>
+    <div class="option selected" data-choice="customer-detail" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content"><h3>Customer detail</h3><p>Tap customer list cards to inspect customer data, recent quotations, recent orders, and balances.</p></div>
+    </div>
+    <div class="option selected" data-choice="quotation-create" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content"><h3>Create quotation</h3><p>Mobile form with product picker, line items, totals, and submit.</p></div>
+    </div>
+    <div class="option selected" data-choice="order-convert" onclick="toggleSelect(this)">
+      <div class="letter">3</div>
+      <div class="content"><h3>Convert quotation to order</h3><p>Use the backend conversion endpoint already mirrored by the web service layer.</p></div>
+    </div>
+    <div class="option selected" data-choice="payment-create" onclick="toggleSelect(this)">
+      <div class="letter">4</div>
+      <div class="content"><h3>Record payment</h3><p>Add payment capture from order detail with method/reference/date/amount.</p></div>
+    </div>
+  </div>
+</div>

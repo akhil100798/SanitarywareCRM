@@ -8,6 +8,7 @@ const quotationService = {
     delete: (id) => api.delete(`/quotations/${id}`),
     updateStatus: (id, status) => api.patch(`/quotations/${id}/status`, null, { params: { status } }),
     getByCustomer: (customerId) => api.get(`/quotations/customer/${customerId}`),
+    downloadPdf: (id) => api.get(`/quotations/${id}/pdf`, { responseType: 'blob' }),
 };
 
 export default quotationService;

@@ -73,4 +73,14 @@ public class OrderController {
     public ResponseEntity<List<OrderDTO>> getOrdersByCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
     }
+
+    @GetMapping("/{id}/invoice/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<byte[]> getOrderInvoicePdf(@PathVariable Long id) {
+        byte[] pdf = orderService.getOrderInvoicePdf(id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=\"invoice-" + id + ".pdf\"")
+                .body(pdf);
+    }
 }

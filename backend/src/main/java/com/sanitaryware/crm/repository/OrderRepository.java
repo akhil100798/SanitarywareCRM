@@ -15,8 +15,10 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderNumber(String orderNumber);
+    Page<Order> findByCreatedByUsername(String username, Pageable pageable);
     Page<Order> findByCustomerId(Long customerId, Pageable pageable);
     List<Order> findByCustomerId(Long customerId);
+    List<Order> findByCustomerIdAndCreatedByUsername(Long customerId, String username);
     Page<Order> findByStatus(Order.OrderStatus status,Pageable pageable);
     Page<Order> findByPaymentStatus(Order.PaymentStatus paymentStatus, Pageable pageable);
     

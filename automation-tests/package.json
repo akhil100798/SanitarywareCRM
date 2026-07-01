@@ -1,0 +1,25 @@
+{
+  "name": "sanitaryware-crm-automation",
+  "version": "1.0.0",
+  "description": "Playwright Automation Suite for Sanitaryware Store CRM",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test api/specs",
+    "test:frontend": "playwright test frontend/specs",
+    "test:mobile": "playwright test mobile/specs",
+    "test:database": "playwright test database/specs",
+    "test:security": "playwright test security/specs",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report",
+    "seed": "node scripts/seed-test-data.js",
+    "cleanup": "node scripts/cleanup-test-data.js",
+    "health": "node scripts/health-check.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.1"
+  }
+}

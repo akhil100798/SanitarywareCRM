@@ -15,4 +15,5 @@ public interface QuotationService {
     QuotationDTO updateStatus(Long id, String status);
     List<QuotationDTO> getQuotationsByCustomer(Long customerId);
     String generateQuotationNumber();
+    byte[] getQuotationPdf(Long id);
 }

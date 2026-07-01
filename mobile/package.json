@@ -1,0 +1,39 @@
+{
+  "name": "sanitaryware-crm-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "node scripts/android-build-env.mjs expo run:android",
+    "export:android": "expo export --platform android --output-dir dist-check-current --clear",
+    "build:android:debug": "node scripts/android-build-env.mjs gradle assembleDebug",
+    "build:android:release": "node scripts/android-build-env.mjs gradle assembleRelease",
+    "ui:smoke": "node scripts/ui-smoke-test.mjs",
+    "web": "expo start --web",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~55.0.11",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "latest",
+    "@react-navigation/native": "latest",
+    "@react-navigation/native-stack": "latest",
+    "axios": "latest",
+    "expo": "~55.0.0",
+    "expo-status-bar": "latest",
+    "lucide-react-native": "latest",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@babel/core": "latest",
+    "babel-preset-expo": "^55.0.21",
+    "eslint": "latest",
+    "playwright": "^1.60.0"
+  }
+}

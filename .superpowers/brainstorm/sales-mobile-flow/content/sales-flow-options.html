@@ -1,0 +1,78 @@
+<h2>Mobile Sales Phase: Choose The First Shape</h2>
+<p class="subtitle">All options cover Customers, Products, Quotations, Orders, and Payments. The difference is how quickly mobile becomes useful in the field.</p>
+
+<div class="cards">
+  <div class="card" data-choice="guided-pipeline" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Guided Sales Pipeline</div>
+        <div class="mockup-body">
+          <div class="mock-nav">Dashboard | Customers | Products | Orders | More</div>
+          <div class="placeholder" style="height:70px">Customer detail: profile, recent quotes, recent orders</div>
+          <button class="mock-button">Create Quotation</button>
+          <button class="mock-button">Convert To Order</button>
+          <button class="mock-button">Record Payment</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Guided Pipeline</h3>
+      <p>Build customer and sales flows around real salesperson actions: inspect customer, quote, convert, collect payment.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="crud-parity" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Module CRUD Parity</div>
+        <div class="mockup-body">
+          <div class="placeholder">Customers list + form</div>
+          <div class="placeholder">Products list + form</div>
+          <div class="placeholder">Quotations list + form</div>
+          <div class="placeholder">Orders list + form</div>
+          <div class="placeholder">Payments list + form</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. CRUD Parity</h3>
+      <p>Replicate web create/edit screens module by module. Predictable, but slower to feel like a mobile workflow.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="details-first" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">Detail Screens First</div>
+        <div class="mockup-body">
+          <div class="placeholder">Tap list item</div>
+          <div class="placeholder" style="height:90px">Read-only detail screen with sections</div>
+          <button class="mock-button">Edit later</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Details First</h3>
+      <p>Make mobile lists useful by adding detail screens before write workflows. Lowest risk, but less business impact.</p>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>Recommendation</h4>
+    <ul>
+      <li>Choose A for the first phase.</li>
+      <li>It gives mobile a clear field-sales purpose.</li>
+      <li>It still reuses detail and form components internally.</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Trade-off</h4>
+    <ul>
+      <li>A needs careful flow design for quotation and order line items.</li>
+      <li>B is simpler technically but feels more like a small web clone.</li>
+      <li>C is safest but delays create/edit value.</li>
+    </ul>
+  </div>
+</div>
