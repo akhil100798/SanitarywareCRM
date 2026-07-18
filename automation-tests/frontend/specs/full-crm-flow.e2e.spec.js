@@ -51,7 +51,23 @@ test.describe('Sanitaryware CRM Unified E2E Flow', () => {
     await page.waitForURL(url => url.pathname.includes('/orders/edit/'));
 
     // 7. Pay and verify balance becomes 0
-    await page.click('button:has-text("Record Payment")', { force: true });
+    await page.goto('/orders');
+    await page.locator('span:has-text("Fetching order directory...")')
+      .waitFor({ state: 'detached', timeout: 35000 });
+    const convertedOrderRow = page.locator('table tr')
+      .filter({ hasText: `John Doe E2E ${suffix}` })
+      .first();
+    await expect(convertedOrderRow).toBeVisible();
+    await convertedOrderRow.locator('a.btn-secondary').click();
+    await page.waitForURL(url => url.pathname.includes('/orders/edit/'));
+    await page.locator('select option:checked')
+      .filter({ hasText: `John Doe E2E ${suffix}` })
+      .first()
+      .waitFor({ state: 'attached', timeout: 15000 });
+    await Promise.all([
+      page.waitForURL(/\/payments\/new\?orderId=\d+/, { timeout: 15000 }),
+      page.getByRole('button', { name: 'Record Payment', exact: true }).click(),
+    ]);
     const paymentPage = new PaymentPage(page);
     await paymentPage.recordPayment(1100.00);
     

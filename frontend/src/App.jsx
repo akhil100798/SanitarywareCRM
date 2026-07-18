@@ -30,6 +30,8 @@ import DistributorPaymentFormPage from './pages/distributor-payments/Distributor
 
 import './index.css';
 
+const managementRoles = ['ADMIN', 'MANAGER'];
+
 function App() {
     return (
         <>
@@ -88,7 +90,7 @@ function App() {
                     <Route
                         path="/products/new"
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={managementRoles}>
                                 <ProductFormPage />
                             </ProtectedRoute>
                         }
@@ -96,7 +98,7 @@ function App() {
                     <Route
                         path="/products/edit/:id"
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={managementRoles}>
                                 <ProductFormPage />
                             </ProtectedRoute>
                         }
@@ -168,7 +170,7 @@ function App() {
                     <Route
                         path="/settings"
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={managementRoles}>
                                 <SettingsPage />
                             </ProtectedRoute>
                         }
@@ -183,17 +185,17 @@ function App() {
                     />
 
                     {/* Distributor Module Routes */}
-                    <Route path="/distributors" element={<ProtectedRoute><DistributorListPage /></ProtectedRoute>} />
-                    <Route path="/distributors/new" element={<ProtectedRoute><DistributorFormPage /></ProtectedRoute>} />
-                    <Route path="/distributors/edit/:id" element={<ProtectedRoute><DistributorFormPage /></ProtectedRoute>} />
+                    <Route path="/distributors" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorListPage /></ProtectedRoute>} />
+                    <Route path="/distributors/new" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorFormPage /></ProtectedRoute>} />
+                    <Route path="/distributors/edit/:id" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorFormPage /></ProtectedRoute>} />
 
-                    <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrderListPage /></ProtectedRoute>} />
-                    <Route path="/purchase-orders/new" element={<ProtectedRoute><PurchaseOrderFormPage /></ProtectedRoute>} />
-                    <Route path="/purchase-orders/edit/:id" element={<ProtectedRoute><PurchaseOrderFormPage /></ProtectedRoute>} />
+                    <Route path="/purchase-orders" element={<ProtectedRoute allowedRoles={managementRoles}><PurchaseOrderListPage /></ProtectedRoute>} />
+                    <Route path="/purchase-orders/new" element={<ProtectedRoute allowedRoles={managementRoles}><PurchaseOrderFormPage /></ProtectedRoute>} />
+                    <Route path="/purchase-orders/edit/:id" element={<ProtectedRoute allowedRoles={managementRoles}><PurchaseOrderFormPage /></ProtectedRoute>} />
 
-                    <Route path="/distributor-payments" element={<ProtectedRoute><DistributorPaymentListPage /></ProtectedRoute>} />
-                    <Route path="/distributor-payments/new" element={<ProtectedRoute><DistributorPaymentFormPage /></ProtectedRoute>} />
-                    <Route path="/distributor-payments/edit/:id" element={<ProtectedRoute><DistributorPaymentFormPage /></ProtectedRoute>} />
+                    <Route path="/distributor-payments" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorPaymentListPage /></ProtectedRoute>} />
+                    <Route path="/distributor-payments/new" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorPaymentFormPage /></ProtectedRoute>} />
+                    <Route path="/distributor-payments/edit/:id" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorPaymentFormPage /></ProtectedRoute>} />
 
                     <Route
                         path="/profile"

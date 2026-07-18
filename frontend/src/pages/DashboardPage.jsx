@@ -17,9 +17,21 @@ import {
 } from 'lucide-react';
 import dashboardService from '../services/dashboardService';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../store/authStore';
+
+const fallbackName = {
+    ADMIN: 'Administrator',
+    MANAGER: 'Manager',
+    SALES: 'Sales Staff'
+};
 
 const DashboardPage = () => {
     const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const displayName = user?.fullName?.trim()
+        || user?.name?.trim()
+        || fallbackName[user?.role]
+        || 'User';
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
 
@@ -62,7 +74,7 @@ const DashboardPage = () => {
                             <Sparkles size={12} />
                             <span>System Status: Healthy</span>
                         </div>
-                        <h1 className="text-3xl font-extrabold tracking-tight text-white">Hello, Administrator</h1>
+                        <h1 className="text-3xl font-extrabold tracking-tight text-white">Hello, {displayName}</h1>
                         <p className="text-slate-400 text-sm max-w-lg">
                             Monitor catalog changes, track purchase orders, analyze customer conversions, and record payments in real-time.
                         </p>

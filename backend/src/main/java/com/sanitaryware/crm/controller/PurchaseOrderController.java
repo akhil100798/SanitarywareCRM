@@ -2,6 +2,7 @@ package com.sanitaryware.crm.controller;
 
 import com.sanitaryware.crm.dto.PurchaseOrderDTO;
 import com.sanitaryware.crm.service.PurchaseOrderService;
+import com.sanitaryware.crm.web.PaginationFactory;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import java.util.List;
 public class PurchaseOrderController {
 
     private final PurchaseOrderService purchaseOrderService;
+    private final PaginationFactory paginationFactory;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -39,7 +41,11 @@ public class PurchaseOrderController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<Page<PurchaseOrderDTO>> getAllPurchaseOrders(Pageable pageable) {
+    public ResponseEntity<Page<PurchaseOrderDTO>> getAllPurchaseOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(purchaseOrderService.getAllPurchaseOrders(pageable));
     }
 

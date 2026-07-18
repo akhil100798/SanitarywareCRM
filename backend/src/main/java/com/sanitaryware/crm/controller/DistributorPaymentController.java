@@ -2,6 +2,7 @@ package com.sanitaryware.crm.controller;
 
 import com.sanitaryware.crm.dto.DistributorPaymentDTO;
 import com.sanitaryware.crm.service.DistributorPaymentService;
+import com.sanitaryware.crm.web.PaginationFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import java.util.List;
 public class DistributorPaymentController {
 
     private final DistributorPaymentService paymentService;
+    private final PaginationFactory paginationFactory;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -33,7 +35,11 @@ public class DistributorPaymentController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<Page<DistributorPaymentDTO>> getAllPayments(Pageable pageable) {
+    public ResponseEntity<Page<DistributorPaymentDTO>> getAllPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(paymentService.getAllPayments(pageable));
     }
 

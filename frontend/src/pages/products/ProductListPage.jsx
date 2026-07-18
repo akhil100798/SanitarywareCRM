@@ -4,8 +4,11 @@ import { Plus, Search, Edit, Trash2, Package, Tag, Layers, AlertCircle, FileUp }
 import { productService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import BulkUploadModal from './BulkUploadModal';
+import { useAuthStore } from '../../store/authStore';
 
 const ProductListPage = () => {
+    const user = useAuthStore((state) => state.user);
+    const canManageProducts = ['ADMIN', 'MANAGER'].includes(user?.role);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -74,14 +77,18 @@ const ProductListPage = () => {
                         <Layers size={16} />
                         <span>Categories</span>
                     </Link>
-                    <button onClick={() => setIsUploadModalOpen(true)} className="btn-secondary text-sm">
-                        <FileUp size={16} />
-                        <span>Bulk Import</span>
-                    </button>
-                    <Link to="/products/new" className="btn-primary text-sm">
-                        <Plus size={16} />
-                        <span>Add Product</span>
-                    </Link>
+                    {canManageProducts && (
+                        <>
+                            <button onClick={() => setIsUploadModalOpen(true)} className="btn-secondary text-sm">
+                                <FileUp size={16} />
+                                <span>Bulk Import</span>
+                            </button>
+                            <Link to="/products/new" className="btn-primary text-sm">
+                                <Plus size={16} />
+                                <span>Add Product</span>
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -166,22 +173,24 @@ const ProductListPage = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end space-x-1.5">
-                                                    <Link
-                                                        to={`/products/edit/${product.id}`}
-                                                        className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
-                                                        title="Edit Product"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDelete(product.id)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
-                                                        title="Deactivate Product"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
+                                                {canManageProducts && (
+                                                    <div className="flex items-center justify-end space-x-1.5">
+                                                        <Link
+                                                            to={`/products/edit/${product.id}`}
+                                                            className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
+                                                            title="Edit Product"
+                                                        >
+                                                            <Edit size={16} />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDelete(product.id)}
+                                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                            title="Deactivate Product"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -192,11 +201,13 @@ const ProductListPage = () => {
                 </div>
             </div>
 
-            <BulkUploadModal
-                isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
-                onUploadSuccess={fetchProducts}
-            />
+            {canManageProducts && (
+                <BulkUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onUploadSuccess={fetchProducts}
+                />
+            )}
         </div>
     );
 };

@@ -3,6 +3,7 @@ package com.sanitaryware.crm.service;
 import com.sanitaryware.crm.dto.CustomerDTO;
 import com.sanitaryware.crm.entity.Customer;
 import com.sanitaryware.crm.entity.Customer.CustomerType;
+import com.sanitaryware.crm.exception.ConflictException;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.CustomerMapper;
 import com.sanitaryware.crm.repository.CustomerRepository;
@@ -24,6 +25,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
+        normalizeAndValidate(customerDTO, null);
         Customer customer = CustomerMapper.toEntity(customerDTO);
         Customer savedCustomer = customerRepository.save(customer);
         return CustomerMapper.toDTO(savedCustomer);
@@ -33,7 +35,8 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerDTO updateCustomer(Long id, CustomerDTO customerDTO) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
-        
+
+        normalizeAndValidate(customerDTO, id);
         CustomerMapper.updateEntity(customer, customerDTO);
         Customer updatedCustomer = customerRepository.save(customer);
         return CustomerMapper.toDTO(updatedCustomer);
@@ -82,5 +85,41 @@ public class CustomerServiceImpl implements CustomerService {
     public Page<CustomerDTO> getCustomersByType(CustomerType type, Pageable pageable) {
         return customerRepository.findByCustomerType(type, pageable)
                 .map(CustomerMapper::toDTO);
+    }
+
+    private void normalizeAndValidate(CustomerDTO customerDTO, Long customerId) {
+        String phoneNumber = normalizePhone(customerDTO.getPhoneNumber());
+        if (phoneNumber.isEmpty()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+
+        String email = normalizeEmail(customerDTO.getEmail());
+        boolean duplicatePhone = customerId == null
+                ? customerRepository.existsByPhoneNumber(phoneNumber)
+                : customerRepository.existsByPhoneNumberAndIdNot(phoneNumber, customerId);
+        if (duplicatePhone) {
+            throw new ConflictException("Phone number already exists");
+        }
+
+        boolean duplicateEmail = email != null && (customerId == null
+                ? customerRepository.existsByEmail(email)
+                : customerRepository.existsByEmailAndIdNot(email, customerId));
+        if (duplicateEmail) {
+            throw new ConflictException("Email already exists");
+        }
+
+        customerDTO.setPhoneNumber(phoneNumber);
+        customerDTO.setEmail(email);
+        if (customerDTO.getCustomerType() == null) {
+            customerDTO.setCustomerType(CustomerType.RETAIL);
+        }
+    }
+
+    private String normalizePhone(String phoneNumber) {
+        return phoneNumber == null ? "" : phoneNumber.replaceAll("\\D", "");
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null || email.isBlank() ? null : email.trim();
     }
 }

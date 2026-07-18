@@ -1,17 +1,29 @@
-# Build stage
-FROM maven:3.8.5-openjdk-17-slim AS build
-WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+FROM maven:3.9.9-eclipse-temurin-17 AS build
+WORKDIR /workspace
+
+COPY pom.xml ./
+RUN mvn -B dependency:go-offline
+
 COPY src ./src
-RUN mvn package -DskipTests
+RUN mvn -B -DskipTests package
 
-# Run stage
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy AS runtime
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system crm \
+    && useradd --system --gid crm --home-dir /app crm
+
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build --chown=crm:crm /workspace/target/*.jar app.jar
 
-# Deployed environments will inject the PORT variable dynamically
+USER crm
+ENV SPRING_PROFILES_ACTIVE=prod \
+    SERVER_PORT=8081
+
 EXPOSE 8081
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl --fail --silent http://localhost:8081/api/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "-Dserver.port=${PORT:8081}", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,6 +1,10 @@
 const { defineConfig, devices } = require('@playwright/test');
 require('dotenv').config();
 
+const bugHuntRequested = process.argv.some((argument) => argument.includes('bug-hunt'));
+const releaseSpecMatch = /(?:api|frontend|security|database)[\\/]specs[\\/].*\.spec\.js/;
+const bugHuntSpecMatch = /(?:api|frontend|security)[\\/]bug-hunt[\\/].*\.spec\.js/;
+
 module.exports = defineConfig({
   testDir: '.',
   timeout: 60 * 1000,
@@ -20,17 +24,17 @@ module.exports = defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /.*(e2e|api|database|security)\.spec\.js/
+      testMatch: bugHuntRequested ? bugHuntSpecMatch : releaseSpecMatch
     },
     {
       name: 'Mobile Chrome (Pixel 5)',
       use: { ...devices['Pixel 5'] },
-      testMatch: /.*mobile.*\.spec\.js/
+      testMatch: /mobile[\\/]specs[\\/].*\.spec\.js/
     },
     {
       name: 'Mobile Safari (iPhone 13)',
       use: { ...devices['iPhone 13'] },
-      testMatch: /.*mobile.*\.spec\.js/
+      testMatch: /mobile[\\/]specs[\\/].*\.spec\.js/
     }
   ]
 });

@@ -3,21 +3,12 @@ package com.sanitaryware.crm.mapper;
 import com.sanitaryware.crm.dto.PurchaseOrderDTO;
 import com.sanitaryware.crm.entity.PurchaseOrder;
 import com.sanitaryware.crm.entity.PurchaseOrderItem;
-import com.sanitaryware.crm.repository.DistributorRepository;
-import com.sanitaryware.crm.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
 @Component
 public class PurchaseOrderMapper {
-
-    @Autowired
-    private DistributorRepository distributorRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
 
     public PurchaseOrderDTO toDTO(PurchaseOrder po) {
         if (po == null) return null;
@@ -83,10 +74,6 @@ public class PurchaseOrderMapper {
         po.setInvoicePdfPath(dto.getInvoicePdfPath());
         po.setNotes(dto.getNotes());
 
-        if (dto.getDistributorId() != null) {
-            distributorRepository.findById(dto.getDistributorId())
-                    .ifPresent(po::setDistributor);
-        }
     }
 
     public PurchaseOrderItem toItemEntity(PurchaseOrderDTO.PurchaseOrderItemDTO dto, PurchaseOrder po) {
@@ -98,11 +85,6 @@ public class PurchaseOrderMapper {
         item.setReceivedQuantity(dto.getReceivedQuantity() != null ? dto.getReceivedQuantity() : 0);
         item.setUnitCost(dto.getUnitCost());
         item.setNotes(dto.getNotes());
-
-        if (dto.getProductId() != null) {
-            productRepository.findById(dto.getProductId())
-                    .ifPresent(item::setProduct);
-        }
 
         item.calculateLineTotal();
         return item;

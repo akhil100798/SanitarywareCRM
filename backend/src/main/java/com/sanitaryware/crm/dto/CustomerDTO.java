@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.dto;
 
 import com.sanitaryware.crm.entity.Customer.CustomerType;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +20,7 @@ public class CustomerDTO {
     @NotBlank(message = "Customer name is required")
     private String name;
     
+    @Email(message = "Email must be valid")
     private String email;
     
     @NotBlank(message = "Phone number is required")
@@ -37,4 +39,8 @@ public class CustomerDTO {
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : email.trim();
+    }
 }

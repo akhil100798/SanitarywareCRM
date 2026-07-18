@@ -2,6 +2,18 @@ const { test, expect } = require('@playwright/test');
 const { getClient } = require('../helpers/apiClient');
 const { getAdminToken } = require('../helpers/authHelper');
 
+const internalTokens = [
+  'sql', 'sqlstate', 'org.hibernate', 'java.lang', 'constraint', 'stacktrace', 'exception'
+];
+
+async function expectSanitizedNotFound(response) {
+  expect(response.status()).toBe(404);
+  const body = await response.text();
+  expect(JSON.parse(body).message).toBe('Resource not found');
+  const normalizedBody = body.toLowerCase();
+  for (const token of internalTokens) expect(normalizedBody).not.toContain(token);
+}
+
 test.describe('Purchase Orders API Suite', () => {
   let adminToken;
   let distributorId;
@@ -86,6 +98,28 @@ test.describe('Purchase Orders API Suite', () => {
     expect(response.status()).toBe(200);
     const json = await response.json();
     expect(json.status).toBe('DRAFT');
+  });
+
+  test('NEG-PO-001 Missing distributor returns sanitized 404', async () => {
+    const client = await getClient(adminToken);
+    const response = await client.post('/api/purchase-orders', {
+      data: {
+        distributorId: 999999999,
+        items: [{ productId, quantity: 1, unitCost: 95.00 }]
+      }
+    });
+    await expectSanitizedNotFound(response);
+  });
+
+  test('NEG-PO-002 Missing product returns sanitized 404', async () => {
+    const client = await getClient(adminToken);
+    const response = await client.post('/api/purchase-orders', {
+      data: {
+        distributorId,
+        items: [{ productId: 999999999, quantity: 1, unitCost: 95.00 }]
+      }
+    });
+    await expectSanitizedNotFound(response);
   });
 
   test.skip('NEG-084 Receive PO quantity overflow check', async () => {

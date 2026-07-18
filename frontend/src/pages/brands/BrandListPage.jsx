@@ -4,9 +4,12 @@ import { Plus, Search, Edit, Trash2, ArrowLeft, Tag } from 'lucide-react';
 import { brandService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import BrandFormModal from './BrandFormModal';
+import { useAuthStore } from '../../store/authStore';
 
 const BrandListPage = () => {
     const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const canManageBrands = ['ADMIN', 'MANAGER'].includes(user?.role);
     const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -71,13 +74,15 @@ const BrandListPage = () => {
                         <p className="text-gray-500">Manage your product brands.</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleCreate}
-                    className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                    <Plus size={20} />
-                    <span>Add Brand</span>
-                </button>
+                {canManageBrands && (
+                    <button
+                        onClick={handleCreate}
+                        className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                        <Plus size={20} />
+                        <span>Add Brand</span>
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -147,20 +152,24 @@ const BrandListPage = () => {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end space-x-2">
-                                                <button
-                                                    onClick={() => handleEdit(brand)}
-                                                    className="p-1 hover:text-blue-600 transition-colors rounded"
-                                                >
-                                                    <Edit size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(brand.id)}
-                                                    className="p-1 hover:text-red-600 transition-colors rounded"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
+                                            {canManageBrands && (
+                                                <div className="flex items-center justify-end space-x-2">
+                                                    <button
+                                                        onClick={() => handleEdit(brand)}
+                                                        className="p-1 hover:text-blue-600 transition-colors rounded"
+                                                        title="Edit Brand"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(brand.id)}
+                                                        className="p-1 hover:text-red-600 transition-colors rounded"
+                                                        title="Delete Brand"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -170,12 +179,14 @@ const BrandListPage = () => {
                 </div>
             </div>
 
-            <BrandFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={fetchBrands}
-                initialData={selectedBrand}
-            />
+            {canManageBrands && (
+                <BrandFormModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={fetchBrands}
+                    initialData={selectedBrand}
+                />
+            )}
         </div>
     );
 };

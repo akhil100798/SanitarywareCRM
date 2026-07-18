@@ -36,13 +36,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { icon: Users, label: 'Customers', path: '/customers' },
         { icon: Package, label: 'Products', path: '/products' },
         { icon: FolderTree, label: 'Categories', path: '/categories' },
-        { icon: Truck, label: 'Distributors', path: '/distributors' },
-        { icon: ShoppingCartIcon, label: 'Purchase Orders', path: '/purchase-orders' },
-        { icon: CreditCard, label: 'Distributor Payments', path: '/distributor-payments' },
+        { icon: Truck, label: 'Distributors', path: '/distributors', roles: ['ADMIN', 'MANAGER'] },
+        { icon: ShoppingCartIcon, label: 'Purchase Orders', path: '/purchase-orders', roles: ['ADMIN', 'MANAGER'] },
+        { icon: CreditCard, label: 'Distributor Payments', path: '/distributor-payments', roles: ['ADMIN', 'MANAGER'] },
         { icon: FileText, label: 'Quotations', path: '/quotations' },
         { icon: ShoppingCart, label: 'Orders', path: '/orders' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: Settings, label: 'Settings', path: '/settings', roles: ['ADMIN', 'MANAGER'] },
     ];
+
+    const visibleMenuItems = menuItems.filter(
+        (item) => !item.roles || item.roles.includes(user?.role)
+    );
 
     return (
         <>
@@ -96,7 +100,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     {/* Navigation */}
                     <nav className="flex-1 p-4 overflow-y-auto space-y-1">
                         <ul className="space-y-1">
-                            {menuItems.map((item) => {
+                            {visibleMenuItems.map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
                                     <li key={item.path}>

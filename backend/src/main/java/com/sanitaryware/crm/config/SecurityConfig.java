@@ -1,11 +1,15 @@
 package com.sanitaryware.crm.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sanitaryware.crm.dto.ApiErrorResponse;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -20,6 +24,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.io.IOException;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -30,18 +36,19 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final PasswordEncoder passwordEncoder;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) 
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType("application/json");
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("{\"message\": \"Unauthorized: " + authException.getMessage() + "\"}");
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                writeError(response, HttpStatus.UNAUTHORIZED, "Authentication is required"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeError(response, HttpStatus.FORBIDDEN,
+                                        "You do not have access to this resource."))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
@@ -69,5 +76,12 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    private void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getOutputStream(),
+                new ApiErrorResponse(status.value(), status.getReasonPhrase(), message));
     }
 }

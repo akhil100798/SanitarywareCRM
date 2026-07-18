@@ -2,6 +2,7 @@ package com.sanitaryware.crm.controller;
 
 import com.sanitaryware.crm.dto.DistributorDTO;
 import com.sanitaryware.crm.service.DistributorService;
+import com.sanitaryware.crm.web.PaginationFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,7 @@ import java.util.List;
 public class DistributorController {
 
     private final DistributorService distributorService;
+    private final PaginationFactory paginationFactory;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -39,8 +41,11 @@ public class DistributorController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Page<DistributorDTO>> getAllDistributors(
-            Pageable pageable, 
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort,
             @RequestParam(required = false) String search) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(distributorService.getAllDistributors(pageable, search));
     }
 

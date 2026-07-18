@@ -2,6 +2,7 @@ package com.sanitaryware.crm.mapper;
 
 import com.sanitaryware.crm.dto.CustomerDTO;
 import com.sanitaryware.crm.entity.Customer;
+import com.sanitaryware.crm.entity.Customer.CustomerType;
 
 public class CustomerMapper {
 
@@ -35,12 +36,12 @@ public class CustomerMapper {
         Customer customer = new Customer();
         customer.setId(dto.getId());
         customer.setName(dto.getName());
-        customer.setEmail(dto.getEmail());
+        customer.setEmail(normalizeEmail(dto.getEmail()));
         customer.setPhoneNumber(dto.getPhoneNumber());
         customer.setAlternatePhone(dto.getAlternatePhone());
         customer.setCompany(dto.getCompany());
         customer.setGstNumber(dto.getGstNumber());
-        customer.setCustomerType(dto.getCustomerType());
+        customer.setCustomerType(dto.getCustomerType() != null ? dto.getCustomerType() : CustomerType.RETAIL);
         customer.setBillingAddress(dto.getBillingAddress());
         customer.setShippingAddress(dto.getShippingAddress());
         customer.setCity(dto.getCity());
@@ -56,12 +57,12 @@ public class CustomerMapper {
         if (dto == null || customer == null) return;
 
         customer.setName(dto.getName());
-        customer.setEmail(dto.getEmail());
+        customer.setEmail(normalizeEmail(dto.getEmail()));
         customer.setPhoneNumber(dto.getPhoneNumber());
         customer.setAlternatePhone(dto.getAlternatePhone());
         customer.setCompany(dto.getCompany());
         customer.setGstNumber(dto.getGstNumber());
-        customer.setCustomerType(dto.getCustomerType());
+        customer.setCustomerType(dto.getCustomerType() != null ? dto.getCustomerType() : CustomerType.RETAIL);
         customer.setBillingAddress(dto.getBillingAddress());
         customer.setShippingAddress(dto.getShippingAddress());
         customer.setCity(dto.getCity());
@@ -71,5 +72,12 @@ public class CustomerMapper {
             customer.setIsActive(dto.getIsActive());
         }
         customer.setNotes(dto.getNotes());
+    }
+
+    private static String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return email.trim();
     }
 }

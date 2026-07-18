@@ -5,6 +5,7 @@ import com.sanitaryware.crm.entity.Distributor;
 import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.entity.PurchaseOrder;
 import com.sanitaryware.crm.entity.PurchaseOrderItem;
+import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.PurchaseOrderMapper;
 import com.sanitaryware.crm.repository.DistributorRepository;
 import com.sanitaryware.crm.repository.ProductRepository;
@@ -36,7 +37,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public PurchaseOrderDTO createPurchaseOrder(PurchaseOrderDTO dto) {
+        Distributor distributor = resolveDistributor(dto.getDistributorId());
         PurchaseOrder po = purchaseOrderMapper.toEntity(dto);
+        po.setDistributor(distributor);
         
         if (po.getPoNumber() == null || po.getPoNumber().isEmpty()) {
             po.setPoNumber(generatePoNumber());
@@ -48,7 +51,12 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         if (dto.getItems() != null) {
             List<PurchaseOrderItem> items = dto.getItems().stream()
-                    .map(itemDTO -> purchaseOrderMapper.toItemEntity(itemDTO, po))
+                    .map(itemDTO -> {
+                        Product product = resolveProduct(itemDTO.getProductId());
+                        PurchaseOrderItem item = purchaseOrderMapper.toItemEntity(itemDTO, po);
+                        item.setProduct(product);
+                        return item;
+                    })
                     .collect(Collectors.toList());
             po.setItems(items);
         }
@@ -64,13 +72,27 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         PurchaseOrder existingPo = purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found with id: " + id));
 
-        purchaseOrderMapper.updateEntity(existingPo, dto);
+        Distributor distributor = dto.getDistributorId() == null
+                ? existingPo.getDistributor()
+                : resolveDistributor(dto.getDistributorId());
 
+        List<PurchaseOrderItem> updatedItems = null;
         if (dto.getItems() != null) {
-            existingPo.getItems().clear();
-            List<PurchaseOrderItem> updatedItems = dto.getItems().stream()
-                    .map(itemDTO -> purchaseOrderMapper.toItemEntity(itemDTO, existingPo))
+            updatedItems = dto.getItems().stream()
+                    .map(itemDTO -> {
+                        Product product = resolveProduct(itemDTO.getProductId());
+                        PurchaseOrderItem item = purchaseOrderMapper.toItemEntity(itemDTO, existingPo);
+                        item.setProduct(product);
+                        return item;
+                    })
                     .collect(Collectors.toList());
+        }
+
+        purchaseOrderMapper.updateEntity(existingPo, dto);
+        existingPo.setDistributor(distributor);
+
+        if (updatedItems != null) {
+            existingPo.getItems().clear();
             existingPo.getItems().addAll(updatedItems);
         }
 
@@ -168,5 +190,23 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             }
         }
         return prefix + "-" + now.format(DateTimeFormatter.ofPattern("HHmmssSSS"));
+    }
+
+    private Distributor resolveDistributor(Long distributorId) {
+        if (distributorId == null) {
+            throw new ResourceNotFoundException("Distributor not found");
+        }
+        return distributorRepository.findById(distributorId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Distributor not found with id: " + distributorId));
+    }
+
+    private Product resolveProduct(Long productId) {
+        if (productId == null) {
+            throw new ResourceNotFoundException("Product not found");
+        }
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId));
     }
 }

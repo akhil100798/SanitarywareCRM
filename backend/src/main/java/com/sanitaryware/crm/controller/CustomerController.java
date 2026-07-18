@@ -3,6 +3,7 @@ package com.sanitaryware.crm.controller;
 import com.sanitaryware.crm.dto.CustomerDTO;
 import com.sanitaryware.crm.entity.Customer.CustomerType;
 import com.sanitaryware.crm.service.CustomerService;
+import com.sanitaryware.crm.web.PaginationFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final PaginationFactory paginationFactory;
 
     @PostMapping
     public ResponseEntity<CustomerDTO> createCustomer(@Valid @RequestBody CustomerDTO customerDTO) {
@@ -36,12 +38,21 @@ public class CustomerController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<CustomerDTO>> getAllCustomers(Pageable pageable) {
+    public ResponseEntity<Page<CustomerDTO>> getAllCustomers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(customerService.getAllCustomers(pageable));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Page<CustomerDTO>> searchCustomers(@RequestParam String query, Pageable pageable) {
+    public ResponseEntity<Page<CustomerDTO>> searchCustomers(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(customerService.searchCustomers(query, pageable));
     }
 
@@ -57,7 +68,12 @@ public class CustomerController {
     }
 
     @GetMapping("/type/{type}")
-    public ResponseEntity<Page<CustomerDTO>> getCustomersByType(@PathVariable CustomerType type, Pageable pageable) {
+    public ResponseEntity<Page<CustomerDTO>> getCustomersByType(
+            @PathVariable CustomerType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(customerService.getCustomersByType(type, pageable));
     }
 }

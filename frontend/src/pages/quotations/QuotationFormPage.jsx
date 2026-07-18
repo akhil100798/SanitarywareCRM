@@ -45,7 +45,7 @@ const QuotationFormPage = () => {
         try {
             const [custRes, prodRes] = await Promise.all([
                 customerService.getActive(),
-                productService.getAll({ size: 200 })
+                productService.getAll({ size: 100 })
             ]);
             setCustomers(custRes.data);
             setProducts(prodRes.data.content);

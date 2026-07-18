@@ -2,6 +2,7 @@ package com.sanitaryware.crm.controller;
 
 import com.sanitaryware.crm.dto.QuotationDTO;
 import com.sanitaryware.crm.service.QuotationService;
+import com.sanitaryware.crm.web.PaginationFactory;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,9 @@ public class QuotationController {
 
     @Autowired
     private QuotationService quotationService;
+
+    @Autowired
+    private PaginationFactory paginationFactory;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
@@ -39,7 +43,11 @@ public class QuotationController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
-    public ResponseEntity<Page<QuotationDTO>> getAllQuotations(Pageable pageable) {
+    public ResponseEntity<Page<QuotationDTO>> getAllQuotations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort) {
+        Pageable pageable = paginationFactory.create(page, size, sort);
         return ResponseEntity.ok(quotationService.getAllQuotations(pageable));
     }
 

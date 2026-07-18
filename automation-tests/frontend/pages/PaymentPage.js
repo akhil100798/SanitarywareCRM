@@ -9,6 +9,7 @@ class PaymentPage {
   }
 
   async recordPayment(amount) {
+    await this.page.waitForURL(/\/payments\/new\?orderId=\d+/, { timeout: 15000 });
     await this.amountInput.waitFor({ state: 'visible', timeout: 15000 });
     await this.amountInput.fill(amount.toString());
     await this.submitPaymentButton.click();
