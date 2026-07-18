@@ -17,10 +17,7 @@ frontend/build/
 mobile/.expo/
 mobile/dist/
 mobile/build/
-mobile/android/app/build/
-mobile/android/build/
-mobile/android/.cxx/
-mobile/android/.gradle/
+mobile/android/
 .expo/
 
 # Playwright / test outputs
