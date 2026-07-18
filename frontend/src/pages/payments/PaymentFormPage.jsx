@@ -103,6 +103,7 @@ const PaymentFormPage = () => {
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
                             <input
                                 type="number" step="0.01" required
+                                name="amount"
                                 className="w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 value={formData.amount}
                                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}

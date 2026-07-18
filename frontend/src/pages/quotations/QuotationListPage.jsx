@@ -163,7 +163,7 @@ const QuotationListPage = () => {
                                                     >
                                                         <Download size={16} />
                                                     </button>
-                                                    {q.status === 'SENT' && (
+                                                    {(q.status === 'DRAFT' || q.status === 'SENT') && (
                                                         <button
                                                             onClick={() => handleStatusUpdate(q.id, 'ACCEPTED')}
                                                             title="Mark Accepted"

@@ -27,6 +27,7 @@ const CustomerFormPage = () => {
     });
 
     const [loading, setLoading] = useState(false);
+    const [emailError, setEmailError] = useState('');
 
     useEffect(() => {
         if (isEditMode) {
@@ -53,6 +54,13 @@ const CustomerFormPage = () => {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        if (name === 'email') {
+            if (value && !value.includes('@')) {
+                setEmailError('Invalid email format');
+            } else {
+                setEmailError('');
+            }
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -136,12 +144,13 @@ const CustomerFormPage = () => {
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-slate-500">Email Address</label>
                                 <input
-                                    type="email"
+                                    type="text"
                                     name="email"
                                     className="input-field text-sm"
                                     value={formData.email}
                                     onChange={handleChange}
                                 />
+                                {emailError && <p className="text-danger text-xs text-red-500 font-semibold mt-1">{emailError}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-slate-500">Phone Number *</label>

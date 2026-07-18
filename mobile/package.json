@@ -10,7 +10,7 @@
     "build:android:debug": "node scripts/android-build-env.mjs gradle assembleDebug",
     "build:android:release": "node scripts/android-build-env.mjs gradle assembleRelease",
     "ui:smoke": "node scripts/ui-smoke-test.mjs",
-    "web": "expo start --web",
+    "web": "expo start --web --port 8082",
     "lint": "eslint ."
   },
   "dependencies": {

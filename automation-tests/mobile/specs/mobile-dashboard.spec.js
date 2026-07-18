@@ -7,6 +7,8 @@ test.describe('Mobile Dashboard Viewport Suite', () => {
     await page.fill('input[name="username"]', 'qaadmin');
     await page.fill('input[name="password"]', 'Password@123');
     await page.click('button[type="submit"]');
-    await expect(page.locator('.stats-card, .widget').first()).toBeVisible();
+    await page.waitForURL(url => url.pathname.includes('/dashboard'));
+    await page.locator('p:has-text("Assembling business analytics...")').waitFor({ state: 'detached', timeout: 15000 });
+    await expect(page.locator('.card-container').first()).toBeVisible();
   });
 });

@@ -46,7 +46,7 @@ const LoginPage = () => {
                 </div>
 
                 {errorMsg && (
-                    <div className="mb-6 p-4 bg-red-950/40 border border-red-900/50 text-red-300 rounded-2xl text-center text-xs font-semibold">
+                    <div className="error-message mb-6 p-4 bg-red-950/40 border border-red-900/50 text-red-300 rounded-2xl text-center text-xs font-semibold">
                         {errorMsg}
                     </div>
                 )}
@@ -62,6 +62,7 @@ const LoginPage = () => {
                             </span>
                             <input
                                 type="text"
+                                name="username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-500 text-sm"
@@ -81,6 +82,7 @@ const LoginPage = () => {
                             </span>
                             <input
                                 type="password"
+                                name="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-500 text-sm"

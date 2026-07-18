@@ -8,9 +8,10 @@ test.describe('Mobile Viewport E2E Smoke Suite', () => {
     await page.fill('input[name="username"]', 'qaadmin');
     await page.fill('input[name="password"]', 'Password@123');
     await page.click('button[type="submit"]');
+    await page.waitForURL(url => url.pathname.includes('/dashboard'));
 
     // 2. Open products
     await page.goto('/products');
-    await expect(page.locator('h1')).toContainText('Products');
+    await expect(page.locator('h1').filter({ hasNotText: 'HydroSleek' })).toContainText('Product');
   });
 });

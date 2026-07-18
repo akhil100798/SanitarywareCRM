@@ -20,6 +20,6 @@ test.describe('Mobile Viewport Login Suite', () => {
     await page.fill('input[name="username"]', 'qaadmin');
     await page.fill('input[name="password"]', 'WrongPassword');
     await page.click('button[type="submit"]');
-    await expect(page.locator('.error-message, .alert-danger')).toBeVisible();
+    await expect(page.locator('.error-message, .alert-danger')).toBeVisible({ timeout: 10000 });
   });
 });

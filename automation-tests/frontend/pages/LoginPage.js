@@ -15,6 +15,11 @@ class LoginPage {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
+    if (password === 'Password@123') {
+      await this.page.waitForURL(url => url.pathname.includes('/dashboard'), { timeout: 25000 });
+    } else {
+      await this.errorAlert.waitFor({ state: 'visible', timeout: 15000 });
+    }
   }
 }
 

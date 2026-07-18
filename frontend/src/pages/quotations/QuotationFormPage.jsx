@@ -190,6 +190,7 @@ const QuotationFormPage = () => {
                             <label className="text-xs font-semibold text-slate-500">Customer *</label>
                             <select
                                 required
+                                name="customerId"
                                 className="input-field text-sm font-medium"
                                 value={formData.customerId}
                                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
@@ -256,6 +257,7 @@ const QuotationFormPage = () => {
                                             <td className="px-4 py-3">
                                                 <select
                                                     required
+                                                    name="productId"
                                                     className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
                                                     value={item.productId}
                                                     onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
@@ -268,6 +270,7 @@ const QuotationFormPage = () => {
                                                 <input
                                                     type="number"
                                                     min="1"
+                                                    name="quantity"
                                                     className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
                                                     value={item.quantity}
                                                     onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}

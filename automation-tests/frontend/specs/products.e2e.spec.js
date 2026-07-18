@@ -12,20 +12,25 @@ test.describe('Frontend Product E2E Suite', () => {
 
   test('POS-041 Display catalog product tables', async ({ page }) => {
     await page.goto('/products');
+    await page.locator('td:has-text("Fetching catalog list...")').waitFor({ state: 'detached', timeout: 35000 });
     const productPage = new ProductPage(page);
     await expect(productPage.addProductButton).toBeVisible();
   });
 
   test('POS-042 Add product with valid properties', async ({ page }) => {
     await page.goto('/products');
+    await page.locator('td:has-text("Fetching catalog list...")').waitFor({ state: 'detached', timeout: 35000 });
     const productPage = new ProductPage(page);
     const suffix = Date.now();
     await productPage.createProduct(`SKU-${suffix}`, `Basin-${suffix}`, 1500.00, 50);
+    await page.fill('input[placeholder*="Search"]', `SKU-${suffix}`);
+    await page.keyboard.press('Enter');
     await expect(page.locator(`table tr:has-text("SKU-${suffix}")`)).toBeVisible();
   });
 
   test('POS-046 Categories shortcut navigates correctly', async ({ page }) => {
     await page.goto('/products');
+    await page.locator('td:has-text("Fetching catalog list...")').waitFor({ state: 'detached', timeout: 35000 });
     const productPage = new ProductPage(page);
     await productPage.categoriesButton.click();
     await expect(page).toHaveURL(/\/categories/);

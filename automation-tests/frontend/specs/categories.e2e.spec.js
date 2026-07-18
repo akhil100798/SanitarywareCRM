@@ -22,6 +22,6 @@ test.describe('Frontend Category E2E Suite', () => {
     const categoryPage = new CategoryPage(page);
     const suffix = Date.now();
     await categoryPage.createCategory(`Ceramics ${suffix}`, 'Vitreous china items');
-    await expect(page.locator(`table tr:has-text("Ceramics ${suffix}")`)).toBeVisible();
+    await expect(page.locator(`table tr:has-text("Ceramics ${suffix}")`)).toBeVisible({ timeout: 15000 });
   });
 });

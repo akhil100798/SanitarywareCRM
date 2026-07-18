@@ -7,6 +7,7 @@ test.describe('Mobile Product Viewport Suite', () => {
     await page.fill('input[name="username"]', 'qaadmin');
     await page.fill('input[name="password"]', 'Password@123');
     await page.click('button[type="submit"]');
+    await page.waitForURL(url => url.pathname.includes('/dashboard'));
   });
 
   test('POS-065 Browse product cards in mobile layout', async ({ page }) => {

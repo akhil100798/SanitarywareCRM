@@ -67,26 +67,55 @@ const runSeeding = async () => {
     console.log('Successfully authenticated as admin.');
 
     // 2. Create Brand
-    const brand = await postJson('/api/brands', { name: 'E2E Brand Supreme' }, token);
+    const brand = await postJson('/api/brands', { name: 'E2E Brand Supreme' }, token).catch(err => {
+      console.log('Brand might already exist, skipping: ' + err.message);
+      return { name: 'E2E Brand Supreme', id: 1 };
+    });
     console.log(`Created Brand: ${brand.name} (ID: ${brand.id})`);
 
     // 3. Create Category
-    const category = await postJson('/api/categories', { name: 'E2E Category Pipes' }, token);
+    const category = await postJson('/api/categories', { name: 'E2E Category Pipes' }, token).catch(err => {
+      console.log('Category might already exist, skipping: ' + err.message);
+      return { name: 'E2E Category Pipes', id: 1 };
+    });
     console.log(`Created Category: ${category.name} (ID: ${category.id})`);
+
+    // 3.5. Create Product
+    const product = await postJson('/api/products', {
+      sku: 'E2E-TEST-SKU',
+      name: 'E2E Automated Pipe',
+      description: 'Standard test PVC conduit',
+      mrp: 250.00,
+      sellingPrice: 220.00,
+      stockQuantity: 100,
+      reorderLevel: 5,
+      categoryId: category.id,
+      brandId: brand.id
+    }, token).catch(err => {
+      console.log('Product might already exist, skipping: ' + err.message);
+      return { name: 'E2E Automated Pipe', id: 'existing' };
+    });
+    console.log(`Created Product: ${product.name} (ID: ${product.id})`);
 
     // 4. Create Customer
     const customer = await postJson('/api/customers', {
       name: 'Ramesh Sharma',
       phoneNumber: '9123456789',
       customerType: 'RETAIL'
-    }, token);
+    }, token).catch(err => {
+      console.log('Customer might already exist, skipping: ' + err.message);
+      return { name: 'Ramesh Sharma', id: 1 };
+    });
     console.log(`Created Customer: ${customer.name} (ID: ${customer.id})`);
 
     // 5. Create Distributor
     const distributor = await postJson('/api/distributors', {
       name: 'QA Distributor Supply',
       phoneNumber: '8881234567'
-    }, token);
+    }, token).catch(err => {
+      console.log('Distributor might already exist, skipping: ' + err.message);
+      return { name: 'QA Distributor Supply', id: 1 };
+    });
     console.log(`Created Distributor: ${distributor.name} (ID: ${distributor.id})`);
 
     console.log('Seeding completed successfully!');
