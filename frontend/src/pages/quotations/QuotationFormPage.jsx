@@ -42,6 +42,25 @@ const QuotationFormPage = () => {
         calculateTotals();
     }, [formData.items, formData.taxPercentage, formData.discount]);
 
+    useEffect(() => {
+        if (!productSearchQuery.trim()) return;
+        const timer = setTimeout(async () => {
+            try {
+                const res = await productService.getAll({ query: productSearchQuery.trim(), isActive: true, size: 50 });
+                const newProds = res.data?.content || res.data || [];
+                setProducts(prev => {
+                    const map = new Map();
+                    prev.forEach(p => map.set(p.id, p));
+                    newProds.forEach(p => map.set(p.id, p));
+                    return Array.from(map.values());
+                });
+            } catch (err) {
+                // Keep local products
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productSearchQuery]);
+
     const filteredProducts = products.filter(p => {
         if (!productSearchQuery.trim()) return true;
         const q = productSearchQuery.toLowerCase();
@@ -57,10 +76,10 @@ const QuotationFormPage = () => {
         try {
             const [custRes, prodRes] = await Promise.all([
                 customerService.getActive(),
-                productService.getAll({ size: 100 })
+                productService.getAll({ isActive: true, size: 50 })
             ]);
             setCustomers(custRes.data);
-            setProducts(prodRes.data.content);
+            setProducts(prodRes.data?.content || prodRes.data || []);
         } catch (error) {
             toast.error('Failed to load customers or products');
         }

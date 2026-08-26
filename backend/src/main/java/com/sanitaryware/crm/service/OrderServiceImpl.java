@@ -108,6 +108,9 @@ public class OrderServiceImpl implements OrderService {
                     oItem.setUnitPrice(qItem.getUnitPrice());
                     oItem.setDiscountPercentage(qItem.getDiscountPercentage());
                     oItem.setLineTotal(qItem.getLineTotal());
+                    oItem.setBarcode(qItem.getBarcode() != null ? qItem.getBarcode() : (qItem.getProduct() != null ? qItem.getProduct().getBarcode() : null));
+                    oItem.setHsnCode(qItem.getHsnCode() != null ? qItem.getHsnCode() : (qItem.getProduct() != null ? qItem.getProduct().getHsnCode() : null));
+                    oItem.setGstRate(qItem.getGstRate() != null ? qItem.getGstRate() : (qItem.getProduct() != null ? qItem.getProduct().getGstRate() : null));
                     return oItem;
                 }).collect(Collectors.toList());
         order.setItems(orderItems);
@@ -181,7 +184,11 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
         
-        Order.OrderStatus newStatus = Order.OrderStatus.valueOf(statusString.toUpperCase());
+        Order.OrderStatus newStatus = parseOrderStatus(statusString);
+        
+        if (order.getStatus() == Order.OrderStatus.CANCELLED && newStatus != Order.OrderStatus.CANCELLED) {
+            throw new IllegalArgumentException("Cannot change status of a cancelled order");
+        }
         
         // Logical check for stock deduction
         if (newStatus == Order.OrderStatus.CONFIRMED && order.getStatus() != Order.OrderStatus.CONFIRMED) {

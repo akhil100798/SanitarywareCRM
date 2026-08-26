@@ -82,6 +82,65 @@ class QuotationServiceImplTest {
     }
 
     @Test
+    void createQuotation_ZeroTaxAndMultipleItems_CalculatesCorrectly() {
+        QuotationDTO dto = new QuotationDTO();
+        dto.setCustomerId(1L);
+        dto.setValidUntil(LocalDate.now().plusDays(7));
+        QuotationDTO.QuotationItemDTO item1 = new QuotationDTO.QuotationItemDTO();
+        item1.setProductId(10L);
+        item1.setQuantity(3);
+        item1.setUnitPrice(BigDecimal.valueOf(250.50));
+        item1.setDiscountPercentage(BigDecimal.ZERO);
+
+        QuotationDTO.QuotationItemDTO item2 = new QuotationDTO.QuotationItemDTO();
+        item2.setProductId(11L);
+        item2.setQuantity(1);
+        item2.setUnitPrice(BigDecimal.valueOf(100.00));
+        item2.setDiscountPercentage(BigDecimal.valueOf(50));
+
+        dto.setItems(List.of(item1, item2));
+
+        Quotation quotation = new Quotation();
+        quotation.setCustomer(new Customer());
+        quotation.setTaxPercentage(BigDecimal.ZERO);
+        quotation.setDiscount(BigDecimal.valueOf(20)); // Document-level discount ₹20
+
+        QuotationItem qi1 = new QuotationItem();
+        qi1.setProduct(new Product());
+        qi1.setQuantity(3);
+        qi1.setUnitPrice(BigDecimal.valueOf(250.50));
+        qi1.setDiscountPercentage(BigDecimal.ZERO);
+        qi1.calculateLineTotal(); // 751.50
+
+        QuotationItem qi2 = new QuotationItem();
+        qi2.setProduct(new Product());
+        qi2.setQuantity(1);
+        qi2.setUnitPrice(BigDecimal.valueOf(100.00));
+        qi2.setDiscountPercentage(BigDecimal.valueOf(50));
+        qi2.calculateLineTotal(); // 50.00
+
+        when(quotationMapper.toEntity(dto)).thenReturn(quotation);
+        when(accessControlService.currentUser()).thenReturn(new User());
+        when(quotationMapper.toItemEntity(eq(item1), any())).thenReturn(qi1);
+        when(quotationMapper.toItemEntity(eq(item2), any())).thenReturn(qi2);
+        when(quotationRepository.findByQuotationNumber(anyString())).thenReturn(Optional.empty());
+        when(quotationRepository.save(any(Quotation.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(quotationMapper.toDTO(any(Quotation.class))).thenReturn(new QuotationDTO());
+
+        QuotationDTO result = quotationService.createQuotation(dto);
+
+        assertNotNull(result);
+        // Subtotal = 751.50 + 50.00 = 801.50
+        // Tax = 0
+        // Total = 801.50 - 20 = 781.50
+        verify(quotationRepository).save(argThat(saved ->
+                BigDecimal.valueOf(801.50).compareTo(saved.getSubtotal()) == 0 &&
+                BigDecimal.ZERO.compareTo(saved.getTaxAmount()) == 0 &&
+                BigDecimal.valueOf(781.50).compareTo(saved.getTotal()) == 0
+        ));
+    }
+
+    @Test
     void createQuotation_EmptyItems_ThrowsIllegalArgumentException() {
         QuotationDTO dto = new QuotationDTO();
         dto.setCustomerId(1L);

@@ -69,6 +69,9 @@ public class QuotationDTO {
         private BigDecimal discountPercentage;
         
         private BigDecimal lineTotal;
+        private String barcode;
+        private String hsnCode;
+        private BigDecimal gstRate;
         private String notes;
     }
 }

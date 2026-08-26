@@ -124,6 +124,71 @@ class OrderServiceImplTest {
         verify(orderRepository, never()).save(any(Order.class));
     }
 
+    @Test
+    void updateStatus_PendingToConfirmed_DeductsStock() {
+        Product prod = product(1L, "SKU-1", 10);
+        OrderItem item = new OrderItem();
+        item.setProduct(prod);
+        item.setQuantity(4);
+
+        Order order = new Order();
+        order.setId(100L);
+        order.setStatus(Order.OrderStatus.PENDING);
+        order.setItems(List.of(item));
+
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(prod));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(orderMapper.toDTO(any(Order.class))).thenReturn(new OrderDTO());
+
+        orderService.updateStatus(100L, "CONFIRMED");
+
+        assertEquals(6, prod.getStockQuantity());
+        assertEquals(Order.OrderStatus.CONFIRMED, order.getStatus());
+        verify(productRepository).save(prod);
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void updateStatus_ConfirmedToCancelled_RestoresStock() {
+        Product prod = product(1L, "SKU-1", 6);
+        OrderItem item = new OrderItem();
+        item.setProduct(prod);
+        item.setQuantity(4);
+
+        Order order = new Order();
+        order.setId(100L);
+        order.setStatus(Order.OrderStatus.CONFIRMED);
+        order.setItems(List.of(item));
+
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(prod));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(orderMapper.toDTO(any(Order.class))).thenReturn(new OrderDTO());
+
+        orderService.updateStatus(100L, "CANCELLED");
+
+        assertEquals(10, prod.getStockQuantity());
+        assertEquals(Order.OrderStatus.CANCELLED, order.getStatus());
+        verify(productRepository).save(prod);
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void updateStatus_CancelledOrder_CannotChangeStatus() {
+        Order order = new Order();
+        order.setId(100L);
+        order.setStatus(Order.OrderStatus.CANCELLED);
+
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderService.updateStatus(100L, "CONFIRMED"));
+
+        assertEquals("Cannot change status of a cancelled order", ex.getMessage());
+        verify(orderRepository, never()).save(any());
+    }
+
     private Product product(Long id, String sku, int stock) {
         Product product = new Product();
         product.setId(id);

@@ -38,6 +38,15 @@ public class QuotationItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal lineTotal;
 
+    @Column(length = 100)
+    private String barcode;
+
+    @Column(length = 20)
+    private String hsnCode;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal gstRate;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 

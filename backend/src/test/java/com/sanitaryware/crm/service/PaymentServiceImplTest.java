@@ -89,6 +89,44 @@ class PaymentServiceImplTest {
         verify(paymentRepository, never()).save(any(Payment.class));
     }
 
+    @Test
+    void recordPayment_PartialPayment_UpdatesPaidAmountAndPartialStatus() {
+        PaymentDTO payload = paymentPayload("400.00");
+        Order order = orderWithBalance("1000.00");
+        order.setTotal(new BigDecimal("1000.00"));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(accessControlService.currentUser()).thenReturn(new User());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentDTO result = paymentService.recordPayment(payload);
+
+        assertEquals(0, new BigDecimal("400.00").compareTo(order.getPaidAmount()));
+        assertEquals(0, new BigDecimal("600.00").compareTo(order.getBalanceAmount()));
+        assertEquals(Order.PaymentStatus.PARTIAL, order.getPaymentStatus());
+        verify(orderRepository).save(order);
+        verify(paymentRepository).save(any(Payment.class));
+    }
+
+    @Test
+    void recordPayment_FullPayment_UpdatesPaidAmountAndPaidStatus() {
+        PaymentDTO payload = paymentPayload("1000.00");
+        Order order = orderWithBalance("1000.00");
+        order.setTotal(new BigDecimal("1000.00"));
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(accessControlService.currentUser()).thenReturn(new User());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentDTO result = paymentService.recordPayment(payload);
+
+        assertEquals(0, new BigDecimal("1000.00").compareTo(order.getPaidAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(order.getBalanceAmount()));
+        assertEquals(Order.PaymentStatus.PAID, order.getPaymentStatus());
+        verify(orderRepository).save(order);
+        verify(paymentRepository).save(any(Payment.class));
+    }
+
     private PaymentDTO paymentPayload(String amount) {
         PaymentDTO payload = new PaymentDTO();
         payload.setOrderId(1L);

@@ -75,6 +75,9 @@ public class OrderMapper {
         dto.setUnitPrice(item.getUnitPrice());
         dto.setDiscountPercentage(item.getDiscountPercentage());
         dto.setLineTotal(item.getLineTotal());
+        dto.setBarcode(item.getBarcode() != null ? item.getBarcode() : item.getProduct().getBarcode());
+        dto.setHsnCode(item.getHsnCode() != null ? item.getHsnCode() : item.getProduct().getHsnCode());
+        dto.setGstRate(item.getGstRate() != null ? item.getGstRate() : item.getProduct().getGstRate());
         dto.setNotes(item.getNotes());
 
         return dto;
@@ -122,8 +125,12 @@ public class OrderMapper {
         item.setNotes(dto.getNotes());
 
         if (dto.getProductId() != null) {
-            item.setProduct(productRepository.findById(dto.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId())));
+            Product product = productRepository.findById(dto.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId()));
+            item.setProduct(product);
+            item.setBarcode(dto.getBarcode() != null ? dto.getBarcode() : product.getBarcode());
+            item.setHsnCode(dto.getHsnCode() != null ? dto.getHsnCode() : product.getHsnCode());
+            item.setGstRate(dto.getGstRate() != null ? dto.getGstRate() : product.getGstRate());
         } else {
             throw new IllegalArgumentException("Order item product is required");
         }

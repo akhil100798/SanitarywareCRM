@@ -59,6 +59,9 @@ public class OrderDTO {
         @DecimalMin(value = "0.0", inclusive = true)
         private BigDecimal discountPercentage;
         private BigDecimal lineTotal;
+        private String barcode;
+        private String hsnCode;
+        private BigDecimal gstRate;
         private String notes;
     }
 }

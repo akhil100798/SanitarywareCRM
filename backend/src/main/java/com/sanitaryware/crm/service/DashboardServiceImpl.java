@@ -67,8 +67,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .map(orderMapper::toDTO)
                 .collect(Collectors.toList());
 
-        // Simple mock for top products and breakdown for now
-        // In a real app, these would be complex aggregate queries
+        // Order status breakdown across all order statuses
         Map<String, Long> orderStatusBreakdown = new HashMap<>();
         for (Order.OrderStatus status : Order.OrderStatus.values()) {
             orderStatusBreakdown.put(status.name(), orderRepository.findByStatus(status, PageRequest.of(0, 1)).getTotalElements());

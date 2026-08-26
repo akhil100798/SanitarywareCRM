@@ -44,11 +44,30 @@ const PurchaseOrderFormPage = () => {
         calculateTotals();
     }, [formData.items, formData.taxPercentage]);
 
+    useEffect(() => {
+        if (!productSearchQuery.trim()) return;
+        const timer = setTimeout(async () => {
+            try {
+                const res = await productService.getAll({ query: productSearchQuery.trim(), isActive: true, size: 50 });
+                const newProds = res.data?.content || res.data || [];
+                setProducts(prev => {
+                    const map = new Map();
+                    prev.forEach(p => map.set(p.id, p));
+                    newProds.forEach(p => map.set(p.id, p));
+                    return Array.from(map.values());
+                });
+            } catch (err) {
+                // Keep local products
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productSearchQuery]);
+
     const fetchInitialData = async () => {
         try {
             const [distRes, prodRes] = await Promise.all([
-                distributorService.getAllDistributors(0, 100).catch(() => distributorService.getAllActiveDistributors()),
-                productService.getAll({ size: 100 })
+                distributorService.getAllDistributors(0, 50).catch(() => distributorService.getAllActiveDistributors()),
+                productService.getAll({ isActive: true, size: 50 })
             ]);
             const distList = distRes?.content || distRes?.data?.content || distRes || [];
             setDistributors(Array.isArray(distList) ? distList : []);
