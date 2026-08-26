@@ -32,7 +32,15 @@ test.describe('Frontend Quotations E2E Suite', () => {
   test('POS-049 Accept quotation and verify tag updates', async ({ page }) => {
     await page.goto('/quotations');
     await page.locator('span:has-text("Fetching quotations...")').waitFor({ state: 'detached', timeout: 35000 });
-    const targetRow = page.locator('table tr').filter({ has: page.locator('button[title="Mark Accepted"]') }).first();
+    let targetRow = page.locator('table tr').filter({ has: page.locator('button[title="Mark Accepted"]') }).first();
+    if (await targetRow.count() === 0) {
+      const quotationPage = new QuotationPage(page);
+      await quotationPage.createQuotation(null, null, 2);
+      await page.goto('/quotations');
+      await page.locator('span:has-text("Fetching quotations...")').waitFor({ state: 'detached', timeout: 35000 });
+      targetRow = page.locator('table tr').filter({ has: page.locator('button[title="Mark Accepted"]') }).first();
+    }
+    await expect(targetRow).toBeVisible();
     const rawQuoteNum = await targetRow.locator('td').first().innerText();
     const cleanQuoteNum = rawQuoteNum.split('\n')[0].trim();
     await targetRow.locator('button[title="Mark Accepted"]').click();

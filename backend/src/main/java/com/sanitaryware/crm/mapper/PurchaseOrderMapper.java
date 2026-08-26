@@ -45,9 +45,12 @@ public class PurchaseOrderMapper {
 
         PurchaseOrderDTO.PurchaseOrderItemDTO dto = new PurchaseOrderDTO.PurchaseOrderItemDTO();
         dto.setId(item.getId());
-        dto.setProductId(item.getProduct().getId());
-        dto.setProductName(item.getProduct().getName());
-        dto.setProductSku(item.getProduct().getSku());
+        dto.setProductId(item.getProduct() != null ? item.getProduct().getId() : null);
+        dto.setProductName(item.getProduct() != null ? item.getProduct().getName() : null);
+        dto.setProductSku(item.getProduct() != null ? item.getProduct().getSku() : null);
+        dto.setBarcode(item.getBarcode() != null ? item.getBarcode() : (item.getProduct() != null ? item.getProduct().getBarcode() : null));
+        dto.setHsnCode(item.getHsnCode() != null ? item.getHsnCode() : (item.getProduct() != null ? item.getProduct().getHsnCode() : null));
+        dto.setGstRate(item.getGstRate() != null ? item.getGstRate() : (item.getProduct() != null ? item.getProduct().getGstRate() : null));
         dto.setQuantity(item.getQuantity());
         dto.setReceivedQuantity(item.getReceivedQuantity());
         dto.setUnitCost(item.getUnitCost());
@@ -70,6 +73,12 @@ public class PurchaseOrderMapper {
         po.setOrderDate(dto.getOrderDate());
         po.setExpectedDeliveryDate(dto.getExpectedDeliveryDate());
         po.setReceivedDate(dto.getReceivedDate());
+        if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
+            try {
+                po.setStatus(PurchaseOrder.POStatus.valueOf(dto.getStatus().trim().toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
         if (dto.getTaxPercentage() != null) po.setTaxPercentage(dto.getTaxPercentage());
         po.setInvoicePdfPath(dto.getInvoicePdfPath());
         po.setNotes(dto.getNotes());
@@ -84,6 +93,9 @@ public class PurchaseOrderMapper {
         item.setQuantity(dto.getQuantity());
         item.setReceivedQuantity(dto.getReceivedQuantity() != null ? dto.getReceivedQuantity() : 0);
         item.setUnitCost(dto.getUnitCost());
+        item.setBarcode(dto.getBarcode());
+        item.setHsnCode(dto.getHsnCode());
+        item.setGstRate(dto.getGstRate());
         item.setNotes(dto.getNotes());
 
         item.calculateLineTotal();

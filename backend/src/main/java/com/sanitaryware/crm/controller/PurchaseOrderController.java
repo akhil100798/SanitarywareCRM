@@ -62,6 +62,12 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(purchaseOrderService.updateStatus(id, status));
     }
 
+    @PostMapping("/{id}/receive")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<PurchaseOrderDTO> receivePurchaseOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(purchaseOrderService.receivePurchaseOrder(id));
+    }
+
     @GetMapping("/distributor/{distributorId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<List<PurchaseOrderDTO>> getPurchaseOrdersByDistributor(@PathVariable Long distributorId) {

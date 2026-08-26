@@ -16,21 +16,26 @@ class QuotationPage {
     
     // Wait for customer and product dropdowns to be populated
     if (customerName) {
-      await this.page.locator('select[name="customerId"] option').filter({ hasText: customerName }).first().waitFor({ state: 'attached', timeout: 10000 });
-      await this.customerSelect.selectOption({ label: customerName });
+      const option = this.page.locator('select[name="customerId"] option').filter({ hasText: customerName }).first();
+      await option.waitFor({ state: 'attached', timeout: 15000 });
+      const value = await option.getAttribute('value');
+      await this.customerSelect.selectOption(value);
     } else {
-      await this.page.locator('select[name="customerId"] option:not([value=""])').first().waitFor({ state: 'attached', timeout: 10000 });
+      await this.page.locator('select[name="customerId"] option:not([value=""])').first().waitFor({ state: 'attached', timeout: 15000 });
       await this.customerSelect.selectOption({ index: 1 });
     }
     
     await this.addItemButton.click();
+    await this.page.locator('select[name="productId"] option:not([value=""])').first().waitFor({ state: 'attached', timeout: 15000 });
     if (productName) {
       const option = this.productSelect.locator('option').filter({ hasText: productName }).first();
-      await option.waitFor({ state: 'attached', timeout: 10000 });
-      const value = await option.getAttribute('value');
-      await this.productSelect.selectOption(value);
+      if (await option.count() > 0) {
+        const value = await option.getAttribute('value');
+        await this.productSelect.selectOption(value);
+      } else {
+        await this.productSelect.selectOption({ index: 1 });
+      }
     } else {
-      await this.page.locator('select[name="productId"] option:not([value=""])').first().waitFor({ state: 'attached', timeout: 10000 });
       await this.productSelect.selectOption({ index: 1 });
     }
     

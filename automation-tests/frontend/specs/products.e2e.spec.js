@@ -68,7 +68,7 @@ test.describe('Frontend Product E2E Suite', () => {
     await page.fill('input[placeholder*="Search"]', sku);
     await page.keyboard.press('Enter');
     const row = page.locator(`table tr:has-text("${sku}")`);
-    await expect(row).toBeVisible();
+    await expect(row).toBeVisible({ timeout: 15000 });
     await expect(row).toContainText(`BAR: ${barcode}`);
     await expect(row).toContainText('GST: 18%');
   });

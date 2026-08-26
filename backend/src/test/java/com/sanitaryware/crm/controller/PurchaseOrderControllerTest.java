@@ -65,4 +65,21 @@ class PurchaseOrderControllerTest {
 
         verify(purchaseOrderService).getAllPurchaseOrders(any());
     }
+
+    @Test
+    void receivePurchaseOrder_CallsServiceReceive() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/purchase-orders/{id}/receive", 12L))
+                .andExpect(status().isOk());
+
+        verify(purchaseOrderService).receivePurchaseOrder(12L);
+    }
+
+    @Test
+    void updateStatus_CallsServiceUpdateStatus() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/purchase-orders/{id}/status", 12L)
+                        .param("status", "ORDERED"))
+                .andExpect(status().isOk());
+
+        verify(purchaseOrderService).updateStatus(12L, "ORDERED");
+    }
 }

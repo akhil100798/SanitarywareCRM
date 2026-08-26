@@ -13,6 +13,7 @@ public interface PurchaseOrderService {
     Page<PurchaseOrderDTO> getAllPurchaseOrders(Pageable pageable);
     void deletePurchaseOrder(Long id);
     PurchaseOrderDTO updateStatus(Long id, String status);
+    PurchaseOrderDTO receivePurchaseOrder(Long id);
     List<PurchaseOrderDTO> getPurchaseOrdersByDistributor(Long distributorId);
     String generatePoNumber();
 }

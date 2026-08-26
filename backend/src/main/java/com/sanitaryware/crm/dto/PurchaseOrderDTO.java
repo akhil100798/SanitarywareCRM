@@ -43,12 +43,14 @@ public class PurchaseOrderDTO {
         private Long productId;
         private String productName;
         private String productSku;
+        private String barcode;
+        private String hsnCode;
+        private BigDecimal gstRate;
         @NotNull(message = "Quantity is required")
         @Min(value = 1, message = "Quantity must be at least 1")
         private Integer quantity;
         @Min(value = 0, message = "Received quantity cannot be negative")
         private Integer receivedQuantity;
-        @NotNull(message = "Unit cost is required")
         @DecimalMin(value = "0.0", inclusive = true, message = "Unit cost cannot be negative")
         private BigDecimal unitCost;
         private BigDecimal lineTotal;

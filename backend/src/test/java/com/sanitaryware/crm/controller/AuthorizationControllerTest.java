@@ -7,6 +7,7 @@ import com.sanitaryware.crm.exception.GlobalExceptionHandler;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtTokenProvider;
 import com.sanitaryware.crm.service.ProductService;
+import com.sanitaryware.crm.service.PurchaseOrderService;
 import com.sanitaryware.crm.service.SystemSettingsService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {ProductController.class, SystemSettingsController.class})
+@WebMvcTest(controllers = {ProductController.class, SystemSettingsController.class, PurchaseOrderController.class})
 @Import({AuthorizationControllerTest.TestSecurityConfig.class, GlobalExceptionHandler.class, PaginationFactory.class})
 class AuthorizationControllerTest {
 
@@ -53,6 +54,9 @@ class AuthorizationControllerTest {
 
     @MockBean
     private SystemSettingsService systemSettingsService;
+
+    @MockBean
+    private PurchaseOrderService purchaseOrderService;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -231,6 +235,43 @@ class AuthorizationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(settings)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanReceivePurchaseOrder() throws Exception {
+        mockMvc.perform(post("/api/purchase-orders/{id}/receive", 55L))
+                .andExpect(status().isOk());
+
+        verify(purchaseOrderService).receivePurchaseOrder(55L);
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void managerCanReceivePurchaseOrder() throws Exception {
+        mockMvc.perform(post("/api/purchase-orders/{id}/receive", 55L))
+                .andExpect(status().isOk());
+
+        verify(purchaseOrderService).receivePurchaseOrder(55L);
+    }
+
+    @Test
+    @WithMockUser(roles = "SALES")
+    void salesCannotReceiveOrMutatePurchaseOrder() throws Exception {
+        mockMvc.perform(post("/api/purchase-orders/{id}/receive", 55L))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/purchase-orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"distributorId\":1,\"items\":[{\"productId\":10,\"quantity\":2,\"unitCost\":100.00}]}"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/purchase-orders/{id}", 55L))
+                .andExpect(status().isForbidden());
+
+        verify(purchaseOrderService, never()).receivePurchaseOrder(any());
+        verify(purchaseOrderService, never()).createPurchaseOrder(any());
+        verify(purchaseOrderService, never()).deletePurchaseOrder(any());
     }
 
     private ProductDTO validProduct() {

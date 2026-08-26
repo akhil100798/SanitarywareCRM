@@ -37,6 +37,12 @@ const purchaseOrderService = {
         return response.data;
     },
 
+    // Receive purchase order and increment stock atomically
+    receivePurchaseOrder: async (id) => {
+        const response = await api.post(`/purchase-orders/${id}/receive`);
+        return response.data;
+    },
+
     // Delete a purchase order
     deletePurchaseOrder: async (id) => {
         const response = await api.delete(`/purchase-orders/${id}`);
