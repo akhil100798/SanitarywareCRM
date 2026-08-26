@@ -29,6 +29,9 @@ public class Product {
     @Column(nullable = false, unique = true, length = 50)
     private String sku;
 
+    @Column(unique = true, length = 100)
+    private String barcode;
+
     @Column(nullable = false, length = 200)
     private String name;
 
@@ -60,6 +63,12 @@ public class Product {
 
     @Column(length = 50)
     private String unit = "Piece";
+
+    @Column(length = 20)
+    private String hsnCode;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal gstRate;
 
     @Column(length = 100)
     private String color;

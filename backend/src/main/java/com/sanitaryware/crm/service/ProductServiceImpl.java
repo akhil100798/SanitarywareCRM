@@ -2,14 +2,20 @@ package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.BulkUploadResponse;
 import com.sanitaryware.crm.dto.ProductDTO;
+import com.sanitaryware.crm.dto.ProductFilterDTO;
+import com.sanitaryware.crm.dto.ProductImageDTO;
 import com.sanitaryware.crm.entity.Brand;
 import com.sanitaryware.crm.entity.Category;
 import com.sanitaryware.crm.entity.Product;
+import com.sanitaryware.crm.entity.ProductImage;
+import com.sanitaryware.crm.exception.ConflictException;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.ProductMapper;
 import com.sanitaryware.crm.repository.BrandRepository;
 import com.sanitaryware.crm.repository.CategoryRepository;
+import com.sanitaryware.crm.repository.ProductImageRepository;
 import com.sanitaryware.crm.repository.ProductRepository;
+import com.sanitaryware.crm.repository.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -18,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,9 +43,23 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
+    private final ProductImageRepository productImageRepository;
+    private final FileUploadService fileUploadService;
 
     @Override
     public ProductDTO createProduct(ProductDTO productDTO) {
+        if (productDTO.getSku() != null && !productDTO.getSku().isBlank()) {
+            productRepository.findBySku(productDTO.getSku().trim()).ifPresent(existing -> {
+                throw new ConflictException("Product with SKU " + productDTO.getSku() + " already exists");
+            });
+        }
+
+        if (productDTO.getBarcode() != null && !productDTO.getBarcode().isBlank()) {
+            productRepository.findByBarcode(productDTO.getBarcode().trim()).ifPresent(existing -> {
+                throw new ConflictException("Product with barcode " + productDTO.getBarcode() + " already exists");
+            });
+        }
+
         Category category = categoryRepository.findById(productDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategoryId()));
         Brand brand = brandRepository.findById(productDTO.getBrandId())
@@ -53,6 +74,22 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        if (productDTO.getSku() != null && !productDTO.getSku().isBlank()) {
+            productRepository.findBySku(productDTO.getSku().trim()).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new ConflictException("Product with SKU " + productDTO.getSku() + " already exists");
+                }
+            });
+        }
+
+        if (productDTO.getBarcode() != null && !productDTO.getBarcode().isBlank()) {
+            productRepository.findByBarcode(productDTO.getBarcode().trim()).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new ConflictException("Product with barcode " + productDTO.getBarcode() + " already exists");
+                }
+            });
+        }
         
         Category category = categoryRepository.findById(productDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategoryId()));
@@ -81,14 +118,28 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<ProductDTO> getProductsWithFilters(ProductFilterDTO filter, Pageable pageable) {
+        validateFilter(filter);
+        return productRepository.findAll(ProductSpecification.withFilters(filter), pageable)
+                .map(ProductMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<ProductDTO> searchProducts(String search, Pageable pageable) {
-        return productRepository.searchProducts(search, pageable)
+        if (search == null || search.isBlank()) {
+            return getAllProducts(pageable);
+        }
+        ProductFilterDTO filter = ProductFilterDTO.builder().query(search).build();
+        return productRepository.findAll(ProductSpecification.withFilters(filter), pageable)
                 .map(ProductMapper::toDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByCategory(Long categoryId, Pageable pageable) {
+        categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
         return productRepository.findByCategoryId(categoryId, pageable)
                 .map(ProductMapper::toDTO);
     }
@@ -96,7 +147,30 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> getProductsByBrand(Long brandId, Pageable pageable) {
+        brandRepository.findById(brandId)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + brandId));
         return productRepository.findByBrandId(brandId, pageable)
+                .map(ProductMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductDTO getProductByBarcode(String barcode) {
+        if (!StringUtils.hasText(barcode)) {
+            throw new IllegalArgumentException("Barcode cannot be blank");
+        }
+        Product product = productRepository.findByBarcode(barcode.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with barcode: " + barcode));
+        return ProductMapper.toDTO(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductDTO> getProductsByHsnCode(String hsnCode, Pageable pageable) {
+        if (!StringUtils.hasText(hsnCode)) {
+            throw new IllegalArgumentException("HSN code cannot be blank");
+        }
+        return productRepository.findByHsnCode(hsnCode.trim(), pageable)
                 .map(ProductMapper::toDTO);
     }
 
@@ -146,9 +220,6 @@ public class ProductServiceImpl implements ProductService {
             String text = stripper.getText(document);
             String[] lines = text.split("\\r?\\n");
 
-            // Ashirvad Format Regex: SrNo (opt) | Group | Code (SKU) | Description | Existing MRP | New MRP
-            // Pattern attempts to match: [Material Group] [SKU] [Description...] [OldPrice] [NewPrice]
-            // SKU is usually 8 digits. Prices are numbers with possible decimals.
             Pattern pattern = Pattern.compile("^\\d*\\s*(.*?)\\s+(\\d{7,10})\\s+(.*?)\\s+([\\d,]+\\.?\\d*)\\s+([\\d,]+\\.?\\d*)");
 
             for (String line : lines) {
@@ -164,7 +235,6 @@ public class ProductServiceImpl implements ProductService {
                         String newMrpStr = matcher.group(5).replace(",", "");
                         BigDecimal newMrp = new BigDecimal(newMrpStr);
 
-                        // Category handling
                         Category category = categoryRepository.findByName(categoryName)
                                 .orElseGet(() -> {
                                     Category newCat = new Category();
@@ -173,7 +243,6 @@ public class ProductServiceImpl implements ProductService {
                                     return categoryRepository.save(newCat);
                                 });
 
-                        // Product handling (Upsert)
                         Product product = productRepository.findBySku(sku).orElse(null);
                         if (product == null) {
                             product = new Product();
@@ -208,5 +277,113 @@ public class ProductServiceImpl implements ProductService {
                 .totalProcessed(created + updated)
                 .errors(errors)
                 .build();
+    }
+
+    @Override
+    public ProductImageDTO addProductImage(Long productId, MultipartFile file, Boolean isPrimary, Integer displayOrder) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        String storedFileName = fileUploadService.storeFile(file, "products");
+        String fileDownloadUri = "/api/files/download/" + storedFileName;
+
+        List<ProductImage> existingImages = productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId);
+        boolean effectivePrimary = (isPrimary != null && isPrimary) || existingImages.isEmpty();
+        if (effectivePrimary) {
+            for (ProductImage img : existingImages) {
+                if (Boolean.TRUE.equals(img.getIsPrimary())) {
+                    img.setIsPrimary(false);
+                    productImageRepository.save(img);
+                }
+            }
+        }
+
+        int effectiveDisplayOrder = displayOrder != null ? displayOrder : existingImages.size();
+
+        ProductImage newImage = new ProductImage();
+        newImage.setProduct(product);
+        newImage.setImageUrl(fileDownloadUri);
+        newImage.setIsPrimary(effectivePrimary);
+        newImage.setDisplayOrder(effectiveDisplayOrder);
+
+        ProductImage savedImage = productImageRepository.save(newImage);
+
+        return ProductImageDTO.builder()
+                .id(savedImage.getId())
+                .productId(productId)
+                .imageUrl(savedImage.getImageUrl())
+                .isPrimary(savedImage.getIsPrimary())
+                .displayOrder(savedImage.getDisplayOrder())
+                .uploadedAt(savedImage.getUploadedAt())
+                .build();
+    }
+
+    @Override
+    public void deleteProductImage(Long productId, Long imageId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        ProductImage image = productImageRepository.findByIdAndProductId(imageId, productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with id: " + imageId + " for product: " + productId));
+
+        try {
+            String imgUrl = image.getImageUrl();
+            if (imgUrl.contains("/api/files/download/")) {
+                String relPath = imgUrl.substring(imgUrl.indexOf("/api/files/download/") + "/api/files/download/".length());
+                fileUploadService.deleteFile(relPath);
+            }
+        } catch (Exception ignored) {
+        }
+
+        boolean wasPrimary = Boolean.TRUE.equals(image.getIsPrimary());
+        productImageRepository.delete(image);
+
+        if (wasPrimary) {
+            List<ProductImage> remaining = productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId);
+            if (!remaining.isEmpty()) {
+                ProductImage newPrimary = remaining.get(0);
+                newPrimary.setIsPrimary(true);
+                productImageRepository.save(newPrimary);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductImageDTO> getProductImages(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        return productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId).stream()
+                .map(img -> ProductImageDTO.builder()
+                        .id(img.getId())
+                        .productId(productId)
+                        .imageUrl(img.getImageUrl())
+                        .isPrimary(img.getIsPrimary())
+                        .displayOrder(img.getDisplayOrder())
+                        .uploadedAt(img.getUploadedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private void validateFilter(ProductFilterDTO filter) {
+        if (filter == null) return;
+
+        if (filter.getMinPrice() != null && filter.getMinPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Minimum price cannot be negative");
+        }
+        if (filter.getMaxPrice() != null && filter.getMaxPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Maximum price cannot be negative");
+        }
+        if (filter.getMinPrice() != null && filter.getMaxPrice() != null
+                && filter.getMinPrice().compareTo(filter.getMaxPrice()) > 0) {
+            throw new IllegalArgumentException("Minimum price cannot exceed maximum price");
+        }
+        if (filter.getBarcode() != null && filter.getBarcode().length() > 100) {
+            throw new IllegalArgumentException("Barcode cannot exceed 100 characters");
+        }
+        if (filter.getHsnCode() != null && filter.getHsnCode().length() > 20) {
+            throw new IllegalArgumentException("HSN code cannot exceed 20 characters");
+        }
     }
 }

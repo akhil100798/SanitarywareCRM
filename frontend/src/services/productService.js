@@ -12,6 +12,25 @@ export const productService = {
     updateStock: (id, quantity) => api.patch(`/products/${id}/stock`, null, { params: { quantity } }),
     getByCategory: (categoryId, params) => api.get(`/products/category/${categoryId}`, { params }),
     getByBrand: (brandId, params) => api.get(`/products/brand/${brandId}`, { params }),
+    getByBarcode: (barcode) => api.get(`/products/barcode/${encodeURIComponent(barcode)}`),
+    getByHsn: (hsnCode, params) => api.get(`/products/hsn/${encodeURIComponent(hsnCode)}`, { params }),
+    getImages: (productId) => api.get(`/products/${productId}/images`),
+    uploadImage: (productId, file, isPrimary, displayOrder) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (isPrimary !== undefined && isPrimary !== null) {
+            formData.append('isPrimary', isPrimary);
+        }
+        if (displayOrder !== undefined && displayOrder !== null) {
+            formData.append('displayOrder', displayOrder);
+        }
+        return api.post(`/products/${productId}/images`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+    deleteImage: (productId, imageId) => api.delete(`/products/${productId}/images/${imageId}`),
     bulkCatalogUpload: (brandId, file) => {
         const formData = new FormData();
         formData.append('brandId', brandId);

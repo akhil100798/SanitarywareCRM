@@ -16,6 +16,7 @@ public class ProductMapper {
         return ProductDTO.builder()
                 .id(product.getId())
                 .sku(product.getSku())
+                .barcode(product.getBarcode())
                 .name(product.getName())
                 .description(product.getDescription())
                 .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
@@ -28,6 +29,8 @@ public class ProductMapper {
                 .stockQuantity(product.getStockQuantity())
                 .reorderLevel(product.getReorderLevel())
                 .unit(product.getUnit())
+                .hsnCode(product.getHsnCode())
+                .gstRate(product.getGstRate())
                 .color(product.getColor())
                 .material(product.getMaterial())
                 .size(product.getSize())
@@ -36,6 +39,15 @@ public class ProductMapper {
                 .isFeatured(product.getIsFeatured())
                 .imageUrls(product.getImages() != null ? 
                         product.getImages().stream().map(ProductImage::getImageUrl).collect(Collectors.toList()) : null)
+                .images(product.getImages() != null ?
+                        product.getImages().stream().map(img -> com.sanitaryware.crm.dto.ProductImageDTO.builder()
+                                .id(img.getId())
+                                .productId(product.getId())
+                                .imageUrl(img.getImageUrl())
+                                .isPrimary(img.getIsPrimary())
+                                .displayOrder(img.getDisplayOrder())
+                                .uploadedAt(img.getUploadedAt())
+                                .build()).collect(Collectors.toList()) : null)
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .build();
@@ -47,6 +59,7 @@ public class ProductMapper {
         Product product = new Product();
         product.setId(dto.getId());
         product.setSku(dto.getSku());
+        product.setBarcode(dto.getBarcode());
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setCategory(category);
@@ -57,6 +70,8 @@ public class ProductMapper {
         product.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
         product.setReorderLevel(dto.getReorderLevel() != null ? dto.getReorderLevel() : 10);
         product.setUnit(dto.getUnit() != null ? dto.getUnit() : "Piece");
+        product.setHsnCode(dto.getHsnCode());
+        product.setGstRate(dto.getGstRate());
         product.setColor(dto.getColor());
         product.setMaterial(dto.getMaterial());
         product.setSize(dto.getSize());
@@ -71,6 +86,7 @@ public class ProductMapper {
         if (dto == null || product == null) return;
 
         product.setSku(dto.getSku());
+        product.setBarcode(dto.getBarcode());
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setCategory(category);
@@ -81,6 +97,8 @@ public class ProductMapper {
         product.setStockQuantity(dto.getStockQuantity());
         product.setReorderLevel(dto.getReorderLevel());
         product.setUnit(dto.getUnit());
+        product.setHsnCode(dto.getHsnCode());
+        product.setGstRate(dto.getGstRate());
         product.setColor(dto.getColor());
         product.setMaterial(dto.getMaterial());
         product.setSize(dto.getSize());

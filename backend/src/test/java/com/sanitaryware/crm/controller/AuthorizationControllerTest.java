@@ -107,6 +107,65 @@ class AuthorizationControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void adminCanUploadAndDeleteProductImages() throws Exception {
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "test.jpg", "image/jpeg", "image".getBytes());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/products/{id}/images", 7L)
+                        .file(file))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/products/{id}/images/{imageId}", 7L, 10L))
+                .andExpect(status().isNoContent());
+
+        verify(productService).addProductImage(eq(7L), any(), any(), any());
+        verify(productService).deleteProductImage(7L, 10L);
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void managerCanUploadAndDeleteProductImages() throws Exception {
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "test.jpg", "image/jpeg", "image".getBytes());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/products/{id}/images", 7L)
+                        .file(file))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/products/{id}/images/{imageId}", 7L, 10L))
+                .andExpect(status().isNoContent());
+
+        verify(productService).addProductImage(eq(7L), any(), any(), any());
+        verify(productService).deleteProductImage(7L, 10L);
+    }
+
+    @Test
+    @WithMockUser(roles = "SALES")
+    void salesCannotUploadOrDeleteProductImages() throws Exception {
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "test.jpg", "image/jpeg", "image".getBytes());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/products/{id}/images", 7L)
+                        .file(file))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/products/{id}/images/{imageId}", 7L, 10L))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).addProductImage(any(), any(), any(), any());
+        verify(productService, never()).deleteProductImage(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "SALES")
+    void salesCanReadProductImagesBarcodeAndHsn() throws Exception {
+        mockMvc.perform(get("/api/products/{id}/images", 7L))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/products/barcode/{barcode}", "8901234567890"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/products/hsn/{hsnCode}", "69101000"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void adminCanUpdateSettings() throws Exception {
         assertCanUpdateSettings();
     }

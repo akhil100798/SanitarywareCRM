@@ -1,9 +1,11 @@
 package com.sanitaryware.crm.dto;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +24,9 @@ public class ProductDTO {
 
     @NotBlank(message = "SKU is required")
     private String sku;
+
+    @Size(max = 100, message = "Barcode must not exceed 100 characters")
+    private String barcode;
 
     @NotBlank(message = "Product name is required")
     private String name;
@@ -48,6 +53,13 @@ public class ProductDTO {
     private Integer stockQuantity;
     private Integer reorderLevel;
     private String unit;
+
+    @Size(max = 20, message = "HSN code must not exceed 20 characters")
+    private String hsnCode;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "GST rate cannot be negative")
+    @DecimalMax(value = "100.0", inclusive = true, message = "GST rate cannot exceed 100%")
+    private BigDecimal gstRate;
     private String color;
     private String material;
     private String size;
@@ -55,6 +67,7 @@ public class ProductDTO {
     private Boolean isActive;
     private Boolean isFeatured;
     private List<String> imageUrls;
+    private List<ProductImageDTO> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
