@@ -121,7 +121,7 @@ test.describe('Frontend Purchase Order E2E Suite', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify receive toast or status badge
-      await expect(page.locator('text=received and inventory updated').or(page.locator('span:has-text("RECEIVED")').first())).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('span:has-text("RECEIVED")').first()).toBeVisible({ timeout: 10000 });
     }
   });
 });

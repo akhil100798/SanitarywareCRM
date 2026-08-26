@@ -47,6 +47,9 @@ class OrderServiceImplTest {
     @Mock
     private AccessControlService accessControlService;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 

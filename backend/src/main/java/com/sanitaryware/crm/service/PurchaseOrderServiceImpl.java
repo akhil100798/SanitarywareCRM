@@ -33,6 +33,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final ProductRepository productRepository;
     private final PurchaseOrderMapper purchaseOrderMapper;
     private final PdfGeneratorService pdfGeneratorService;
+    private final AuditService auditService;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -74,6 +75,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         po.calculateTotal();
         PurchaseOrder savedPo = purchaseOrderRepository.save(po);
+
+        auditService.logEvent("CREATE", "PURCHASE_ORDER", savedPo.getId(),
+                "Created Purchase Order " + savedPo.getPoNumber() + " with total Rs. " + savedPo.getTotal());
+
         return purchaseOrderMapper.toDTO(savedPo);
     }
 
@@ -82,6 +87,13 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     public PurchaseOrderDTO updatePurchaseOrder(Long id, PurchaseOrderDTO dto) {
         PurchaseOrder existingPo = purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+
+        if (existingPo.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot update an already received Purchase Order");
+        }
+        if (existingPo.getStatus() == PurchaseOrder.POStatus.CANCELLED) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot update a cancelled Purchase Order");
+        }
 
         Distributor distributor = dto.getDistributorId() == null
                 ? existingPo.getDistributor()
@@ -118,6 +130,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         existingPo.calculateTotal();
         PurchaseOrder updatedPo = purchaseOrderRepository.save(existingPo);
+
+        auditService.logEvent("UPDATE", "PURCHASE_ORDER", updatedPo.getId(),
+                "Updated Purchase Order " + updatedPo.getPoNumber() + " (total Rs. " + updatedPo.getTotal() + ")");
+
         return purchaseOrderMapper.toDTO(updatedPo);
     }
 
@@ -144,6 +160,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         purchaseOrderRepository.delete(po);
+
+        auditService.logEvent("DELETE", "PURCHASE_ORDER", id,
+                "Deleted Purchase Order " + po.getPoNumber());
     }
 
     @Override
@@ -172,7 +191,12 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         po.setStatus(newStatus);
-        return purchaseOrderMapper.toDTO(purchaseOrderRepository.save(po));
+        PurchaseOrder saved = purchaseOrderRepository.save(po);
+
+        auditService.logEvent("STATUS_CHANGE", "PURCHASE_ORDER", id,
+                "Changed status of Purchase Order " + po.getPoNumber() + " to " + newStatus);
+
+        return purchaseOrderMapper.toDTO(saved);
     }
 
     @Override
@@ -231,6 +255,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         po.setStatus(PurchaseOrder.POStatus.RECEIVED);
         PurchaseOrder savedPo = purchaseOrderRepository.save(po);
+
+        auditService.logEvent("RECEIVE_PO", "PURCHASE_ORDER", savedPo.getId(),
+                "Received Purchase Order " + savedPo.getPoNumber() + " with total Rs. " + savedPo.getTotal() + " (updated stock and distributor balance)");
+
         return purchaseOrderMapper.toDTO(savedPo);
     }
 

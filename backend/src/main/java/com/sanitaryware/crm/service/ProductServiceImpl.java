@@ -45,6 +45,7 @@ public class ProductServiceImpl implements ProductService {
     private final BrandRepository brandRepository;
     private final ProductImageRepository productImageRepository;
     private final FileUploadService fileUploadService;
+    private final AuditService auditService;
 
     @Override
     public ProductDTO createProduct(ProductDTO productDTO) {
@@ -67,6 +68,10 @@ public class ProductServiceImpl implements ProductService {
 
         Product product = ProductMapper.toEntity(productDTO, category, brand);
         Product savedProduct = productRepository.save(product);
+
+        auditService.logEvent("CREATE", "PRODUCT", savedProduct.getId(),
+                "Created product " + savedProduct.getName() + " (SKU: " + savedProduct.getSku() + ", Stock: " + savedProduct.getStockQuantity() + ")");
+
         return ProductMapper.toDTO(savedProduct);
     }
 
@@ -98,6 +103,10 @@ public class ProductServiceImpl implements ProductService {
 
         ProductMapper.updateEntity(product, productDTO, category, brand);
         Product updatedProduct = productRepository.save(product);
+
+        auditService.logEvent("UPDATE", "PRODUCT", updatedProduct.getId(),
+                "Updated product " + updatedProduct.getName() + " (SKU: " + updatedProduct.getSku() + ")");
+
         return ProductMapper.toDTO(updatedProduct);
     }
 
@@ -196,6 +205,9 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         product.setIsActive(false);
         productRepository.save(product);
+
+        auditService.logEvent("DEACTIVATE", "PRODUCT", id,
+                "Deactivated product " + product.getName() + " (SKU: " + product.getSku() + ")");
     }
 
     @Override
@@ -204,6 +216,9 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         product.setStockQuantity(product.getStockQuantity() + quantity);
         productRepository.save(product);
+
+        auditService.logEvent("ADJUST_STOCK", "PRODUCT", id,
+                "Adjusted stock of product " + product.getName() + " by " + quantity + " (new stock: " + product.getStockQuantity() + ")");
     }
 
     @Override

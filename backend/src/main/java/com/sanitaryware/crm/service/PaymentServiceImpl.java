@@ -27,6 +27,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final AccessControlService accessControlService;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -58,6 +59,9 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         orderRepository.save(order);
+
+        auditService.logEvent("RECORD_PAYMENT", "PAYMENT", savedPayment.getId(),
+                "Recorded payment " + savedPayment.getPaymentNumber() + " of Rs. " + savedPayment.getAmount() + " for order " + order.getOrderNumber());
 
         return PaymentMapper.toDTO(savedPayment);
     }
@@ -112,6 +116,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         orderRepository.save(order);
         paymentRepository.delete(payment);
+
+        auditService.logEvent("DELETE_PAYMENT", "PAYMENT", id,
+                "Deleted payment " + payment.getPaymentNumber() + " of Rs. " + payment.getAmount() + " (recalculated order " + order.getOrderNumber() + " balance to Rs. " + order.getBalanceAmount() + ")");
     }
 
     @Override

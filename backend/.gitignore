@@ -17,3 +17,5 @@ bin/
 test_output*.txt
 test_results*.txt
 uploads/
+uploads-qa/
+apache-maven*/

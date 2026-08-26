@@ -37,6 +37,9 @@ class QuotationServiceImplTest {
     @Mock
     private AccessControlService accessControlService;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private QuotationServiceImpl quotationService;
 

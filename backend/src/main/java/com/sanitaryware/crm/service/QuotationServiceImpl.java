@@ -36,6 +36,9 @@ public class QuotationServiceImpl implements QuotationService {
     @Autowired
     private AccessControlService accessControlService;
 
+    @Autowired
+    private AuditService auditService;
+
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -64,6 +67,10 @@ public class QuotationServiceImpl implements QuotationService {
 
         quotation.calculateTotal();
         Quotation savedQuotation = quotationRepository.save(quotation);
+
+        auditService.logEvent("CREATE", "QUOTATION", savedQuotation.getId(),
+                "Created quotation " + savedQuotation.getQuotationNumber() + " with total Rs. " + savedQuotation.getTotal());
+
         return quotationMapper.toDTO(savedQuotation);
     }
 
@@ -76,6 +83,13 @@ public class QuotationServiceImpl implements QuotationService {
         Quotation existingQuotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(existingQuotation);
+
+        if (existingQuotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
+            throw new IllegalArgumentException("Cannot update a quotation that has already been converted to an order");
+        }
+        if (existingQuotation.getStatus() == Quotation.QuotationStatus.REJECTED) {
+            throw new IllegalArgumentException("Cannot update a rejected quotation");
+        }
 
         quotationMapper.updateEntity(existingQuotation, quotationDTO);
 
@@ -90,6 +104,10 @@ public class QuotationServiceImpl implements QuotationService {
 
         existingQuotation.calculateTotal();
         Quotation updatedQuotation = quotationRepository.save(existingQuotation);
+
+        auditService.logEvent("UPDATE", "QUOTATION", updatedQuotation.getId(),
+                "Updated quotation " + updatedQuotation.getQuotationNumber() + " (total Rs. " + updatedQuotation.getTotal() + ")");
+
         return quotationMapper.toDTO(updatedQuotation);
     }
 
@@ -115,7 +133,15 @@ public class QuotationServiceImpl implements QuotationService {
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(quotation);
+
+        if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete a quotation that has already been converted to an order");
+        }
+
         quotationRepository.delete(quotation);
+
+        auditService.logEvent("DELETE", "QUOTATION", id,
+                "Deleted quotation " + quotation.getQuotationNumber());
     }
 
     @Override
@@ -124,8 +150,18 @@ public class QuotationServiceImpl implements QuotationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(quotation);
         
-        quotation.setStatus(Quotation.QuotationStatus.valueOf(status.toUpperCase()));
-        return quotationMapper.toDTO(quotationRepository.save(quotation));
+        Quotation.QuotationStatus newStatus = Quotation.QuotationStatus.valueOf(status.toUpperCase());
+        if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED && newStatus != Quotation.QuotationStatus.CONVERTED) {
+            throw new IllegalArgumentException("Cannot change status of a converted quotation");
+        }
+
+        quotation.setStatus(newStatus);
+        Quotation saved = quotationRepository.save(quotation);
+
+        auditService.logEvent("STATUS_CHANGE", "QUOTATION", id,
+                "Changed status of quotation " + quotation.getQuotationNumber() + " to " + newStatus);
+
+        return quotationMapper.toDTO(saved);
     }
 
     @Override

@@ -40,6 +40,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private PdfGeneratorService pdfGeneratorService;
 
+    @Autowired
+    private AuditService auditService;
+
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -52,7 +55,6 @@ public class OrderServiceImpl implements OrderService {
         if (orderDTO.getStatus() != null && !orderDTO.getStatus().isBlank()) {
             order.setStatus(parseOrderStatus(orderDTO.getStatus()));
         }
-
 
         order.setCreatedBy(accessControlService.currentUser());
 
@@ -70,6 +72,10 @@ public class OrderServiceImpl implements OrderService {
 
         order.calculateTotal();
         Order savedOrder = orderRepository.save(order);
+
+        auditService.logEvent("CREATE", "ORDER", savedOrder.getId(),
+                "Created order " + savedOrder.getOrderNumber() + " with total Rs. " + savedOrder.getTotal() + " (status: " + savedOrder.getStatus() + ")");
+
         return orderMapper.toDTO(savedOrder);
     }
 
@@ -80,6 +86,9 @@ public class OrderServiceImpl implements OrderService {
 
         if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
             throw new IllegalArgumentException("Quotation has already been converted to an order");
+        }
+        if (quotation.getStatus() == Quotation.QuotationStatus.REJECTED) {
+            throw new IllegalArgumentException("Cannot convert a rejected quotation");
         }
 
         Order order = new Order();
@@ -120,6 +129,10 @@ public class OrderServiceImpl implements OrderService {
         quotationRepository.save(quotation);
 
         Order savedOrder = orderRepository.save(order);
+
+        auditService.logEvent("CONVERT_FROM_QUOTATION", "ORDER", savedOrder.getId(),
+                "Converted quotation " + quotation.getQuotationNumber() + " into order " + savedOrder.getOrderNumber());
+
         return orderMapper.toDTO(savedOrder);
     }
 
@@ -129,6 +142,11 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
         accessControlService.requireOrderAccess(existingOrder);
+
+        if (existingOrder.getStatus() == Order.OrderStatus.CANCELLED) {
+            throw new IllegalArgumentException("Cannot update a cancelled order");
+        }
+
         boolean wasConfirmed = existingOrder.getStatus() == Order.OrderStatus.CONFIRMED;
         List<OrderItem> previousItems = List.copyOf(existingOrder.getItems());
 
@@ -150,6 +168,10 @@ public class OrderServiceImpl implements OrderService {
 
         existingOrder.calculateTotal();
         Order updatedOrder = orderRepository.save(existingOrder);
+
+        auditService.logEvent("UPDATE", "ORDER", updatedOrder.getId(),
+                "Updated order " + updatedOrder.getOrderNumber() + " (total Rs. " + updatedOrder.getTotal() + ")");
+
         return orderMapper.toDTO(updatedOrder);
     }
 
@@ -175,7 +197,15 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
+
+        if (order.getStatus() == Order.OrderStatus.CONFIRMED) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete a confirmed order. Cancel it first to restore stock.");
+        }
+
         orderRepository.deleteById(id);
+
+        auditService.logEvent("DELETE", "ORDER", id,
+                "Deleted order " + order.getOrderNumber());
     }
 
     @Override
@@ -198,7 +228,12 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus(newStatus);
-        return orderMapper.toDTO(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+
+        auditService.logEvent("STATUS_CHANGE", "ORDER", id,
+                "Changed status of order " + order.getOrderNumber() + " to " + newStatus);
+
+        return orderMapper.toDTO(saved);
     }
 
     @Override
@@ -208,7 +243,12 @@ public class OrderServiceImpl implements OrderService {
         accessControlService.requireOrderAccess(order);
         
         order.setPaymentStatus(Order.PaymentStatus.valueOf(paymentStatus.toUpperCase()));
-        return orderMapper.toDTO(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+
+        auditService.logEvent("PAYMENT_STATUS_CHANGE", "ORDER", id,
+                "Changed payment status of order " + order.getOrderNumber() + " to " + paymentStatus);
+
+        return orderMapper.toDTO(saved);
     }
 
     @Override

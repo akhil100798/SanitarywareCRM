@@ -32,6 +32,7 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     private final DistributorRepository distributorRepository;
     private final UserRepository userRepository;
     private final DistributorPaymentMapper paymentMapper;
+    private final AuditService auditService;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -87,6 +88,11 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
         }
 
         DistributorPayment savedPayment = paymentRepository.save(payment);
+
+        auditService.logEvent("CREATE_DISTRIBUTOR_PAYMENT", "DISTRIBUTOR_PAYMENT", savedPayment.getId(),
+                "Recorded payment " + savedPayment.getPaymentNumber() + " of Rs. " + savedPayment.getAmount() + " to distributor "
+                        + (savedPayment.getDistributor() != null ? savedPayment.getDistributor().getName() : "N/A"));
+
         return paymentMapper.toDTO(savedPayment);
     }
 
@@ -135,6 +141,9 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
         }
 
         paymentRepository.delete(payment);
+
+        auditService.logEvent("DELETE_DISTRIBUTOR_PAYMENT", "DISTRIBUTOR_PAYMENT", id,
+                "Deleted distributor payment " + payment.getPaymentNumber() + " of Rs. " + payment.getAmount());
     }
 
     @Override

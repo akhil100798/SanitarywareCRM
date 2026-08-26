@@ -36,6 +36,9 @@ class PaymentServiceImplTest {
     @Mock
     private AccessControlService accessControlService;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 

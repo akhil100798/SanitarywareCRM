@@ -44,6 +44,9 @@ class PurchaseOrderServiceImplTest {
     @Mock
     private PdfGeneratorService pdfGeneratorService;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private PurchaseOrderMapper purchaseOrderMapper;
 
@@ -52,7 +55,7 @@ class PurchaseOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new PurchaseOrderServiceImpl(
-                purchaseOrderRepository, distributorRepository, productRepository, purchaseOrderMapper, pdfGeneratorService);
+                purchaseOrderRepository, distributorRepository, productRepository, purchaseOrderMapper, pdfGeneratorService, auditService);
     }
 
     @Test

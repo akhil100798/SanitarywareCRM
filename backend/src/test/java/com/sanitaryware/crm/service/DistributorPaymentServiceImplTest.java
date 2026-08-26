@@ -43,6 +43,9 @@ class DistributorPaymentServiceImplTest {
     @Mock
     private DistributorPaymentMapper paymentMapper;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private DistributorPaymentServiceImpl paymentService;
 

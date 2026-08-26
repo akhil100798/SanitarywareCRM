@@ -55,6 +55,9 @@ class ProductServiceImplTest {
     @Mock
     private FileUploadService fileUploadService;
 
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
