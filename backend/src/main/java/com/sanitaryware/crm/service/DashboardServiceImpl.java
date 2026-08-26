@@ -43,7 +43,7 @@ public class DashboardServiceImpl implements DashboardService {
         long totalOrders = orderRepository.count();
         long pendingOrders = orderRepository.findByStatus(Order.OrderStatus.PENDING, PageRequest.of(0, 1)).getTotalElements();
         long totalCustomers = customerRepository.count();
-        long lowStockProducts = productRepository.findAll().stream().filter(p -> p.getStockQuantity() < 10).count();
+        long lowStockProducts = productRepository.findAll().stream().filter(p -> p.getStockQuantity() != null && p.getStockQuantity() < 10).count();
 
         // Calculate distributor payments for the month
         BigDecimal distributorPaymentsTotal = distributorPaymentRepository.findAll().stream()

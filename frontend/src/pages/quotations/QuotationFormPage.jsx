@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Search } from 'lucide-react';
 import quotationService from '../../services/quotationService';
 import orderService from '../../services/orderService';
 import customerService from '../../services/customerService';
@@ -26,6 +26,7 @@ const QuotationFormPage = () => {
         items: []
     });
 
+    const [productSearchQuery, setProductSearchQuery] = useState('');
     const [totals, setTotals] = useState({
         subtotal: 0,
         taxAmount: 0,
@@ -40,6 +41,17 @@ const QuotationFormPage = () => {
     useEffect(() => {
         calculateTotals();
     }, [formData.items, formData.taxPercentage, formData.discount]);
+
+    const filteredProducts = products.filter(p => {
+        if (!productSearchQuery.trim()) return true;
+        const q = productSearchQuery.toLowerCase();
+        return (
+            p.name?.toLowerCase().includes(q) ||
+            p.sku?.toLowerCase().includes(q) ||
+            p.barcode?.toLowerCase().includes(q) ||
+            p.hsnCode?.toLowerCase().includes(q)
+        );
+    });
 
     const fetchInitialData = async () => {
         try {
@@ -69,9 +81,9 @@ const QuotationFormPage = () => {
 
     const calculateTotals = () => {
         const subtotal = formData.items.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
-        const taxAmount = (subtotal * formData.taxPercentage) / 100;
-        const total = subtotal + taxAmount - formData.discount;
-        setTotals({ subtotal, taxAmount, total });
+        const taxAmount = (subtotal * (Number(formData.taxPercentage) || 0)) / 100;
+        const total = subtotal + taxAmount - (Number(formData.discount) || 0);
+        setTotals({ subtotal, taxAmount, total: Math.max(0, total) });
     };
 
     const addItem = () => {
@@ -91,30 +103,73 @@ const QuotationFormPage = () => {
         const item = { ...newItems[index], [field]: value };
 
         if (field === 'productId') {
-            const product = products.find(p => p.id === parseInt(value));
+            const product = products.find(p => p.id === parseInt(value, 10));
             if (product) {
-                item.unitPrice = product.sellingPrice;
+                item.unitPrice = product.sellingPrice || 0;
                 item.productName = product.name;
                 item.productSku = product.sku;
+                item.barcode = product.barcode;
+                item.hsnCode = product.hsnCode;
+                item.gstRate = product.gstRate;
             }
         }
 
-        const sub = item.unitPrice * item.quantity;
-        item.lineTotal = sub - (sub * item.discountPercentage) / 100;
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.unitPrice) || 0;
+        const disc = Number(item.discountPercentage) || 0;
+        const sub = price * qty;
+        item.lineTotal = sub - (sub * disc) / 100;
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.items.length === 0) {
-            toast.error('Please add at least one item');
+        if (!formData.customerId) {
+            toast.error('Please select a customer');
             return;
+        }
+        if (formData.items.length === 0) {
+            toast.error('Please add at least one line item');
+            return;
+        }
+
+        for (const item of formData.items) {
+            if (!item.productId) {
+                toast.error('All line items must have a selected product');
+                return;
+            }
+            if (Number(item.quantity) <= 0) {
+                toast.error('Quantity must be greater than 0');
+                return;
+            }
+            if (Number(item.unitPrice) < 0) {
+                toast.error('Unit price cannot be negative');
+                return;
+            }
+            if (Number(item.discountPercentage) < 0 || Number(item.discountPercentage) > 100) {
+                toast.error('Discount percentage must be between 0 and 100');
+                return;
+            }
         }
 
         try {
             setLoading(true);
-            const dataToSave = { ...formData, ...totals };
+            const dataToSave = {
+                ...formData,
+                ...totals,
+                customerId: Number(formData.customerId),
+                taxPercentage: Number(formData.taxPercentage) || 0,
+                discount: Number(formData.discount) || 0,
+                items: formData.items.map(item => ({
+                    ...item,
+                    productId: Number(item.productId),
+                    quantity: Number(item.quantity),
+                    unitPrice: Number(item.unitPrice),
+                    discountPercentage: Number(item.discountPercentage) || 0,
+                    lineTotal: Number(item.lineTotal) || 0
+                }))
+            };
             if (isEditMode) {
                 await quotationService.update(id, dataToSave);
                 toast.success('Quotation updated');
@@ -124,7 +179,7 @@ const QuotationFormPage = () => {
             }
             navigate('/quotations');
         } catch (error) {
-            toast.error('Failed to save quotation');
+            toast.error(error.response?.data?.message || 'Failed to save quotation');
         } finally {
             setLoading(false);
         }
@@ -222,8 +277,20 @@ const QuotationFormPage = () => {
 
                 {/* Items Canvas */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                        <h3 className="text-sm font-bold text-slate-700">Estimate Items Line</h3>
+                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-sm font-bold text-slate-700">Estimate Items Line</h3>
+                            <div className="relative">
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Filter products..."
+                                    className="pl-8 pr-3 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal w-44"
+                                    value={productSearchQuery}
+                                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
                         <button
                             type="button"
                             onClick={addItem}
@@ -252,56 +319,85 @@ const QuotationFormPage = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    formData.items.map((item, index) => (
-                                        <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <select
-                                                    required
-                                                    name="productId"
-                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
-                                                    value={item.productId}
-                                                    onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                                                >
-                                                    <option value="">Select Product</option>
-                                                    {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
-                                                </select>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    name="quantity"
-                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
-                                                    value={item.quantity}
-                                                    onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                                                />
-                                            </td>
-                                            <td className="px-4 py-3 font-bold text-slate-800">
-                                                ₹{(item.unitPrice || 0).toLocaleString()}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <input
-                                                    type="number"
-                                                    min="0" max="100"
-                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
-                                                    value={item.discountPercentage}
-                                                    onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
-                                                />
-                                            </td>
-                                            <td className="px-4 py-3 font-extrabold text-slate-900">
-                                                ₹{(item.lineTotal || 0).toLocaleString()}
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeItem(index)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    formData.items.map((item, index) => {
+                                        const selectedProd = products.find(p => p.id === parseInt(item.productId, 10));
+
+                                        return (
+                                            <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <select
+                                                        required
+                                                        name="productId"
+                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
+                                                        value={item.productId}
+                                                        onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
+                                                    >
+                                                        <option value="">Select Product</option>
+                                                        {filteredProducts.map(p => (
+                                                            <option key={p.id} value={p.id}>
+                                                                {p.name} ({p.sku}) [₹{p.sellingPrice || 0}]
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {selectedProd && (
+                                                        <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                                            <span>Stock: {selectedProd.stockQuantity ?? 0}</span>
+                                                            {selectedProd.barcode && (
+                                                                <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
+                                                                    BAR: {selectedProd.barcode}
+                                                                </span>
+                                                            )}
+                                                            {selectedProd.hsnCode && (
+                                                                <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
+                                                                    HSN: {selectedProd.hsnCode}
+                                                                </span>
+                                                            )}
+                                                            {selectedProd.gstRate !== null && selectedProd.gstRate !== undefined && (
+                                                                <span className="bg-teal-50 text-teal-700 font-medium px-1.5 py-0.5 rounded">
+                                                                    GST: {selectedProd.gstRate}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        name="quantity"
+                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
+                                                        value={item.quantity}
+                                                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 0)}
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3 font-bold text-slate-800">
+                                                    ₹{(item.unitPrice || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="number"
+                                                        min="0" max="100"
+                                                        name="discountPercentage"
+                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
+                                                        value={item.discountPercentage}
+                                                        onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3 font-extrabold text-slate-900">
+                                                    ₹{(item.lineTotal || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeItem(index)}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>

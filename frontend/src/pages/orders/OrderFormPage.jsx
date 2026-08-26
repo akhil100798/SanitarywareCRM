@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Truck, CreditCard } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Truck, CreditCard, Search } from 'lucide-react';
 import orderService from '../../services/orderService';
 import quotationService from '../../services/quotationService';
 import customerService from '../../services/customerService';
@@ -18,6 +18,7 @@ const OrderFormPage = () => {
     const [loading, setLoading] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [products, setProducts] = useState([]);
+    const [productSearchQuery, setProductSearchQuery] = useState('');
     const [uploadingFile, setUploadingFile] = useState(false);
     const [formData, setFormData] = useState({
         customerId: '',
@@ -49,6 +50,17 @@ const OrderFormPage = () => {
     useEffect(() => {
         calculateTotals();
     }, [formData.items, formData.taxPercentage, formData.discount, formData.shippingCharge]);
+
+    const filteredProducts = products.filter(p => {
+        if (!productSearchQuery.trim()) return true;
+        const q = productSearchQuery.toLowerCase();
+        return (
+            p.name?.toLowerCase().includes(q) ||
+            p.sku?.toLowerCase().includes(q) ||
+            p.barcode?.toLowerCase().includes(q) ||
+            p.hsnCode?.toLowerCase().includes(q)
+        );
+    });
 
     const fetchInitialData = async () => {
         try {
@@ -129,12 +141,15 @@ const OrderFormPage = () => {
         const item = { ...newItems[index], [field]: value };
 
         if (field === 'productId') {
-            const product = products.find(p => p.id === parseInt(value));
+            const product = products.find(p => p.id === parseInt(value, 10));
             if (product) {
-                item.unitPrice = product.sellingPrice;
+                item.unitPrice = product.sellingPrice || 0;
                 item.productName = product.name;
                 item.productSku = product.sku;
-                item.mrp = product.mrp;
+                item.mrp = product.mrp || 0;
+                item.barcode = product.barcode;
+                item.hsnCode = product.hsnCode;
+                item.gstRate = product.gstRate;
             }
         }
 
@@ -157,7 +172,9 @@ const OrderFormPage = () => {
             }
         }
 
-        item.lineTotal = (item.unitPrice || 0) * (item.quantity || 0);
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.unitPrice) || 0;
+        item.lineTotal = price * qty;
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
     };
@@ -186,14 +203,48 @@ const OrderFormPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.customerId) {
+            toast.error('Please select a customer');
+            return;
+        }
         if (formData.items.length === 0) {
             toast.error('Please add at least one item');
             return;
         }
 
+        for (const item of formData.items) {
+            if (!item.productId) {
+                toast.error('All line items must have a selected product');
+                return;
+            }
+            if (Number(item.quantity) <= 0) {
+                toast.error('Quantity must be greater than 0');
+                return;
+            }
+            if (Number(item.unitPrice) < 0) {
+                toast.error('Unit price cannot be negative');
+                return;
+            }
+        }
+
         try {
             setLoading(true);
-            const dataToSave = { ...formData, ...totals };
+            const dataToSave = {
+                ...formData,
+                ...totals,
+                customerId: Number(formData.customerId),
+                taxPercentage: Number(formData.taxPercentage) || 0,
+                discount: Number(formData.discount) || 0,
+                shippingCharge: Number(formData.shippingCharge) || 0,
+                items: formData.items.map(item => ({
+                    ...item,
+                    productId: Number(item.productId),
+                    quantity: Number(item.quantity),
+                    unitPrice: Number(item.unitPrice),
+                    discountPercentage: Number(item.discountPercentage) || 0,
+                    lineTotal: Number(item.lineTotal) || 0
+                }))
+            };
             if (isEditMode) {
                 await orderService.update(id, dataToSave);
                 toast.success('Order updated');
@@ -203,7 +254,7 @@ const OrderFormPage = () => {
             }
             navigate('/orders');
         } catch (error) {
-            toast.error('Failed to save order');
+            toast.error(error.response?.data?.message || 'Failed to save order');
         } finally {
             setLoading(false);
         }
@@ -239,21 +290,30 @@ const OrderFormPage = () => {
                             Record Payment
                         </button>
                     )}
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="btn-primary"
+                    >
+                        <Save size={16} className="mr-2" />
+                        {loading ? 'Saving...' : isEditMode ? 'Update Order' : 'Create Order'}
+                    </button>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 pb-12">
-                {/* Meta Settings */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Header Information */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-5 flex items-center">
-                        <ShoppingCart size={22} className="mr-2 text-teal" />
-                        {isEditMode ? 'Edit Customer Order' : 'New Customer Order'}
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-5">
+                        {isEditMode ? 'Edit Customer Order' : 'Create Customer Order'}
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                        <div className="space-y-1.5 md:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-slate-500">Customer *</label>
                             <select
                                 required
+                                name="customerId"
                                 className="input-field text-sm font-medium"
                                 value={formData.customerId}
                                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
@@ -276,23 +336,24 @@ const OrderFormPage = () => {
                             <input
                                 type="date"
                                 className="input-field text-sm"
-                                value={formData.deliveryDate || ''}
+                                value={formData.deliveryDate}
                                 onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
                             />
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500">Order Status</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center">
+                                <Truck size={14} className="mr-1" /> Order Status
+                            </label>
                             <select
-                                className="input-field text-sm font-medium animate-fade-in"
+                                className="input-field text-sm font-medium"
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                             >
-                                <option value="PENDING">Pending</option>
+                                <option value="PENDING">Pending Approval</option>
                                 <option value="CONFIRMED">Confirmed</option>
                                 <option value="PROCESSING">Processing</option>
+                                <option value="READY_TO_SHIP">Ready To Ship</option>
                                 <option value="SHIPPED">Shipped</option>
                                 <option value="DELIVERED">Delivered</option>
                                 <option value="CANCELLED">Cancelled</option>
@@ -317,8 +378,20 @@ const OrderFormPage = () => {
 
                 {/* Items Container */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                        <h3 className="text-sm font-bold text-slate-700">Order Items</h3>
+                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-sm font-bold text-slate-700">Order Items</h3>
+                            <div className="relative">
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Filter products..."
+                                    className="pl-8 pr-3 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal w-44"
+                                    value={productSearchQuery}
+                                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
                         <button
                             type="button"
                             onClick={addItem}
@@ -347,71 +420,101 @@ const OrderFormPage = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    formData.items.map((item, index) => (
-                                        <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <select
-                                                    required
-                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
-                                                    value={item.productId}
-                                                    onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                                                >
-                                                    <option value="">Select Product</option>
-                                                    {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
-                                                </select>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
-                                                    value={item.quantity}
-                                                    onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                                                />
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex bg-slate-50 border border-slate-200 rounded-xl items-center px-2">
-                                                    <span className="text-slate-400 text-xs font-semibold">₹</span>
+                                    formData.items.map((item, index) => {
+                                        const selectedProd = products.find(p => p.id === parseInt(item.productId, 10));
+
+                                        return (
+                                            <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <select
+                                                        required
+                                                        name="productId"
+                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
+                                                        value={item.productId}
+                                                        onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
+                                                    >
+                                                        <option value="">Select Product</option>
+                                                        {filteredProducts.map(p => (
+                                                            <option key={p.id} value={p.id}>
+                                                                {p.name} ({p.sku}) [₹{p.sellingPrice || 0}]
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {selectedProd && (
+                                                        <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                                            <span>Stock: {selectedProd.stockQuantity ?? 0}</span>
+                                                            {selectedProd.barcode && (
+                                                                <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
+                                                                    BAR: {selectedProd.barcode}
+                                                                </span>
+                                                            )}
+                                                            {selectedProd.hsnCode && (
+                                                                <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
+                                                                    HSN: {selectedProd.hsnCode}
+                                                                </span>
+                                                            )}
+                                                            {selectedProd.gstRate !== null && selectedProd.gstRate !== undefined && (
+                                                                <span className="bg-teal-50 text-teal-700 font-medium px-1.5 py-0.5 rounded">
+                                                                    GST: {selectedProd.gstRate}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
                                                     <input
                                                         type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        className="w-full py-2 bg-transparent outline-none pl-1 text-sm text-slate-800 font-bold"
-                                                        value={item.unitPrice}
-                                                        onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                        min="1"
+                                                        name="quantity"
+                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
+                                                        value={item.quantity}
+                                                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 0)}
                                                     />
-                                                </div>
-                                                {item.mrp > 0 && (
-                                                    <div className="text-[10px] text-slate-400 font-medium mt-1 pl-1">MRP: ₹{item.mrp.toLocaleString()}</div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex bg-slate-100 border border-slate-200 rounded-xl items-center px-2">
-                                                    <input
-                                                        type="number"
-                                                        className="w-full py-2 bg-transparent text-slate-500 outline-none text-center text-xs font-semibold"
-                                                        value={item.discountPercentage}
-                                                        readOnly
-                                                        disabled
-                                                        title="Auto-calculated from MRP"
-                                                    />
-                                                    <span className="text-slate-400 text-xs font-semibold">%</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 font-extrabold text-slate-900">
-                                                ₹{(item.lineTotal || 0).toLocaleString()}
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeItem(index)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex bg-slate-50 border border-slate-200 rounded-xl items-center px-2">
+                                                        <span className="text-slate-400 text-xs font-semibold">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="w-full py-2 bg-transparent outline-none pl-1 text-sm text-slate-800 font-bold"
+                                                            value={item.unitPrice}
+                                                            onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                        />
+                                                    </div>
+                                                    {item.mrp > 0 && (
+                                                        <div className="text-[10px] text-slate-400 font-medium mt-1 pl-1">MRP: ₹{item.mrp.toLocaleString()}</div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex bg-slate-100 border border-slate-200 rounded-xl items-center px-2">
+                                                        <input
+                                                            type="number"
+                                                            className="w-full py-2 bg-transparent text-slate-500 outline-none text-center text-xs font-semibold"
+                                                            value={item.discountPercentage}
+                                                            readOnly
+                                                            disabled
+                                                            title="Auto-calculated from MRP"
+                                                        />
+                                                        <span className="text-slate-400 text-xs font-semibold">%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 font-extrabold text-slate-900">
+                                                    ₹{(item.lineTotal || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeItem(index)}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
