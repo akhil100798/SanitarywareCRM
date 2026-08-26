@@ -58,6 +58,9 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
         PurchaseOrder po = payment.getPurchaseOrder();
 
         if (po != null) {
+            if (po.getStatus() == PurchaseOrder.POStatus.CANCELLED) {
+                throw new IllegalArgumentException("Cannot record payment for a cancelled Purchase Order");
+            }
             // Validate and update PO balance
             if (po.getBalanceAmount().compareTo(payment.getAmount()) < 0) {
                 throw new IllegalArgumentException("Payment amount ₹" + payment.getAmount() + " exceeds the PO balance ₹" + po.getBalanceAmount());
@@ -90,7 +93,7 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     @Override
     public DistributorPaymentDTO getPaymentById(Long id) {
         DistributorPayment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
+                .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Payment not found with id: " + id));
         return paymentMapper.toDTO(payment);
     }
 
@@ -110,18 +113,26 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     @Transactional
     public void deletePayment(Long id) {
         DistributorPayment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
+                .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Payment not found with id: " + id));
 
         PurchaseOrder po = payment.getPurchaseOrder();
-        // Restore PO balance
-        po.setPaidAmount(po.getPaidAmount().subtract(payment.getAmount()));
-        po.calculateBalance();
-        purchaseOrderRepository.save(po);
+        if (po != null) {
+            // Restore PO balance
+            po.setPaidAmount(po.getPaidAmount().subtract(payment.getAmount()));
+            po.calculateBalance();
+            purchaseOrderRepository.save(po);
 
-        // Restore Distributor balance
-        Distributor distributor = po.getDistributor();
-        distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
-        distributorRepository.save(distributor);
+            // Restore Distributor balance
+            Distributor distributor = po.getDistributor();
+            if (distributor != null) {
+                distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
+                distributorRepository.save(distributor);
+            }
+        } else if (payment.getDistributor() != null) {
+            Distributor distributor = payment.getDistributor();
+            distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
+            distributorRepository.save(distributor);
+        }
 
         paymentRepository.delete(payment);
     }

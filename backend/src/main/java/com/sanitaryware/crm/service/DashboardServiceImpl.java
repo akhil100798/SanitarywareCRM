@@ -73,6 +73,48 @@ public class DashboardServiceImpl implements DashboardService {
             orderStatusBreakdown.put(status.name(), orderRepository.findByStatus(status, PageRequest.of(0, 1)).getTotalElements());
         }
 
+        // Monthly revenue for the last 6 months
+        Map<String, BigDecimal> monthlyRevenue = new java.util.LinkedHashMap<>();
+        for (int i = 5; i >= 0; i--) {
+            LocalDate monthDate = now.minusMonths(i);
+            LocalDate monthStart = monthDate.withDayOfMonth(1);
+            LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
+            String monthLabel = monthDate.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH);
+            BigDecimal rev = paymentRepository.getTotalPaymentsBetweenDates(monthStart, monthEnd);
+            monthlyRevenue.put(monthLabel, rev != null ? rev : BigDecimal.ZERO);
+        }
+
+        // Top 5 selling products aggregated from non-cancelled orders
+        Map<String, DashboardDTO.ProductSalesDTO> productSalesMap = new HashMap<>();
+        orderRepository.findAll().stream()
+                .filter(o -> o.getStatus() != Order.OrderStatus.CANCELLED && o.getItems() != null)
+                .flatMap(o -> o.getItems().stream())
+                .forEach(item -> {
+                    if (item.getProduct() != null) {
+                        String name = item.getProduct().getName();
+                        long qty = item.getQuantity() != null ? item.getQuantity() : 0;
+                        BigDecimal total = item.getLineTotal() != null ? item.getLineTotal() : BigDecimal.ZERO;
+                        productSalesMap.compute(name, (k, v) -> {
+                            if (v == null) {
+                                return DashboardDTO.ProductSalesDTO.builder()
+                                        .productName(name)
+                                        .quantitySold(qty)
+                                        .totalRevenue(total)
+                                        .build();
+                            } else {
+                                v.setQuantitySold(v.getQuantitySold() + qty);
+                                v.setTotalRevenue(v.getTotalRevenue().add(total));
+                                return v;
+                            }
+                        });
+                    }
+                });
+
+        List<DashboardDTO.ProductSalesDTO> topProducts = productSalesMap.values().stream()
+                .sorted((a, b) -> b.getTotalRevenue().compareTo(a.getTotalRevenue()))
+                .limit(5)
+                .collect(Collectors.toList());
+
         return DashboardDTO.builder()
                 .totalRevenue(totalRevenue)
                 .totalOrders(totalOrders)
@@ -84,6 +126,8 @@ public class DashboardServiceImpl implements DashboardService {
                 .totalReceivables(totalReceivables)
                 .recentOrders(recentOrders)
                 .orderStatusBreakdown(orderStatusBreakdown)
+                .monthlyRevenue(monthlyRevenue)
+                .topProducts(topProducts)
                 .build();
     }
 }

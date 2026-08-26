@@ -27,6 +27,7 @@ import PurchaseOrderListPage from './pages/purchase-orders/PurchaseOrderListPage
 import PurchaseOrderFormPage from './pages/purchase-orders/PurchaseOrderFormPage';
 import DistributorPaymentListPage from './pages/distributor-payments/DistributorPaymentListPage';
 import DistributorPaymentFormPage from './pages/distributor-payments/DistributorPaymentFormPage';
+import ReportsPage from './pages/reports/ReportsPage';
 
 import './index.css';
 
@@ -196,6 +197,8 @@ function App() {
                     <Route path="/distributor-payments" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorPaymentListPage /></ProtectedRoute>} />
                     <Route path="/distributor-payments/new" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorPaymentFormPage /></ProtectedRoute>} />
                     <Route path="/distributor-payments/edit/:id" element={<ProtectedRoute allowedRoles={managementRoles}><DistributorPaymentFormPage /></ProtectedRoute>} />
+
+                    <Route path="/reports" element={<ProtectedRoute allowedRoles={managementRoles}><ReportsPage /></ProtectedRoute>} />
 
                     <Route
                         path="/profile"

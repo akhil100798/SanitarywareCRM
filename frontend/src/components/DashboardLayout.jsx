@@ -41,6 +41,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { icon: CreditCard, label: 'Distributor Payments', path: '/distributor-payments', roles: ['ADMIN', 'MANAGER'] },
         { icon: FileText, label: 'Quotations', path: '/quotations' },
         { icon: ShoppingCart, label: 'Orders', path: '/orders' },
+        { icon: CreditCard, label: 'Payments', path: '/payments' },
+        { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
         { icon: Settings, label: 'Settings', path: '/settings', roles: ['ADMIN', 'MANAGER'] },
     ];
 

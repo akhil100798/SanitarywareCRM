@@ -3,6 +3,7 @@ package com.sanitaryware.crm.mapper;
 import com.sanitaryware.crm.dto.OrderDTO;
 import com.sanitaryware.crm.entity.Order;
 import com.sanitaryware.crm.entity.OrderItem;
+import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.repository.CustomerRepository;
 import com.sanitaryware.crm.repository.ProductRepository;

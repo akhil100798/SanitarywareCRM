@@ -128,6 +128,9 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void validatePayment(PaymentDTO dto, Order order) {
+        if (order.getStatus() == Order.OrderStatus.CANCELLED) {
+            throw new IllegalArgumentException("Cannot record payment for a cancelled order");
+        }
         if (dto.getAmount() == null || dto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Payment amount must be greater than zero");
         }

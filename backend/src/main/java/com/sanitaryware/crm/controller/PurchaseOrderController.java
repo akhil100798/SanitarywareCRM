@@ -73,4 +73,14 @@ public class PurchaseOrderController {
     public ResponseEntity<List<PurchaseOrderDTO>> getPurchaseOrdersByDistributor(@PathVariable Long distributorId) {
         return ResponseEntity.ok(purchaseOrderService.getPurchaseOrdersByDistributor(distributorId));
     }
+
+    @GetMapping("/{id}/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<byte[]> getPurchaseOrderPdf(@PathVariable Long id) {
+        byte[] pdf = purchaseOrderService.getPurchaseOrderPdf(id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=\"purchase-order-" + id + ".pdf\"")
+                .body(pdf);
+    }
 }

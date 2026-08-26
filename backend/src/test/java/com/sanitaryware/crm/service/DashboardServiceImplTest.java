@@ -83,5 +83,8 @@ class DashboardServiceImplTest {
         assertEquals(10L, stats.getTotalOrders());
         assertEquals(25L, stats.getTotalCustomers());
         assertEquals(1L, stats.getLowStockProducts()); // only p2 has stock < 10
+        assertNotNull(stats.getMonthlyRevenue());
+        assertEquals(6, stats.getMonthlyRevenue().size());
+        assertNotNull(stats.getTopProducts());
     }
 }

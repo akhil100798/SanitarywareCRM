@@ -15,5 +15,6 @@ public interface PurchaseOrderService {
     PurchaseOrderDTO updateStatus(Long id, String status);
     PurchaseOrderDTO receivePurchaseOrder(Long id);
     List<PurchaseOrderDTO> getPurchaseOrdersByDistributor(Long distributorId);
+    byte[] getPurchaseOrderPdf(Long id);
     String generatePoNumber();
 }

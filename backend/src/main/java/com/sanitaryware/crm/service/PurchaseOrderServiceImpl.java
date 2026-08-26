@@ -32,6 +32,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final DistributorRepository distributorRepository;
     private final ProductRepository productRepository;
     private final PurchaseOrderMapper purchaseOrderMapper;
+    private final PdfGeneratorService pdfGeneratorService;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -138,6 +139,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         PurchaseOrder po = purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
         
+        if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete an already received Purchase Order");
+        }
+
         purchaseOrderRepository.delete(po);
     }
 
@@ -234,6 +239,13 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return purchaseOrderRepository.findByDistributorId(distributorId).stream()
                 .map(purchaseOrderMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public byte[] getPurchaseOrderPdf(Long id) {
+        PurchaseOrder po = purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        return pdfGeneratorService.generatePurchaseOrderPdf(po);
     }
 
     @Override

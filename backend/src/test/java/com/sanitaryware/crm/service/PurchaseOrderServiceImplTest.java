@@ -41,6 +41,9 @@ class PurchaseOrderServiceImplTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private PdfGeneratorService pdfGeneratorService;
+
     @InjectMocks
     private PurchaseOrderMapper purchaseOrderMapper;
 
@@ -49,7 +52,7 @@ class PurchaseOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new PurchaseOrderServiceImpl(
-                purchaseOrderRepository, distributorRepository, productRepository, purchaseOrderMapper);
+                purchaseOrderRepository, distributorRepository, productRepository, purchaseOrderMapper, pdfGeneratorService);
     }
 
     @Test
@@ -237,6 +240,33 @@ class PurchaseOrderServiceImplTest {
                 .hasMessageContaining("Cannot receive a cancelled Purchase Order");
 
         verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void getPurchaseOrderPdf_ReturnsPdfBytes() {
+        PurchaseOrder existing = existingPurchaseOrder(55L, distributor(1L));
+        byte[] samplePdf = new byte[]{1, 2, 3};
+
+        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
+        when(pdfGeneratorService.generatePurchaseOrderPdf(existing)).thenReturn(samplePdf);
+
+        byte[] result = service.getPurchaseOrderPdf(55L);
+
+        assertThat(result).isEqualTo(samplePdf);
+    }
+
+    @Test
+    void deletePurchaseOrder_WhenReceived_ThrowsConflictException() {
+        PurchaseOrder existing = existingPurchaseOrder(55L, distributor(1L));
+        existing.setStatus(PurchaseOrder.POStatus.RECEIVED);
+
+        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.deletePurchaseOrder(55L))
+                .isInstanceOf(com.sanitaryware.crm.exception.ConflictException.class)
+                .hasMessageContaining("Cannot delete an already received Purchase Order");
+
+        verify(purchaseOrderRepository, never()).delete(any());
     }
 
     private PurchaseOrderDTO purchaseOrderRequest(Long distributorId, Long productId) {
