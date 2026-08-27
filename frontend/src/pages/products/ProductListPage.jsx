@@ -79,7 +79,7 @@ const ProductListPage = () => {
         return true;
     };
 
-    const fetchProducts = useCallback(async (pageToFetch = currentPage) => {
+    const fetchProducts = useCallback(async (pageToFetch = currentPage, queryOverride) => {
         if (!validatePriceRange(minPrice, maxPrice)) {
             return;
         }
@@ -91,7 +91,8 @@ const ProductListPage = () => {
                 size: pageSize
             };
 
-            if (searchQuery.trim()) params.query = searchQuery.trim();
+            const effectiveQuery = queryOverride !== undefined ? queryOverride : searchQuery;
+            if (effectiveQuery && effectiveQuery.trim()) params.query = effectiveQuery.trim();
             if (selectedCategory) params.categoryId = selectedCategory;
             if (selectedBrand) params.brandId = selectedBrand;
             if (minPrice !== '' && !isNaN(minPrice)) params.minPrice = Number(minPrice);
@@ -149,7 +150,11 @@ const ProductListPage = () => {
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         setCurrentPage(0);
-        fetchProducts(0);
+        const form = e.currentTarget;
+        const input = form?.querySelector('input[type="text"]');
+        const q = input ? input.value : searchQuery;
+        setSearchQuery(q);
+        fetchProducts(0, q);
     };
 
     const handlePriceBlur = () => {
