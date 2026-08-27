@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 public class SystemSettingsService {
 
     private final SystemSettingsRepository systemSettingsRepository;
+    private final AuditService auditService;
 
     public SystemSettingsDTO getSettings() {
         SystemSettings settings = systemSettingsRepository.findTopByOrderByIdAsc();
@@ -42,7 +43,12 @@ public class SystemSettingsService {
         settings.setCurrencySymbol(dto.getCurrencySymbol());
         settings.setLogoUrl(dto.getLogoUrl());
 
-        return mapToDTO(systemSettingsRepository.save(settings));
+        SystemSettings saved = systemSettingsRepository.save(settings);
+
+        auditService.logEvent("UPDATE", "SYSTEM_SETTINGS", saved.getId(),
+                "Updated system settings (Company: " + saved.getCompanyName() + ", Currency: " + saved.getCurrencySymbol() + ")");
+
+        return mapToDTO(saved);
     }
 
     private SystemSettingsDTO mapToDTO(SystemSettings entity) {

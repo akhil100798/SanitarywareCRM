@@ -38,6 +38,9 @@ class AuthControllerTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private com.sanitaryware.crm.service.AuditService auditService;
+
     @InjectMocks
     private AuthController authController;
 
@@ -62,6 +65,7 @@ class AuthControllerTest {
         when(userRepository.existsByUsername("owner")).thenReturn(false);
         when(userRepository.existsByEmail("owner@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Admin@123")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         ResponseEntity<?> response = authController.register(registerRequest());
 

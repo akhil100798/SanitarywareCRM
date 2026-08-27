@@ -31,6 +31,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final com.sanitaryware.crm.service.AuditService auditService;
 
     @GetMapping("/test")
     public ResponseEntity<?> test() {
@@ -118,8 +119,12 @@ public class AuthController {
             user.setRole(firstUser ? User.UserRole.ADMIN : User.UserRole.SALES);
             user.setIsActive(true);
 
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            User effectiveUser = savedUser != null ? savedUser : user;
             log.info("User registered successfully: {}", request.getUsername());
+
+            auditService.logEvent("REGISTER_USER", "USER", effectiveUser.getId(),
+                    "Registered user " + effectiveUser.getUsername() + " with role " + effectiveUser.getRole());
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new MessageResponse("User registered successfully"));
@@ -180,23 +185,28 @@ public class AuthController {
             user.setEmail(request.getEmail());
         }
 
+        boolean passwordChanged = false;
         if (request.getNewPassword() != null && !request.getNewPassword().isEmpty()) {
             if (request.getCurrentPassword() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
                 return ResponseEntity.badRequest()
                         .body(new MessageResponse("Incorrect current password"));
             }
             user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            passwordChanged = true;
         }
 
-        userRepository.save(user);
+        User updatedUser = userRepository.save(user);
+
+        auditService.logEvent("UPDATE_PROFILE", "USER", updatedUser.getId(),
+                "Updated profile for " + updatedUser.getUsername() + (passwordChanged ? " (password changed)" : ""));
 
         return ResponseEntity.ok(new AuthResponse(
                 null,
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getRole().name()
+                updatedUser.getId(),
+                updatedUser.getUsername(),
+                updatedUser.getEmail(),
+                updatedUser.getFullName(),
+                updatedUser.getRole().name()
         ));
     }
 }

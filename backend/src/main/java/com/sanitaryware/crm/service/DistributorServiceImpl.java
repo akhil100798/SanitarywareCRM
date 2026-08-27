@@ -20,12 +20,17 @@ public class DistributorServiceImpl implements DistributorService {
 
     private final DistributorRepository distributorRepository;
     private final DistributorMapper distributorMapper;
+    private final AuditService auditService;
 
     @Override
     @Transactional
     public DistributorDTO createDistributor(DistributorDTO dto) {
         Distributor distributor = distributorMapper.toEntity(dto);
         distributor = distributorRepository.save(distributor);
+
+        auditService.logEvent("CREATE", "DISTRIBUTOR", distributor.getId(),
+                "Created distributor " + distributor.getName() + " (" + distributor.getPhoneNumber() + ")");
+
         return distributorMapper.toDTO(distributor);
     }
 
@@ -37,6 +42,10 @@ public class DistributorServiceImpl implements DistributorService {
         
         distributorMapper.updateEntity(distributor, dto);
         distributor = distributorRepository.save(distributor);
+
+        auditService.logEvent("UPDATE", "DISTRIBUTOR", distributor.getId(),
+                "Updated distributor " + distributor.getName() + " (" + distributor.getPhoneNumber() + ")");
+
         return distributorMapper.toDTO(distributor);
     }
 
@@ -71,21 +80,28 @@ public class DistributorServiceImpl implements DistributorService {
     @Transactional
     public void deleteDistributor(Long id) {
         Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Distributor not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
         
         // Soft delete by setting inactive
         distributor.setIsActive(false);
         distributorRepository.save(distributor);
+
+        auditService.logEvent("DEACTIVATE", "DISTRIBUTOR", id,
+                "Deactivated distributor " + distributor.getName());
     }
 
     @Override
     @Transactional
     public DistributorDTO toggleActiveStatus(Long id) {
         Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Distributor not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
         
         distributor.setIsActive(!distributor.getIsActive());
         distributor = distributorRepository.save(distributor);
+
+        auditService.logEvent("TOGGLE_STATUS", "DISTRIBUTOR", id,
+                "Toggled active status of distributor " + distributor.getName() + " to " + distributor.getIsActive());
+
         return distributorMapper.toDTO(distributor);
     }
 }

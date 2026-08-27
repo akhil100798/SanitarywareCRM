@@ -23,11 +23,14 @@ const ENTITY_TYPES = [
   'ORDER',
   'PAYMENT',
   'PURCHASE_ORDER',
+  'DISTRIBUTOR',
   'DISTRIBUTOR_PAYMENT',
   'PRODUCT',
   'CUSTOMER',
   'CATEGORY',
-  'BRAND'
+  'BRAND',
+  'SYSTEM_SETTINGS',
+  'USER'
 ];
 
 const ACTIONS = [
@@ -35,6 +38,7 @@ const ACTIONS = [
   'UPDATE',
   'DELETE',
   'DEACTIVATE',
+  'TOGGLE_STATUS',
   'STATUS_CHANGE',
   'PAYMENT_STATUS_CHANGE',
   'RECORD_PAYMENT',
@@ -43,13 +47,16 @@ const ACTIONS = [
   'DELETE_DISTRIBUTOR_PAYMENT',
   'RECEIVE_PO',
   'CONVERT_FROM_QUOTATION',
-  'ADJUST_STOCK'
+  'ADJUST_STOCK',
+  'REGISTER_USER',
+  'UPDATE_PROFILE',
+  'UPDATE_SETTINGS'
 ];
 
 const getActionBadgeClass = (action) => {
   if (!action) return 'bg-slate-100 text-slate-700 border-slate-200';
   const act = action.toUpperCase();
-  if (act.includes('CREATE') || act.includes('CONVERT')) {
+  if (act.includes('CREATE') || act.includes('CONVERT') || act.includes('REGISTER')) {
     return 'bg-emerald-50 text-emerald-700 border-emerald-200';
   }
   if (act.includes('RECEIVE')) {
@@ -61,7 +68,7 @@ const getActionBadgeClass = (action) => {
   if (act.includes('PAYMENT') || act.includes('FINANCIAL')) {
     return 'bg-blue-50 text-blue-700 border-blue-200';
   }
-  if (act.includes('STATUS') || act.includes('ADJUST')) {
+  if (act.includes('STATUS') || act.includes('ADJUST') || act.includes('TOGGLE')) {
     return 'bg-amber-50 text-amber-700 border-amber-200';
   }
   return 'bg-slate-50 text-slate-700 border-slate-200';
@@ -80,10 +87,16 @@ const getEntityBadgeClass = (entityType) => {
     case 'PAYMENT':
     case 'DISTRIBUTOR_PAYMENT':
       return 'bg-sky-50 text-sky-700 border-sky-200';
+    case 'DISTRIBUTOR':
+      return 'bg-cyan-50 text-cyan-700 border-cyan-200';
     case 'PRODUCT':
       return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'CUSTOMER':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'SYSTEM_SETTINGS':
+      return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'USER':
+      return 'bg-purple-50 text-purple-700 border-purple-200';
     default:
       return 'bg-slate-100 text-slate-700 border-slate-200';
   }
@@ -122,6 +135,8 @@ const AuditLogsPage = () => {
   const [actionFilter, setActionFilter] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
   const [entityIdFilter, setEntityIdFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -134,7 +149,9 @@ const AuditLogsPage = () => {
         actor: actorFilter.trim() || undefined,
         action: actionFilter || undefined,
         entityType: entityTypeFilter || undefined,
-        entityId: entityIdFilter ? parseInt(entityIdFilter, 10) || undefined : undefined
+        entityId: entityIdFilter ? parseInt(entityIdFilter, 10) || undefined : undefined,
+        startDate: startDateFilter ? `${startDateFilter}T00:00:00` : undefined,
+        endDate: endDateFilter ? `${endDateFilter}T23:59:59` : undefined
       };
 
       const data = await auditLogService.getAuditLogs(params);
@@ -148,7 +165,7 @@ const AuditLogsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, size, actorFilter, actionFilter, entityTypeFilter, entityIdFilter]);
+  }, [page, size, actorFilter, actionFilter, entityTypeFilter, entityIdFilter, startDateFilter, endDateFilter]);
 
   useEffect(() => {
     fetchLogs();
@@ -159,10 +176,12 @@ const AuditLogsPage = () => {
     setActionFilter('');
     setEntityTypeFilter('');
     setEntityIdFilter('');
+    setStartDateFilter('');
+    setEndDateFilter('');
     setPage(0);
   };
 
-  const hasActiveFilters = actorFilter || actionFilter || entityTypeFilter || entityIdFilter;
+  const hasActiveFilters = actorFilter || actionFilter || entityTypeFilter || entityIdFilter || startDateFilter || endDateFilter;
 
   return (
     <div className="space-y-6 pb-12">
@@ -215,7 +234,7 @@ const AuditLogsPage = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
             {/* Actor Search */}
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Actor Username</label>
@@ -290,6 +309,34 @@ const AuditLogsPage = () => {
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal/20 focus:border-teal outline-none transition-all"
                 />
               </div>
+            </div>
+
+            {/* Start Date */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">From Date</label>
+              <input
+                type="date"
+                value={startDateFilter}
+                onChange={(e) => {
+                  setStartDateFilter(e.target.value);
+                  setPage(0);
+                }}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal/20 focus:border-teal outline-none transition-all bg-white"
+              />
+            </div>
+
+            {/* End Date */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">To Date</label>
+              <input
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => {
+                  setEndDateFilter(e.target.value);
+                  setPage(0);
+                }}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal/20 focus:border-teal outline-none transition-all bg-white"
+              />
             </div>
           </div>
         </div>
