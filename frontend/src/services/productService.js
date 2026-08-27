@@ -41,6 +41,7 @@ export const productService = {
             },
         });
     },
+    deleteAll: () => api.delete('/products/all'),
 };
 
 export const brandService = {

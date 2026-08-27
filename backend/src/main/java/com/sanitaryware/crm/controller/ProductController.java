@@ -185,4 +185,11 @@ public class ProductController {
         productService.deleteProductImage(id, imageId);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteAllProducts() {
+        productService.deleteAllProducts();
+        return ResponseEntity.noContent().build();
+    }
 }

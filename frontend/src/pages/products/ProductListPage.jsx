@@ -188,6 +188,33 @@ const ProductListPage = () => {
         });
     };
 
+    const handleDeleteProduct = async (id) => {
+        if (window.confirm('Are you sure you want to delete this product?')) {
+            try {
+                await productService.delete(id);
+                toast.success('Product deleted successfully');
+                fetchProducts(currentPage);
+            } catch (error) {
+                toast.error(error.response?.data?.message || 'Failed to delete product');
+            }
+        }
+    };
+
+    const handleClearAllProducts = async () => {
+        if (window.confirm('Are you sure you want to delete ALL products from the database? This action cannot be undone.')) {
+            try {
+                setLoading(true);
+                await productService.deleteAll();
+                toast.success('All products deleted successfully');
+                fetchProducts(0);
+            } catch (error) {
+                toast.error(error.response?.data?.message || 'Failed to delete all products');
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to deactivate this product?')) {
             try {
@@ -239,6 +266,17 @@ const ProductListPage = () => {
                                 <FileUp size={16} />
                                 <span>Bulk Import</span>
                             </button>
+                            {user?.role === 'ADMIN' && products.length > 0 && (
+                                <button
+                                    onClick={handleClearAllProducts}
+                                    className="btn-secondary text-sm text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                                    aria-label="Clear All Products"
+                                    title="Delete all products in catalogue"
+                                >
+                                    <Trash2 size={16} />
+                                    <span>Clear All</span>
+                                </button>
+                            )}
                             <Link to="/products/new" className="btn-primary text-sm" aria-label="Add Product">
                                 <Plus size={16} />
                                 <span>Add Product</span>

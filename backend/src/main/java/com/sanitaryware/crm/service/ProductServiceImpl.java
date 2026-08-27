@@ -474,4 +474,11 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException("HSN code cannot exceed 20 characters");
         }
     }
+
+    @Override
+    public void deleteAllProducts() {
+        productImageRepository.deleteAll();
+        productRepository.deleteAll();
+        auditService.logEvent("DELETE_ALL", "PRODUCT", 0L, "Deleted all products from catalogue");
+    }
 }

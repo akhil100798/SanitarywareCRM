@@ -29,4 +29,5 @@ public interface ProductService {
     ProductImageDTO addProductImage(Long productId, MultipartFile file, Boolean isPrimary, Integer displayOrder);
     void deleteProductImage(Long productId, Long imageId);
     List<ProductImageDTO> getProductImages(Long productId);
+    void deleteAllProducts();
 }
