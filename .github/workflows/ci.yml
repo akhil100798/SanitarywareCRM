@@ -1,0 +1,153 @@
+name: SanitarywareCRM CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, release/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-build-and-test:
+    name: Backend Build, Unit Tests & Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and Test Backend (Maven)
+        run: |
+          cd backend
+          mvn clean package
+
+      - name: Archive Backend Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+      - name: Archive Executable JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release-jar
+          path: backend/target/*.jar
+          retention-days: 7
+
+  frontend-build:
+    name: Frontend Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build Frontend (Vite Production)
+        run: |
+          cd frontend
+          npm run build
+        env:
+          VITE_API_BASE_URL: "https://api.crm.example.com/api"
+
+      - name: Archive Frontend Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  e2e-and-api-verification:
+    name: Automated API & E2E Verification
+    needs: [backend-build-and-test, frontend-build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: automation-tests/package-lock.json
+
+      - name: Install Test Automation Dependencies
+        run: |
+          cd automation-tests
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start QA Backend Server
+        run: |
+          cd backend
+          mvn package -DskipTests
+          java -jar target/crm-backend-1.0.0.jar --spring.profiles.active=qa &
+          sleep 15
+
+      - name: Start Frontend Server
+        run: |
+          cd frontend
+          npm ci
+          npm run dev -- --host 0.0.0.0 --port 5173 &
+          sleep 5
+
+      - name: Run Database Tests
+        run: |
+          cd automation-tests
+          npm run test:database
+
+      - name: Run API Tests
+        run: |
+          cd automation-tests
+          npm run test:api
+
+      - name: Run Security & RBAC Tests
+        run: |
+          cd automation-tests
+          npm run test:security
+
+      - name: Run Bug Hunt Tests
+        run: |
+          cd automation-tests
+          npm run test:bughunt
+
+      - name: Run Frontend E2E Tests
+        run: |
+          cd automation-tests
+          npm run test:frontend
+
+      - name: Archive Playwright Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: automation-tests/playwright-report/
+          retention-days: 7
