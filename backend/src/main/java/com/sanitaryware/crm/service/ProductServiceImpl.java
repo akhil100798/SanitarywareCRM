@@ -235,19 +235,38 @@ public class ProductServiceImpl implements ProductService {
             String text = stripper.getText(document);
             String[] lines = text.split("\\r?\\n");
 
-            Pattern pattern = Pattern.compile("^\\d*\\s*(.*?)\\s+(\\d{7,10})\\s+(.*?)\\s+([\\d,]+\\.?\\d*)\\s+([\\d,]+\\.?\\d*)");
+            Pattern genericPattern = Pattern.compile("^\\d*\\s*(.*?)\\s+(\\d{7,10})\\s+(.*?)\\s+([\\d,]+\\.?\\d*)\\s+([\\d,]+\\.?\\d*)");
+            Pattern hsnPattern = Pattern.compile("(?i)HSN\\s*CODE\\s*[:\\s]+([0-9]{4,10})");
+            Pattern catalogueRowPattern = Pattern.compile("^(.*?)\\s+(\\d{7,10})\\s+([\\d,]+\\.\\d{2})$");
+
+            String currentCategoryName = "General";
+            String currentHsnCode = null;
+            String currentProductHeader = "";
 
             for (String line : lines) {
                 line = line.trim();
-                if (line.isEmpty() || line.toLowerCase().contains("mrp")) continue;
+                if (line.isEmpty()) continue;
 
-                Matcher matcher = pattern.matcher(line);
-                if (matcher.find()) {
+                Matcher hsnMatcher = hsnPattern.matcher(line);
+                if (hsnMatcher.find()) {
+                    currentHsnCode = hsnMatcher.group(1).trim();
+                    continue;
+                }
+
+                String lower = line.toLowerCase();
+                if (lower.contains("part no") || lower.contains("mrp") || lower.contains("taxes/pc")
+                        || lower.contains("manufactured from") || lower.contains("warranty applicable")
+                        || lower.contains("cpvc plumbing system") || lower.contains("swr drainage")) {
+                    continue;
+                }
+
+                Matcher genericMatcher = genericPattern.matcher(line);
+                if (genericMatcher.find()) {
                     try {
-                        String categoryName = matcher.group(1).trim();
-                        String sku = matcher.group(2).trim();
-                        String description = matcher.group(3).trim();
-                        String newMrpStr = matcher.group(5).replace(",", "");
+                        String categoryName = genericMatcher.group(1).trim();
+                        String sku = genericMatcher.group(2).trim();
+                        String description = genericMatcher.group(3).trim();
+                        String newMrpStr = genericMatcher.group(5).replace(",", "");
                         BigDecimal newMrp = new BigDecimal(newMrpStr);
 
                         Category category = categoryRepository.findByName(categoryName)
@@ -269,17 +288,71 @@ public class ProductServiceImpl implements ProductService {
                         }
 
                         product.setName(description);
+                        product.setBarcode(sku);
                         product.setBrand(brand);
                         product.setCategory(category);
+                        if (currentHsnCode != null) {
+                            product.setHsnCode(currentHsnCode);
+                        }
                         product.setMrp(newMrp);
                         product.setSellingPrice(newMrp);
                         product.setIsActive(true);
-                        
-                        productRepository.save(product);
 
-                    } catch (Exception e) {
-                        errors.add("Error parsing line: " + line + " - " + e.getMessage());
+                        productRepository.save(product);
+                        continue;
+                    } catch (Exception ignored) {
                     }
+                }
+
+                Matcher rowMatcher = catalogueRowPattern.matcher(line);
+                if (rowMatcher.find()) {
+                    try {
+                        String sizeOrDesc = rowMatcher.group(1).trim();
+                        String sku = rowMatcher.group(2).trim();
+                        String newMrpStr = rowMatcher.group(3).replace(",", "");
+                        BigDecimal newMrp = new BigDecimal(newMrpStr);
+
+                        String effectiveCategoryName = StringUtils.hasText(currentProductHeader) ? currentProductHeader : currentCategoryName;
+                        Category category = categoryRepository.findByName(effectiveCategoryName)
+                                .orElseGet(() -> {
+                                    Category newCat = new Category();
+                                    newCat.setName(effectiveCategoryName);
+                                    newCat.setIsActive(true);
+                                    return categoryRepository.save(newCat);
+                                });
+
+                        Product product = productRepository.findBySku(sku).orElse(null);
+                        if (product == null) {
+                            product = new Product();
+                            product.setSku(sku);
+                            product.setStockQuantity(0);
+                            created++;
+                        } else {
+                            updated++;
+                        }
+
+                        String productName = StringUtils.hasText(currentProductHeader)
+                                ? currentProductHeader + " " + sizeOrDesc
+                                : sizeOrDesc;
+
+                        product.setName(productName);
+                        product.setBarcode(sku);
+                        product.setSize(sizeOrDesc);
+                        product.setBrand(brand);
+                        product.setCategory(category);
+                        if (currentHsnCode != null) {
+                            product.setHsnCode(currentHsnCode);
+                        }
+                        product.setMrp(newMrp);
+                        product.setSellingPrice(newMrp);
+                        product.setIsActive(true);
+
+                        productRepository.save(product);
+                    } catch (Exception e) {
+                        errors.add("Error parsing catalogue row: " + line + " - " + e.getMessage());
+                    }
+                } else if (!line.matches("^\\d+$") && line.length() > 2 && line.length() < 80 && !line.matches(".*\\d{7,10}.*")) {
+                    currentProductHeader = line;
                 }
             }
         } catch (IOException e) {
