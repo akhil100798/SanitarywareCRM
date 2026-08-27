@@ -55,7 +55,7 @@ class AuditServiceImplTest {
                 .details("Updated price")
                 .build();
 
-        when(auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(eq("PRODUCT"), eq(5L), eq(pageable)))
+        when(auditLogRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
         Page<AuditLog> result = auditService.getAuditLogs("PRODUCT", 5L, pageable);
@@ -63,5 +63,33 @@ class AuditServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals("PRODUCT", result.getContent().get(0).getEntityType());
+    }
+
+    @Test
+    void getAuditLogs_WithMultiFieldFilter_ReturnsMatchingPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        AuditLog log = AuditLog.builder()
+                .id(2L)
+                .actorUsername("qamanager")
+                .action("RECEIVE_PO")
+                .entityType("PURCHASE_ORDER")
+                .entityId(15L)
+                .details("Received PO")
+                .build();
+
+        when(auditLogRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(log)));
+
+        com.sanitaryware.crm.dto.AuditLogFilterDTO filter = com.sanitaryware.crm.dto.AuditLogFilterDTO.builder()
+                .actor("manager")
+                .action("RECEIVE_PO")
+                .entityType("PURCHASE_ORDER")
+                .build();
+
+        Page<AuditLog> result = auditService.getAuditLogs(filter, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals("qamanager", result.getContent().get(0).getActorUsername());
     }
 }

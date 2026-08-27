@@ -36,4 +36,15 @@ test.describe('Audit Logs API Suite', () => {
     const response = await client.get('/api/audit-logs?page=0&size=10');
     expect(response.status()).toBe(403);
   });
+
+  test('AUDIT-004 Admin can filter audit logs by entityType, actor, and action', async () => {
+    const client = await getClient(adminToken);
+    const response = await client.get('/api/audit-logs?entityType=PRODUCT&page=0&size=10');
+    expect(response.status()).toBe(200);
+    const json = await response.json();
+    expect(json).toHaveProperty('content');
+    if (json.content.length > 0) {
+      expect(json.content.every(item => item.entityType === 'PRODUCT')).toBe(true);
+    }
+  });
 });

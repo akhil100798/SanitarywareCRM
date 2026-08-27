@@ -17,7 +17,8 @@ import {
     Truck,
     ShoppingCart as ShoppingCartIcon,
     CreditCard,
-    Droplet
+    Droplet,
+    ShieldCheck
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -43,6 +44,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { icon: ShoppingCart, label: 'Orders', path: '/orders' },
         { icon: CreditCard, label: 'Payments', path: '/payments' },
         { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
+        { icon: ShieldCheck, label: 'Audit Logs', path: '/audit-logs', roles: ['ADMIN', 'MANAGER'] },
         { icon: Settings, label: 'Settings', path: '/settings', roles: ['ADMIN', 'MANAGER'] },
     ];
 

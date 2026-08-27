@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final AuditService auditService;
 
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
@@ -28,6 +29,10 @@ public class CategoryServiceImpl implements CategoryService {
         }
         Category category = CategoryMapper.toEntity(categoryDTO, parent);
         Category savedCategory = categoryRepository.save(category);
+
+        auditService.logEvent("CREATE", "CATEGORY", savedCategory.getId(),
+                "Created category " + savedCategory.getName());
+
         return CategoryMapper.toDTO(savedCategory);
     }
 
@@ -44,6 +49,10 @@ public class CategoryServiceImpl implements CategoryService {
         
         CategoryMapper.updateEntity(category, categoryDTO, parent);
         Category updatedCategory = categoryRepository.save(category);
+
+        auditService.logEvent("UPDATE", "CATEGORY", updatedCategory.getId(),
+                "Updated category " + updatedCategory.getName());
+
         return CategoryMapper.toDTO(updatedCategory);
     }
 
@@ -97,5 +106,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
         category.setIsActive(false);
         categoryRepository.save(category);
+
+        auditService.logEvent("DEACTIVATE", "CATEGORY", id,
+                "Deactivated category " + category.getName());
     }
 }

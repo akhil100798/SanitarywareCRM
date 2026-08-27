@@ -42,7 +42,8 @@ class CustomerServiceImplTest {
             case "save" -> invocation.getArgument(0);
             default -> Answers.RETURNS_DEFAULTS.answer(invocation);
         });
-        customerService = new CustomerServiceImpl(customerRepository);
+        AuditService auditService = mock(AuditService.class);
+        customerService = new CustomerServiceImpl(customerRepository, auditService);
     }
 
     @Test

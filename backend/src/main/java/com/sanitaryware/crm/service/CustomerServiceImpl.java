@@ -22,12 +22,17 @@ import java.util.stream.Collectors;
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final AuditService auditService;
 
     @Override
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
         normalizeAndValidate(customerDTO, null);
         Customer customer = CustomerMapper.toEntity(customerDTO);
         Customer savedCustomer = customerRepository.save(customer);
+
+        auditService.logEvent("CREATE", "CUSTOMER", savedCustomer.getId(),
+                "Created customer " + savedCustomer.getName() + " (" + savedCustomer.getPhoneNumber() + ")");
+
         return CustomerMapper.toDTO(savedCustomer);
     }
 
@@ -39,6 +44,10 @@ public class CustomerServiceImpl implements CustomerService {
         normalizeAndValidate(customerDTO, id);
         CustomerMapper.updateEntity(customer, customerDTO);
         Customer updatedCustomer = customerRepository.save(customer);
+
+        auditService.logEvent("UPDATE", "CUSTOMER", updatedCustomer.getId(),
+                "Updated customer " + updatedCustomer.getName() + " (" + updatedCustomer.getPhoneNumber() + ")");
+
         return CustomerMapper.toDTO(updatedCustomer);
     }
 
@@ -70,6 +79,9 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
         customer.setIsActive(false);
         customerRepository.save(customer);
+
+        auditService.logEvent("DEACTIVATE", "CUSTOMER", id,
+                "Deactivated customer " + customer.getName() + " (" + customer.getPhoneNumber() + ")");
     }
 
     @Override

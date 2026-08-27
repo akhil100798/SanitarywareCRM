@@ -18,11 +18,16 @@ import java.util.stream.Collectors;
 public class BrandServiceImpl implements BrandService {
 
     private final BrandRepository brandRepository;
+    private final AuditService auditService;
 
     @Override
     public BrandDTO createBrand(BrandDTO brandDTO) {
         Brand brand = BrandMapper.toEntity(brandDTO);
         Brand savedBrand = brandRepository.save(brand);
+
+        auditService.logEvent("CREATE", "BRAND", savedBrand.getId(),
+                "Created brand " + savedBrand.getName());
+
         return BrandMapper.toDTO(savedBrand);
     }
 
@@ -32,6 +37,10 @@ public class BrandServiceImpl implements BrandService {
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + id));
         BrandMapper.updateEntity(brand, brandDTO);
         Brand updatedBrand = brandRepository.save(brand);
+
+        auditService.logEvent("UPDATE", "BRAND", updatedBrand.getId(),
+                "Updated brand " + updatedBrand.getName());
+
         return BrandMapper.toDTO(updatedBrand);
     }
 
@@ -67,5 +76,8 @@ public class BrandServiceImpl implements BrandService {
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + id));
         brand.setIsActive(false);
         brandRepository.save(brand);
+
+        auditService.logEvent("DEACTIVATE", "BRAND", id,
+                "Deactivated brand " + brand.getName());
     }
 }

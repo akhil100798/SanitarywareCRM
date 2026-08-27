@@ -47,12 +47,17 @@ public class AuditServiceImpl implements AuditService {
     @Override
     @Transactional(readOnly = true)
     public Page<AuditLog> getAuditLogs(String entityType, Long entityId, Pageable pageable) {
-        if (entityType != null && entityId != null) {
-            return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId, pageable);
-        } else if (entityType != null) {
-            return auditLogRepository.findByEntityTypeOrderByCreatedAtDesc(entityType, pageable);
-        }
-        return auditLogRepository.findAll(pageable);
+        com.sanitaryware.crm.dto.AuditLogFilterDTO filter = com.sanitaryware.crm.dto.AuditLogFilterDTO.builder()
+                .entityType(entityType)
+                .entityId(entityId)
+                .build();
+        return getAuditLogs(filter, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AuditLog> getAuditLogs(com.sanitaryware.crm.dto.AuditLogFilterDTO filter, Pageable pageable) {
+        return auditLogRepository.findAll(com.sanitaryware.crm.repository.specification.AuditLogSpecification.withFilters(filter), pageable);
     }
 
     private String getCurrentUsername() {

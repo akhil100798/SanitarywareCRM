@@ -11,4 +11,6 @@ public interface AuditService {
     void logEvent(String actorUsername, String action, String entityType, Long entityId, String details);
 
     Page<AuditLog> getAuditLogs(String entityType, Long entityId, Pageable pageable);
+
+    Page<AuditLog> getAuditLogs(com.sanitaryware.crm.dto.AuditLogFilterDTO filter, Pageable pageable);
 }
