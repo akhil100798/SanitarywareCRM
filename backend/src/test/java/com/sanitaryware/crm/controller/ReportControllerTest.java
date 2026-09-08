@@ -4,6 +4,7 @@ import com.sanitaryware.crm.dto.ReportDTO;
 import com.sanitaryware.crm.exception.GlobalExceptionHandler;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtTokenProvider;
+import com.sanitaryware.crm.security.TokenRevocationService;
 import com.sanitaryware.crm.service.ReportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,9 @@ class ReportControllerTest {
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private TokenRevocationService tokenRevocationService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;

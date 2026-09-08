@@ -9,6 +9,8 @@ import com.sanitaryware.crm.service.CustomerService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -233,6 +235,25 @@ class CustomerControllerTest {
                 .andExpect(status().isOk());
 
         verify(customerService).getAllCustomers(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"12345-----", "555", "----------", "()()()()()", "abc1234567", "1234 567"})
+    void createCustomer_WithInvalidPhone_ReturnsBadRequest(String invalidPhone) throws Exception {
+        mockMvc.perform(post("/api/customers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(String.format("""
+                                {
+                                  "name": "Invalid Phone Customer",
+                                  "phoneNumber": "%s"
+                                }
+                                """, invalidPhone)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+
+        verifyNoInteractions(customerService);
     }
 }
 

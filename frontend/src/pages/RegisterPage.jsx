@@ -66,6 +66,7 @@ const RegisterPage = () => {
                             <input
                                 name="fullName"
                                 type="text"
+                                autoComplete="name"
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-600 text-sm"
@@ -87,6 +88,7 @@ const RegisterPage = () => {
                             <input
                                 name="username"
                                 type="text"
+                                autoComplete="username"
                                 value={formData.username}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-600 text-sm"
@@ -108,6 +110,7 @@ const RegisterPage = () => {
                             <input
                                 name="email"
                                 type="email"
+                                autoComplete="email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-600 text-sm"
@@ -129,6 +132,7 @@ const RegisterPage = () => {
                             <input
                                 name="phoneNumber"
                                 type="text"
+                                autoComplete="tel"
                                 value={formData.phoneNumber}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-600 text-sm"
@@ -149,6 +153,7 @@ const RegisterPage = () => {
                             <input
                                 name="password"
                                 type="password"
+                                autoComplete="new-password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-600 text-sm"

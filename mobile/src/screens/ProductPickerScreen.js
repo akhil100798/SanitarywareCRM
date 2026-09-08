@@ -40,11 +40,7 @@ const ProductPickerScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    loadProducts('');
-  }, [loadProducts]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => loadProducts(query), 350);
+    const timer = setTimeout(() => loadProducts(query), query.trim() ? 350 : 0);
     return () => clearTimeout(timer);
   }, [loadProducts, query]);
 

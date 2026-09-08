@@ -1,5 +1,6 @@
 package com.sanitaryware.crm.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -45,6 +46,7 @@ public class ProductDTO {
     @DecimalMin(value = "0.0", inclusive = false, message = "Selling price must be greater than 0")
     private BigDecimal sellingPrice;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @DecimalMin(value = "0.0", inclusive = true, message = "Purchase price cannot be negative")
     private BigDecimal purchasePrice;
 

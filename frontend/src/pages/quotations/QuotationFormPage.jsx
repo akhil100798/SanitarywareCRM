@@ -6,6 +6,8 @@ import orderService from '../../services/orderService';
 import customerService from '../../services/customerService';
 import { productService } from '../../services/productService';
 import toast from 'react-hot-toast';
+import { calculateDocumentTotals } from '../../utils/documentTotals';
+import ProductSearchSelect from '../../components/ProductSearchSelect';
 
 const QuotationFormPage = () => {
     const { id } = useParams();
@@ -27,20 +29,12 @@ const QuotationFormPage = () => {
     });
 
     const [productSearchQuery, setProductSearchQuery] = useState('');
-    const [totals, setTotals] = useState({
-        subtotal: 0,
-        taxAmount: 0,
-        total: 0
-    });
+    const totals = calculateDocumentTotals(formData);
 
     useEffect(() => {
         fetchInitialData();
         if (isEditMode) fetchQuotation();
     }, [id]);
-
-    useEffect(() => {
-        calculateTotals();
-    }, [formData.items, formData.taxPercentage, formData.discount]);
 
     useEffect(() => {
         if (!productSearchQuery.trim()) return;
@@ -54,8 +48,8 @@ const QuotationFormPage = () => {
                     newProds.forEach(p => map.set(p.id, p));
                     return Array.from(map.values());
                 });
-            } catch (err) {
-                // Keep local products
+            } catch {
+                toast.error('Product search failed. Please try again.');
             }
         }, 300);
         return () => clearTimeout(timer);
@@ -72,11 +66,20 @@ const QuotationFormPage = () => {
         );
     });
 
+    const handleProductsUpdate = (newProds) => {
+        setProducts(prev => {
+            const map = new Map();
+            prev.forEach(p => map.set(p.id, p));
+            newProds.forEach(p => map.set(p.id, p));
+            return Array.from(map.values());
+        });
+    };
+
     const fetchInitialData = async () => {
         try {
             const [custRes, prodRes] = await Promise.all([
                 customerService.getActive(),
-                productService.getAll({ isActive: true, size: 50 })
+                productService.getAll({ isActive: true, size: 100 })
             ]);
             setCustomers(custRes.data);
             setProducts(prodRes.data?.content || prodRes.data || []);
@@ -98,13 +101,6 @@ const QuotationFormPage = () => {
         }
     };
 
-    const calculateTotals = () => {
-        const subtotal = formData.items.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
-        const taxAmount = (subtotal * (Number(formData.taxPercentage) || 0)) / 100;
-        const total = subtotal + taxAmount - (Number(formData.discount) || 0);
-        setTotals({ subtotal, taxAmount, total: Math.max(0, total) });
-    };
-
     const addItem = () => {
         setFormData({
             ...formData,
@@ -117,21 +113,39 @@ const QuotationFormPage = () => {
         setFormData({ ...formData, items: newItems });
     };
 
+    const handleProductChange = (index, productId, product) => {
+        const newItems = [...formData.items];
+        const item = { ...newItems[index], productId: productId || '' };
+
+        const prod = product || products.find(p => p.id === parseInt(productId, 10));
+        if (prod) {
+            item.unitPrice = prod.sellingPrice || 0;
+            item.productName = prod.name;
+            item.productSku = prod.sku;
+            item.barcode = prod.barcode;
+            item.hsnCode = prod.hsnCode;
+            item.gstRate = prod.gstRate;
+        } else if (!productId) {
+            item.unitPrice = 0;
+            item.productName = '';
+            item.productSku = '';
+            item.barcode = '';
+            item.hsnCode = '';
+            item.gstRate = 0;
+        }
+
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.unitPrice) || 0;
+        const disc = Number(item.discountPercentage) || 0;
+        const sub = price * qty;
+        item.lineTotal = sub - (sub * disc) / 100;
+        newItems[index] = item;
+        setFormData({ ...formData, items: newItems });
+    };
+
     const handleItemChange = (index, field, value) => {
         const newItems = [...formData.items];
         const item = { ...newItems[index], [field]: value };
-
-        if (field === 'productId') {
-            const product = products.find(p => p.id === parseInt(value, 10));
-            if (product) {
-                item.unitPrice = product.sellingPrice || 0;
-                item.productName = product.name;
-                item.productSku = product.sku;
-                item.barcode = product.barcode;
-                item.hsnCode = product.hsnCode;
-                item.gstRate = product.gstRate;
-            }
-        }
 
         const qty = Number(item.quantity) || 0;
         const price = Number(item.unitPrice) || 0;
@@ -344,20 +358,15 @@ const QuotationFormPage = () => {
                                         return (
                                             <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
                                                 <td className="px-4 py-3">
-                                                    <select
-                                                        required
-                                                        name="productId"
-                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
+                                                    <ProductSearchSelect
                                                         value={item.productId}
-                                                        onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                                                    >
-                                                        <option value="">Select Product</option>
-                                                        {filteredProducts.map(p => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.name} ({p.sku}) [₹{p.sellingPrice || 0}]
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                        onChange={(prodId, prod) => handleProductChange(index, prodId, prod)}
+                                                        products={products}
+                                                        onProductsUpdate={handleProductsUpdate}
+                                                        filterQuery={productSearchQuery}
+                                                        placeholder="Select Product"
+                                                        priceField="sellingPrice"
+                                                    />
                                                     {selectedProd && (
                                                         <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
                                                             <span>Stock: {selectedProd.stockQuantity ?? 0}</span>

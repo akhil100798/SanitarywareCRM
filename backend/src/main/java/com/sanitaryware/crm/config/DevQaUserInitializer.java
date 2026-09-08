@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("dev")
+@Profile({"dev", "qa"})
 @RequiredArgsConstructor
 public class DevQaUserInitializer implements ApplicationRunner {
 
@@ -36,6 +36,12 @@ public class DevQaUserInitializer implements ApplicationRunner {
     @Value("${qa.sales.password:Password@123}")
     private String salesPassword;
 
+    @Value("${qa.warehouse.username:qawarehouse}")
+    private String warehouseUsername;
+
+    @Value("${qa.warehouse.password:Password@123}")
+    private String warehousePassword;
+
     @Override
     public void run(ApplicationArguments args) {
         ensureQaUser(adminUsername, adminPassword, "qaadmin@test.local", "QA Admin User",
@@ -44,6 +50,10 @@ public class DevQaUserInitializer implements ApplicationRunner {
                 "9000000002", User.UserRole.MANAGER);
         ensureQaUser(salesUsername, salesPassword, "qasales@test.local", "QA Sales User",
                 "9000000003", User.UserRole.SALES);
+        ensureQaUser("qasales2", salesPassword, "qasales2@test.local", "QA Sales User 2",
+                "9000000005", User.UserRole.SALES);
+        ensureQaUser(warehouseUsername, warehousePassword, "qawarehouse@test.local", "QA Warehouse User",
+                "9000000004", User.UserRole.WAREHOUSE);
     }
 
     private void ensureQaUser(String username, String password, String email, String fullName,

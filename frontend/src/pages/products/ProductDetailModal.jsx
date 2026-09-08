@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Package, AlertCircle, Sparkles, Image as ImageIcon, CheckCircle, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -7,6 +7,9 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
     const canViewPurchasePrice = ['ADMIN', 'MANAGER'].includes(user?.role);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [imageErrorMap, setImageErrorMap] = useState({});
+    const dialogRef = useRef(null);
+    const closeButtonRef = useRef(null);
+    const returnFocusRef = useRef(null);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -15,12 +18,34 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
             }
         };
         if (isOpen) {
+            returnFocusRef.current = document.activeElement;
             window.addEventListener('keydown', handleKeyDown);
             setSelectedImageIndex(0);
             setImageErrorMap({});
+            requestAnimationFrame(() => closeButtonRef.current?.focus());
+        } else {
+            returnFocusRef.current?.focus?.();
         }
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
+
+    const handleDialogKeyDown = (event) => {
+        if (event.key !== 'Tab') return;
+        const focusableElements = dialogRef.current?.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusableElements?.length) return;
+
+        const first = focusableElements[0];
+        const last = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    };
 
     if (!isOpen || !product) return null;
 
@@ -43,8 +68,10 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
             aria-labelledby="product-detail-title"
         >
             <div
+                ref={dialogRef}
                 className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={handleDialogKeyDown}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
@@ -60,6 +87,7 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                         </div>
                     </div>
                     <button
+                        ref={closeButtonRef}
                         type="button"
                         onClick={onClose}
                         className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all shrink-0"

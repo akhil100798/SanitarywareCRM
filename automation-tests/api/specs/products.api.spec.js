@@ -149,13 +149,22 @@ test.describe('Products API Suite', () => {
     const salesClient = await getClient(salesToken);
     const adminClient = await getClient(adminToken);
 
-    // 1. Upload image as Admin
+    // Content validation must reject text disguised as an image.
+    const malformedUpload = await adminUploadClient.post(`/api/products/${productId}/images`, {
+      multipart: { file: {
+        name: 'disguised.png', mimeType: 'image/png',
+        buffer: Buffer.from('harmless text, not an image')
+      } }
+    });
+    expect(malformedUpload.status()).toBe(400);
+
+    // 1. Upload a valid one-pixel PNG as Admin.
     const uploadRes = await adminUploadClient.post(`/api/products/${productId}/images`, {
       multipart: {
         file: {
           name: 'catalogue-sample.png',
           mimeType: 'image/png',
-          buffer: Buffer.from('fake image binary content for testing')
+          buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9ZkAAAAASUVORK5CYII=', 'base64')
         },
         isPrimary: 'true',
         displayOrder: '0'

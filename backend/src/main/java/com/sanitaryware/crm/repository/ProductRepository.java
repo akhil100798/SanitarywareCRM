@@ -16,6 +16,8 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
+    long countByStockQuantityLessThan(Integer threshold);
+
     Optional<Product> findBySku(String sku);
     Optional<Product> findByBarcode(String barcode);
 

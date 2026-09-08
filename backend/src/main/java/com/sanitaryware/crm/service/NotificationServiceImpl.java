@@ -62,9 +62,9 @@ public class NotificationServiceImpl implements NotificationService {
             message.setSubject(subject);
             message.setText(body);
             mailSender.send(message);
-            log.info("Email notification sent successfully to {}", to);
+            log.info("Email notification sent successfully");
         } catch (Exception e) {
-            log.error("Failed to send email to {}", to, e);
+            log.error("Email notification failed ({})", e.getClass().getSimpleName());
         }
     }
 
@@ -90,7 +90,7 @@ public class NotificationServiceImpl implements NotificationService {
             
             log.info("WhatsApp notification sent successfully, SID: {}", message.getSid());
         } catch (Exception e) {
-            log.error("Failed to send WhatsApp message to {}", toPhoneNumber, e);
+            log.error("WhatsApp notification failed ({})", e.getClass().getSimpleName());
         }
     }
 

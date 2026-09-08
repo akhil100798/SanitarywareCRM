@@ -1,13 +1,13 @@
-import axios from 'axios';
+import api from './api';
 
-const API_URL = '/api/files';
+const API_URL = '/files';
 
 export const uploadFile = async (file, type = 'general') => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
 
-    const response = await axios.post(`${API_URL}/upload`, formData, {
+    const response = await api.post(`${API_URL}/upload`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -16,14 +16,17 @@ export const uploadFile = async (file, type = 'general') => {
     return response.data;
 };
 
-export const getFileUrl = (fileName, type = 'general') => {
-    if (!fileName) return null;
-    return `${API_URL}/download/${type}/${fileName.split('/').pop()}`; // Handle paths like 'invoices/file123.pdf'
+export const downloadFile = async (fileName, type = 'general', signal) => {
+    const response = await api.get(
+        `${API_URL}/download/${encodeURIComponent(type)}/${encodeURIComponent(fileName.split('/').pop())}`,
+        { responseType: 'blob', signal },
+    );
+    return response.data;
 };
 
 const fileUploadService = {
     uploadFile,
-    getFileUrl
+    downloadFile
 };
 
 export default fileUploadService;

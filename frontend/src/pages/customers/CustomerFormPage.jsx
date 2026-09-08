@@ -117,8 +117,9 @@ const CustomerFormPage = () => {
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Basic Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Full Name *</label>
+                                <label htmlFor="customer-name" className="text-xs font-semibold text-slate-500">Full Name *</label>
                                 <input
+                                    id="customer-name"
                                     type="text"
                                     name="name"
                                     required
@@ -128,8 +129,9 @@ const CustomerFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Customer Type</label>
+                                <label htmlFor="customer-type" className="text-xs font-semibold text-slate-500">Customer Type</label>
                                 <select
+                                    id="customer-type"
                                     name="customerType"
                                     className="input-field text-sm font-medium"
                                     value={formData.customerType}
@@ -142,19 +144,23 @@ const CustomerFormPage = () => {
                                 </select>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Email Address</label>
+                                <label htmlFor="customer-email" className="text-xs font-semibold text-slate-500">Email Address</label>
                                 <input
+                                    id="customer-email"
                                     type="text"
                                     name="email"
                                     className="input-field text-sm"
                                     value={formData.email}
                                     onChange={handleChange}
+                                    aria-invalid={!!emailError}
+                                    aria-describedby={emailError ? 'customer-email-error' : undefined}
                                 />
-                                {emailError && <p className="text-danger text-xs text-red-500 font-semibold mt-1">{emailError}</p>}
+                                {emailError && <p id="customer-email-error" className="text-danger text-xs text-red-500 font-semibold mt-1">{emailError}</p>}
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Phone Number *</label>
+                                <label htmlFor="customer-phone" className="text-xs font-semibold text-slate-500">Phone Number *</label>
                                 <input
+                                    id="customer-phone"
                                     type="text"
                                     name="phoneNumber"
                                     required
@@ -164,8 +170,9 @@ const CustomerFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Alternate Phone</label>
+                                <label htmlFor="customer-alternate-phone" className="text-xs font-semibold text-slate-500">Alternate Phone</label>
                                 <input
+                                    id="customer-alternate-phone"
                                     type="text"
                                     name="alternatePhone"
                                     className="input-field text-sm"
@@ -174,8 +181,9 @@ const CustomerFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Company Name</label>
+                                <label htmlFor="customer-company" className="text-xs font-semibold text-slate-500">Company Name</label>
                                 <input
+                                    id="customer-company"
                                     type="text"
                                     name="company"
                                     className="input-field text-sm"
@@ -184,8 +192,9 @@ const CustomerFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">GST Number</label>
+                                <label htmlFor="customer-gst" className="text-xs font-semibold text-slate-500">GST Number</label>
                                 <input
+                                    id="customer-gst"
                                     type="text"
                                     name="gstNumber"
                                     className="input-field text-sm"
@@ -212,8 +221,9 @@ const CustomerFormPage = () => {
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Address Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div className="md:col-span-2 space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Billing Address</label>
+                                <label htmlFor="customer-billing-address" className="text-xs font-semibold text-slate-500">Billing Address</label>
                                 <textarea
+                                    id="customer-billing-address"
                                     name="billingAddress"
                                     rows="2"
                                     className="input-field text-sm resize-none"
@@ -222,8 +232,9 @@ const CustomerFormPage = () => {
                                 ></textarea>
                             </div>
                             <div className="md:col-span-2 space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Shipping Address</label>
+                                <label htmlFor="customer-shipping-address" className="text-xs font-semibold text-slate-500">Shipping Address</label>
                                 <textarea
+                                    id="customer-shipping-address"
                                     name="shippingAddress"
                                     rows="2"
                                     className="input-field text-sm resize-none"
@@ -232,8 +243,9 @@ const CustomerFormPage = () => {
                                 ></textarea>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">City</label>
+                                <label htmlFor="customer-city" className="text-xs font-semibold text-slate-500">City</label>
                                 <input
+                                    id="customer-city"
                                     type="text"
                                     name="city"
                                     className="input-field text-sm"
@@ -242,8 +254,9 @@ const CustomerFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">State</label>
+                                <label htmlFor="customer-state" className="text-xs font-semibold text-slate-500">State</label>
                                 <input
+                                    id="customer-state"
                                     type="text"
                                     name="state"
                                     className="input-field text-sm"
@@ -252,8 +265,9 @@ const CustomerFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-slate-500">Pincode</label>
+                                <label htmlFor="customer-pincode" className="text-xs font-semibold text-slate-500">Pincode</label>
                                 <input
+                                    id="customer-pincode"
                                     type="text"
                                     name="pincode"
                                     className="input-field text-sm"
@@ -267,7 +281,9 @@ const CustomerFormPage = () => {
                     <section className="space-y-4">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Additional Notes</h3>
                         <div className="space-y-1.5">
+                            <label htmlFor="customer-notes" className="sr-only">Additional Notes</label>
                             <textarea
+                                id="customer-notes"
                                 name="notes"
                                 rows="3"
                                 className="input-field text-sm resize-none"

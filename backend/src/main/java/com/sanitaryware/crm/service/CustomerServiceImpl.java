@@ -7,6 +7,7 @@ import com.sanitaryware.crm.exception.ConflictException;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.CustomerMapper;
 import com.sanitaryware.crm.repository.CustomerRepository;
+import com.sanitaryware.crm.util.PhoneUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -100,10 +101,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private void normalizeAndValidate(CustomerDTO customerDTO, Long customerId) {
-        String phoneNumber = normalizePhone(customerDTO.getPhoneNumber());
-        if (phoneNumber.isEmpty()) {
-            throw new IllegalArgumentException("Phone number is required");
-        }
+        String phoneNumber = PhoneUtil.normalizeAndValidate(customerDTO.getPhoneNumber());
 
         String email = normalizeEmail(customerDTO.getEmail());
         boolean duplicatePhone = customerId == null
@@ -125,10 +123,6 @@ public class CustomerServiceImpl implements CustomerService {
         if (customerDTO.getCustomerType() == null) {
             customerDTO.setCustomerType(CustomerType.RETAIL);
         }
-    }
-
-    private String normalizePhone(String phoneNumber) {
-        return phoneNumber == null ? "" : phoneNumber.replaceAll("\\D", "");
     }
 
     private String normalizeEmail(String email) {

@@ -64,8 +64,8 @@ public class OrderServiceImpl implements OrderService {
                     .collect(Collectors.toList());
             order.setItems(items);
             
-            // Deduct stock for confirmed orders
-            if (order.getStatus() == Order.OrderStatus.CONFIRMED) {
+            // Reserve stock when an order enters fulfillment
+            if (reservesStock(order.getStatus())) {
                 deductStock(items);
             }
         }
@@ -83,6 +83,8 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO createOrderFromQuotation(Long quotationId) {
         Quotation quotation = quotationRepository.findById(quotationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + quotationId));
+
+        accessControlService.requireQuotationAccess(quotation);
 
         if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
             throw new IllegalArgumentException("Quotation has already been converted to an order");
@@ -146,14 +148,17 @@ public class OrderServiceImpl implements OrderService {
         if (existingOrder.getStatus() == Order.OrderStatus.CANCELLED) {
             throw new IllegalArgumentException("Cannot update a cancelled order");
         }
+        if (existingOrder.getStatus() == Order.OrderStatus.DELIVERED) {
+            throw new IllegalArgumentException("Cannot update a delivered order");
+        }
 
-        boolean wasConfirmed = existingOrder.getStatus() == Order.OrderStatus.CONFIRMED;
+        boolean stockReserved = reservesStock(existingOrder.getStatus());
         List<OrderItem> previousItems = List.copyOf(existingOrder.getItems());
 
         orderMapper.updateEntity(existingOrder, orderDTO);
 
         if (orderDTO.getItems() != null) {
-            if (wasConfirmed) {
+            if (stockReserved) {
                 restoreStock(previousItems);
             }
             existingOrder.getItems().clear();
@@ -161,7 +166,7 @@ public class OrderServiceImpl implements OrderService {
                     .map(itemDTO -> orderMapper.toItemEntity(itemDTO, existingOrder))
                     .collect(Collectors.toList());
             existingOrder.getItems().addAll(updatedItems);
-            if (wasConfirmed) {
+            if (stockReserved) {
                 deductStock(updatedItems);
             }
         }
@@ -198,8 +203,8 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
 
-        if (order.getStatus() == Order.OrderStatus.CONFIRMED) {
-            throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete a confirmed order. Cancel it first to restore stock.");
+        if (reservesStock(order.getStatus())) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete an order with reserved stock. Cancel it first to restore stock.");
         }
 
         orderRepository.deleteById(id);
@@ -215,15 +220,12 @@ public class OrderServiceImpl implements OrderService {
         accessControlService.requireOrderAccess(order);
         
         Order.OrderStatus newStatus = parseOrderStatus(statusString);
-        
-        if (order.getStatus() == Order.OrderStatus.CANCELLED && newStatus != Order.OrderStatus.CANCELLED) {
-            throw new IllegalArgumentException("Cannot change status of a cancelled order");
-        }
-        
-        // Logical check for stock deduction
-        if (newStatus == Order.OrderStatus.CONFIRMED && order.getStatus() != Order.OrderStatus.CONFIRMED) {
+        OrderStateValidator.validateTransition(order.getStatus(), newStatus, order.getPaymentStatus(), order.getPaidAmount());
+
+        // Adjust stock only when crossing the reservation boundary
+        if (reservesStock(newStatus) && !reservesStock(order.getStatus())) {
             deductStock(order.getItems());
-        } else if (newStatus == Order.OrderStatus.CANCELLED && order.getStatus() == Order.OrderStatus.CONFIRMED) {
+        } else if (!reservesStock(newStatus) && reservesStock(order.getStatus())) {
             restoreStock(order.getItems());
         }
 
@@ -282,6 +284,11 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return prefix + "-" + now.format(DateTimeFormatter.ofPattern("HHmmssSSS"));
+    }
+
+    // Every fulfillment status holds stock until the order returns to pending or is cancelled.
+    private boolean reservesStock(Order.OrderStatus status) {
+        return status != Order.OrderStatus.PENDING && status != Order.OrderStatus.CANCELLED;
     }
 
     private void deductStock(List<OrderItem> items) {

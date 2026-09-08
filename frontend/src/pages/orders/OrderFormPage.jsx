@@ -7,6 +7,8 @@ import customerService from '../../services/customerService';
 import { productService } from '../../services/productService';
 import fileUploadService from '../../services/fileUploadService';
 import toast from 'react-hot-toast';
+import { calculateDocumentTotals } from '../../utils/documentTotals';
+import ProductSearchSelect from '../../components/ProductSearchSelect';
 
 const OrderFormPage = () => {
     const { id } = useParams();
@@ -81,11 +83,20 @@ const OrderFormPage = () => {
         );
     });
 
+    const handleProductsUpdate = (newProds) => {
+        setProducts(prev => {
+            const map = new Map();
+            prev.forEach(p => map.set(p.id, p));
+            newProds.forEach(p => map.set(p.id, p));
+            return Array.from(map.values());
+        });
+    };
+
     const fetchInitialData = async () => {
         try {
             const [custRes, prodRes] = await Promise.all([
                 customerService.getActive(),
-                productService.getAll({ isActive: true, size: 50 })
+                productService.getAll({ isActive: true, size: 100 })
             ]);
             setCustomers(custRes.data);
             setProducts(prodRes.data?.content || prodRes.data || []);
@@ -152,6 +163,43 @@ const OrderFormPage = () => {
 
     const removeItem = (index) => {
         const newItems = formData.items.filter((_, i) => i !== index);
+        setFormData({ ...formData, items: newItems });
+    };
+
+    const handleProductChange = (index, productId, product) => {
+        const newItems = [...formData.items];
+        const item = { ...newItems[index], productId: productId || '' };
+
+        const prod = product || products.find(p => p.id === parseInt(productId, 10));
+        if (prod) {
+            item.unitPrice = prod.sellingPrice || 0;
+            item.productName = prod.name;
+            item.productSku = prod.sku;
+            item.mrp = prod.mrp || 0;
+            item.barcode = prod.barcode;
+            item.hsnCode = prod.hsnCode;
+            item.gstRate = prod.gstRate;
+            const mrp = item.mrp || 0;
+            if (mrp > 0 && item.unitPrice <= mrp) {
+                item.discountPercentage = parseFloat(((mrp - item.unitPrice) * 100 / mrp).toFixed(2));
+            } else {
+                item.discountPercentage = 0;
+            }
+        } else if (!productId) {
+            item.unitPrice = 0;
+            item.productName = '';
+            item.productSku = '';
+            item.mrp = 0;
+            item.barcode = '';
+            item.hsnCode = '';
+            item.gstRate = 0;
+            item.discountPercentage = 0;
+        }
+
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.unitPrice) || 0;
+        item.lineTotal = price * qty;
+        newItems[index] = item;
         setFormData({ ...formData, items: newItems });
     };
 
@@ -445,20 +493,15 @@ const OrderFormPage = () => {
                                         return (
                                             <tr key={index} className="text-sm hover:bg-slate-50/20 transition-colors">
                                                 <td className="px-4 py-3">
-                                                    <select
-                                                        required
-                                                        name="productId"
-                                                        className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium text-slate-700"
+                                                    <ProductSearchSelect
                                                         value={item.productId}
-                                                        onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                                                    >
-                                                        <option value="">Select Product</option>
-                                                        {filteredProducts.map(p => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.name} ({p.sku}) [₹{p.sellingPrice || 0}]
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                        onChange={(prodId, prod) => handleProductChange(index, prodId, prod)}
+                                                        products={products}
+                                                        onProductsUpdate={handleProductsUpdate}
+                                                        filterQuery={productSearchQuery}
+                                                        placeholder="Select Product"
+                                                        priceField="sellingPrice"
+                                                    />
                                                     {selectedProd && (
                                                         <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
                                                             <span>Stock: {selectedProd.stockQuantity ?? 0}</span>

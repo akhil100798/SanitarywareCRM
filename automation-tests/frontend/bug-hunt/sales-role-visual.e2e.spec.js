@@ -4,6 +4,7 @@ const credentials = {
   SALES: { username: 'qasales', password: 'Password@123' },
   ADMIN: { username: 'qaadmin', password: 'Password@123' },
   MANAGER: { username: 'qamanager', password: 'Password@123' },
+  WAREHOUSE: { username: 'qawarehouse', password: 'Password@123' },
 };
 
 async function loginAs(page, role) {
@@ -23,6 +24,23 @@ test.describe('Role-aware frontend access', () => {
     await expect(page.getByRole('link', { name: 'Distributors', exact: true })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Purchase Orders', exact: true })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Distributor Payments', exact: true })).toHaveCount(0);
+  });
+
+  test('WAREHOUSE can access inventory and fulfillment without sales or management controls', async ({ page }) => {
+    await loginAs(page, 'WAREHOUSE');
+
+    await expect(page.getByRole('link', { name: 'Products', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Orders', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Customers', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Purchase Orders', exact: true })).toHaveCount(0);
+
+    await page.goto('/products');
+    await expect(page.getByRole('heading', { name: 'Product Catalog', level: 1 })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Add Product', exact: true })).toHaveCount(0);
+
+    await page.goto('/orders');
+    await expect(page.getByRole('heading', { name: 'Customer Orders', level: 1 })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'New Order', exact: true })).toHaveCount(0);
   });
 
   test('SALES direct settings access shows the unauthorized page', async ({ page }) => {

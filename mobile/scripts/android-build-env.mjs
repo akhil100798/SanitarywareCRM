@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const androidRoot = path.join(projectRoot, 'android');
+const gradleUserHome = process.env.GRADLE_USER_HOME || path.join(projectRoot, '.gradle');
 const [target, ...targetArgs] = process.argv.slice(2);
 
 const binName = (name) => (process.platform === 'win32' ? `${name}.cmd` : name);
@@ -80,16 +81,24 @@ if (!target || !targets[target]) {
   process.exit(1);
 }
 
-const child = spawn(targets[target].command, targetArgs, {
-  cwd: targets[target].cwd,
+const launcher = target === 'gradle'
+  ? {
+      command: javaHome ? path.join(javaHome, 'bin', process.platform === 'win32' ? 'java.exe' : 'java') : 'java',
+      args: ['-jar', path.join(androidRoot, 'gradle', 'wrapper', 'gradle-wrapper.jar'), ...targetArgs],
+      cwd: androidRoot
+    }
+  : targets[target];
+
+const child = spawn(launcher.command, launcher.args, {
+  cwd: launcher.cwd,
   env: {
     ...process.env,
     ...(javaHome ? { JAVA_HOME: javaHome } : {}),
     ...(androidSdkHome ? { ANDROID_HOME: androidSdkHome, ANDROID_SDK_ROOT: androidSdkHome } : {}),
+    GRADLE_USER_HOME: gradleUserHome,
     GRADLE_OPTS: gradleOpts,
     CMAKE_BUILD_PARALLEL_LEVEL: process.env.CMAKE_BUILD_PARALLEL_LEVEL || '1'
   },
-  shell: process.platform === 'win32',
   stdio: 'inherit'
 });
 

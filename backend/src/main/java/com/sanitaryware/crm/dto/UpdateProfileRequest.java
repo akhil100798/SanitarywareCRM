@@ -1,5 +1,6 @@
 package com.sanitaryware.crm.dto;
 
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class UpdateProfileRequest {
     private String fullName;
     private String phoneNumber;
+    @Email(message = "Email must be a valid email address")
     private String email;
     private String currentPassword; // Required if changing password
     private String newPassword;

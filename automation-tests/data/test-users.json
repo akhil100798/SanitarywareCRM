@@ -6,11 +6,25 @@
     "phoneNumber": "9000000001",
     "password": "Password@123"
   },
+  "manager": {
+    "fullName": "QA Manager User",
+    "username": "qamanager",
+    "email": "qamanager@test.local",
+    "phoneNumber": "9000000002",
+    "password": "Password@123"
+  },
   "sales": {
     "fullName": "QA Sales User",
     "username": "qasales",
     "email": "qasales@test.com",
-    "phoneNumber": "9000000002",
+    "phoneNumber": "9000000003",
+    "password": "Password@123"
+  },
+  "warehouse": {
+    "fullName": "QA Warehouse User",
+    "username": "qawarehouse",
+    "email": "qawarehouse@test.local",
+    "phoneNumber": "9000000004",
     "password": "Password@123"
   }
 }

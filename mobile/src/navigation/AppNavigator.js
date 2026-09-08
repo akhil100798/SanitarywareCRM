@@ -31,7 +31,11 @@ const tabIcon = (Icon) =>
     return <Icon color={color} size={size} />;
   };
 
-const MainTabs = () => (
+const MainTabs = () => {
+  const { user } = useAuth();
+  const canAccessCustomers = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
+
+  return (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
@@ -46,12 +50,12 @@ const MainTabs = () => (
       component={DashboardScreen}
       options={{ tabBarIcon: tabIcon(Home) }}
     />
-    <Tab.Screen
+    {canAccessCustomers && <Tab.Screen
       name="Customers"
       component={ListScreen}
       initialParams={{ resource: 'customers' }}
       options={{ tabBarIcon: tabIcon(Users) }}
-    />
+    />}
     <Tab.Screen
       name="Products"
       component={ListScreen}
@@ -75,7 +79,8 @@ const MainTabs = () => (
       })}
     />
   </Tab.Navigator>
-);
+  );
+};
 
 const MoreNavigator = () => (
   <MoreStack.Navigator

@@ -15,7 +15,9 @@ frontend/build/
 
 # Mobile / Expo / Android Build
 mobile/.expo/
+mobile/.gradle/
 mobile/dist/
+mobile/dist-check*/
 mobile/build/
 mobile/android/
 .expo/

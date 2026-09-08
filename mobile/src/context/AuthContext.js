@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     () => ({
       user,
       bootstrapping,
-      isAuthenticated: !!user?.token,
+      isAuthenticated: !!user,
       async login(username, password) {
         const loggedInUser = await authService.login(username, password);
         setUser(loggedInUser);

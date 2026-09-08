@@ -81,6 +81,15 @@ class CustomerServiceImplTest {
     }
 
     @Test
+    void createCustomer_WithPaddedInsufficientDigits_RejectsBeforeSave() {
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> customerService.createCustomer(customer("12345-----", null, CustomerType.RETAIL)));
+
+        assertEquals("IllegalArgumentException", exception.getClass().getSimpleName());
+        verify(customerRepository, never()).save(any());
+    }
+
+    @Test
     void createCustomer_WithDuplicateNormalizedPhone_ReturnsConflictWithoutSaving() {
         duplicatePhone = true;
 

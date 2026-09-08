@@ -15,5 +15,7 @@ public class BulkUploadResponse {
     private int createdCount;
     private int updatedCount;
     private int totalProcessed;
+    private int imagesLinkedCount;
+    private int skippedCount;
     private List<String> errors;
 }

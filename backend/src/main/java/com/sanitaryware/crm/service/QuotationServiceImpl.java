@@ -7,7 +7,6 @@ import com.sanitaryware.crm.entity.User;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.QuotationMapper;
 import com.sanitaryware.crm.repository.QuotationRepository;
-import com.sanitaryware.crm.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

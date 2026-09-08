@@ -8,6 +8,7 @@ import com.sanitaryware.crm.entity.Brand;
 import com.sanitaryware.crm.entity.Category;
 import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.entity.ProductImage;
+import com.sanitaryware.crm.entity.User;
 import com.sanitaryware.crm.exception.ConflictException;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.ProductMapper;
@@ -17,9 +18,6 @@ import com.sanitaryware.crm.repository.ProductImageRepository;
 import com.sanitaryware.crm.repository.ProductRepository;
 import com.sanitaryware.crm.repository.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,12 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +40,8 @@ public class ProductServiceImpl implements ProductService {
     private final ProductImageRepository productImageRepository;
     private final FileUploadService fileUploadService;
     private final AuditService auditService;
+    private final CatalogPdfImportService catalogPdfImportService;
+    private final AccessControlService accessControlService;
 
     @Override
     public ProductDTO createProduct(ProductDTO productDTO) {
@@ -115,14 +111,14 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        return ProductMapper.toDTO(product);
+        return toResponseDto(product);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductDTO> getAllProducts(Pageable pageable) {
         return productRepository.findAll(pageable)
-                .map(ProductMapper::toDTO);
+                .map(this::toResponseDto);
     }
 
     @Override
@@ -130,7 +126,7 @@ public class ProductServiceImpl implements ProductService {
     public Page<ProductDTO> getProductsWithFilters(ProductFilterDTO filter, Pageable pageable) {
         validateFilter(filter);
         return productRepository.findAll(ProductSpecification.withFilters(filter), pageable)
-                .map(ProductMapper::toDTO);
+                .map(this::toResponseDto);
     }
 
     @Override
@@ -141,7 +137,7 @@ public class ProductServiceImpl implements ProductService {
         }
         ProductFilterDTO filter = ProductFilterDTO.builder().query(search).build();
         return productRepository.findAll(ProductSpecification.withFilters(filter), pageable)
-                .map(ProductMapper::toDTO);
+                .map(this::toResponseDto);
     }
 
     @Override
@@ -150,7 +146,7 @@ public class ProductServiceImpl implements ProductService {
         categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
         return productRepository.findByCategoryId(categoryId, pageable)
-                .map(ProductMapper::toDTO);
+                .map(this::toResponseDto);
     }
 
     @Override
@@ -159,7 +155,7 @@ public class ProductServiceImpl implements ProductService {
         brandRepository.findById(brandId)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + brandId));
         return productRepository.findByBrandId(brandId, pageable)
-                .map(ProductMapper::toDTO);
+                .map(this::toResponseDto);
     }
 
     @Override
@@ -170,7 +166,7 @@ public class ProductServiceImpl implements ProductService {
         }
         Product product = productRepository.findByBarcode(barcode.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with barcode: " + barcode));
-        return ProductMapper.toDTO(product);
+        return toResponseDto(product);
     }
 
     @Override
@@ -180,14 +176,14 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException("HSN code cannot be blank");
         }
         return productRepository.findByHsnCode(hsnCode.trim(), pageable)
-                .map(ProductMapper::toDTO);
+                .map(this::toResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ProductDTO> getLowStockProducts() {
         return productRepository.findLowStockProducts().stream()
-                .map(ProductMapper::toDTO)
+                .map(this::toResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -195,7 +191,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public List<ProductDTO> getFeaturedProducts() {
         return productRepository.findByIsActiveTrueAndIsFeaturedTrue().stream()
-                .map(ProductMapper::toDTO)
+                .map(this::toResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -225,146 +221,11 @@ public class ProductServiceImpl implements ProductService {
     public BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file) {
         Brand brand = brandRepository.findById(brandId)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + brandId));
-
-        List<String> errors = new ArrayList<>();
-        int created = 0;
-        int updated = 0;
-
-        try (PDDocument document = Loader.loadPDF(file.getBytes())) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            String text = stripper.getText(document);
-            String[] lines = text.split("\\r?\\n");
-
-            Pattern genericPattern = Pattern.compile("^\\d*\\s*(.*?)\\s+(\\d{7,10})\\s+(.*?)\\s+([\\d,]+\\.?\\d*)\\s+([\\d,]+\\.?\\d*)");
-            Pattern hsnPattern = Pattern.compile("(?i)HSN\\s*CODE\\s*[:\\s]+([0-9]{4,10})");
-            Pattern catalogueRowPattern = Pattern.compile("^(.*?)\\s+(\\d{7,10})\\s+([\\d,]+\\.\\d{2})$");
-
-            String currentCategoryName = "General";
-            String currentHsnCode = null;
-            String currentProductHeader = "";
-
-            for (String line : lines) {
-                line = line.trim();
-                if (line.isEmpty()) continue;
-
-                Matcher hsnMatcher = hsnPattern.matcher(line);
-                if (hsnMatcher.find()) {
-                    currentHsnCode = hsnMatcher.group(1).trim();
-                    continue;
-                }
-
-                String lower = line.toLowerCase();
-                if (lower.contains("part no") || lower.contains("mrp") || lower.contains("taxes/pc")
-                        || lower.contains("manufactured from") || lower.contains("warranty applicable")
-                        || lower.contains("cpvc plumbing system") || lower.contains("swr drainage")) {
-                    continue;
-                }
-
-                Matcher genericMatcher = genericPattern.matcher(line);
-                if (genericMatcher.find()) {
-                    try {
-                        String categoryName = genericMatcher.group(1).trim();
-                        String sku = genericMatcher.group(2).trim();
-                        String description = genericMatcher.group(3).trim();
-                        String newMrpStr = genericMatcher.group(5).replace(",", "");
-                        BigDecimal newMrp = new BigDecimal(newMrpStr);
-
-                        Category category = categoryRepository.findByName(categoryName)
-                                .orElseGet(() -> {
-                                    Category newCat = new Category();
-                                    newCat.setName(categoryName);
-                                    newCat.setIsActive(true);
-                                    return categoryRepository.save(newCat);
-                                });
-
-                        Product product = productRepository.findBySku(sku).orElse(null);
-                        if (product == null) {
-                            product = new Product();
-                            product.setSku(sku);
-                            product.setStockQuantity(0);
-                            created++;
-                        } else {
-                            updated++;
-                        }
-
-                        product.setName(description);
-                        product.setBarcode(sku);
-                        product.setBrand(brand);
-                        product.setCategory(category);
-                        if (currentHsnCode != null) {
-                            product.setHsnCode(currentHsnCode);
-                        }
-                        product.setMrp(newMrp);
-                        product.setSellingPrice(newMrp);
-                        product.setIsActive(true);
-
-                        productRepository.save(product);
-                        continue;
-                    } catch (Exception ignored) {
-                    }
-                }
-
-                Matcher rowMatcher = catalogueRowPattern.matcher(line);
-                if (rowMatcher.find()) {
-                    try {
-                        String sizeOrDesc = rowMatcher.group(1).trim();
-                        String sku = rowMatcher.group(2).trim();
-                        String newMrpStr = rowMatcher.group(3).replace(",", "");
-                        BigDecimal newMrp = new BigDecimal(newMrpStr);
-
-                        String effectiveCategoryName = StringUtils.hasText(currentProductHeader) ? currentProductHeader : currentCategoryName;
-                        Category category = categoryRepository.findByName(effectiveCategoryName)
-                                .orElseGet(() -> {
-                                    Category newCat = new Category();
-                                    newCat.setName(effectiveCategoryName);
-                                    newCat.setIsActive(true);
-                                    return categoryRepository.save(newCat);
-                                });
-
-                        Product product = productRepository.findBySku(sku).orElse(null);
-                        if (product == null) {
-                            product = new Product();
-                            product.setSku(sku);
-                            product.setStockQuantity(0);
-                            created++;
-                        } else {
-                            updated++;
-                        }
-
-                        String productName = StringUtils.hasText(currentProductHeader)
-                                ? currentProductHeader + " " + sizeOrDesc
-                                : sizeOrDesc;
-
-                        product.setName(productName);
-                        product.setBarcode(sku);
-                        product.setSize(sizeOrDesc);
-                        product.setBrand(brand);
-                        product.setCategory(category);
-                        if (currentHsnCode != null) {
-                            product.setHsnCode(currentHsnCode);
-                        }
-                        product.setMrp(newMrp);
-                        product.setSellingPrice(newMrp);
-                        product.setIsActive(true);
-
-                        productRepository.save(product);
-                    } catch (Exception e) {
-                        errors.add("Error parsing catalogue row: " + line + " - " + e.getMessage());
-                    }
-                } else if (!line.matches("^\\d+$") && line.length() > 2 && line.length() < 80 && !line.matches(".*\\d{7,10}.*")) {
-                    currentProductHeader = line;
-                }
-            }
-        } catch (IOException e) {
-            errors.add("Failed to read PDF file: " + e.getMessage());
-        }
-
-        return BulkUploadResponse.builder()
-                .createdCount(created)
-                .updatedCount(updated)
-                .totalProcessed(created + updated)
-                .errors(errors)
-                .build();
+        BulkUploadResponse response = catalogPdfImportService.importCatalog(brand, file);
+        auditService.logEvent("BULK_IMPORT", "PRODUCT", brandId,
+                "Imported " + response.getTotalProcessed() + " catalogue products and linked "
+                        + response.getImagesLinkedCount() + " images for brand " + brand.getName());
+        return response;
     }
 
     @Override
@@ -473,6 +334,15 @@ public class ProductServiceImpl implements ProductService {
         if (filter.getHsnCode() != null && filter.getHsnCode().length() > 20) {
             throw new IllegalArgumentException("HSN code cannot exceed 20 characters");
         }
+    }
+
+    private ProductDTO toResponseDto(Product product) {
+        ProductDTO dto = ProductMapper.toDTO(product);
+        User currentUser = accessControlService.currentUser();
+        if (currentUser.getRole() != User.UserRole.ADMIN && currentUser.getRole() != User.UserRole.MANAGER) {
+            dto.setPurchasePrice(null);
+        }
+        return dto;
     }
 
     @Override

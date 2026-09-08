@@ -50,6 +50,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .claims(claims)
+                .id(java.util.UUID.randomUUID().toString())
                 .subject(subject)
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -59,14 +60,6 @@ public class JwtTokenProvider {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
-    }
-
-    public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
-    }
-
-    public String extractRole(String token) {
-        return extractAllClaims(token).get("role", String.class);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -82,12 +75,9 @@ public class JwtTokenProvider {
                 .getPayload();
     }
 
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        Claims claims = extractAllClaims(token);
+        return userDetails.getUsername().equals(claims.getSubject())
+                && claims.getExpiration() != null && claims.getExpiration().after(new Date());
     }
 }

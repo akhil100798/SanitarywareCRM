@@ -3,6 +3,7 @@ package com.sanitaryware.crm.dto;
 import com.sanitaryware.crm.entity.Customer.CustomerType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class CustomerDTO {
     private String email;
     
     @NotBlank(message = "Phone number is required")
+    @com.sanitaryware.crm.validation.ValidPhoneNumber
     private String phoneNumber;
     
     private String alternatePhone;

@@ -155,6 +155,7 @@ const ProfilePage = () => {
                             <input
                                 type="password"
                                 name="currentPassword"
+                                autoComplete="current-password"
                                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 value={formData.currentPassword}
                                 onChange={handleChange}
@@ -168,6 +169,7 @@ const ProfilePage = () => {
                                 <input
                                     type="password"
                                     name="newPassword"
+                                    autoComplete="new-password"
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.newPassword}
                                     onChange={handleChange}
@@ -178,6 +180,7 @@ const ProfilePage = () => {
                                 <input
                                     type="password"
                                     name="confirmPassword"
+                                    autoComplete="new-password"
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}

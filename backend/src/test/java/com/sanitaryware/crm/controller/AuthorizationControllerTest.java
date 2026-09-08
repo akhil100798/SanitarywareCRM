@@ -6,9 +6,11 @@ import com.sanitaryware.crm.dto.SystemSettingsDTO;
 import com.sanitaryware.crm.exception.GlobalExceptionHandler;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtTokenProvider;
+import com.sanitaryware.crm.security.TokenRevocationService;
 import com.sanitaryware.crm.service.ProductService;
 import com.sanitaryware.crm.service.PurchaseOrderService;
 import com.sanitaryware.crm.service.SystemSettingsService;
+import com.sanitaryware.crm.service.CustomerService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {ProductController.class, SystemSettingsController.class, PurchaseOrderController.class})
+@WebMvcTest(controllers = {ProductController.class, SystemSettingsController.class, PurchaseOrderController.class, CustomerController.class})
 @Import({AuthorizationControllerTest.TestSecurityConfig.class, GlobalExceptionHandler.class, PaginationFactory.class})
 class AuthorizationControllerTest {
 
@@ -59,7 +61,13 @@ class AuthorizationControllerTest {
     private PurchaseOrderService purchaseOrderService;
 
     @MockBean
+    private CustomerService customerService;
+
+    @MockBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private TokenRevocationService tokenRevocationService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
@@ -207,6 +215,50 @@ class AuthorizationControllerTest {
         when(systemSettingsService.getSettings()).thenReturn(settings());
 
         mockMvc.perform(get("/api/settings"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAREHOUSE")
+    void warehouseCannotAccessCustomerEndpoints() throws Exception {
+        mockMvc.perform(get("/api/customers"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/customers/{id}", 7L))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/customers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Warehouse Customer\",\"phoneNumber\":\"9000000009\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/customers/{id}", 7L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Warehouse Customer\",\"phoneNumber\":\"9000000009\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/customers/{id}", 7L))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/customers/search").param("query", "customer"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/customers/active"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanAccessCustomers() throws Exception {
+        mockMvc.perform(get("/api/customers"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void managerCanAccessCustomers() throws Exception {
+        mockMvc.perform(get("/api/customers"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SALES")
+    void salesCanAccessCustomers() throws Exception {
+        mockMvc.perform(get("/api/customers"))
                 .andExpect(status().isOk());
     }
 

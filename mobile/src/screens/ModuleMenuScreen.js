@@ -12,19 +12,24 @@ import {
 } from 'lucide-react-native';
 import Screen from '../components/Screen';
 import { colors } from '../theme/colors';
+import { useAuth } from '../context/AuthContext';
 
 const modules = [
-  { resource: 'quotations', title: 'Quotations', subtitle: 'Customer estimates and quote status', icon: FileText },
-  { resource: 'payments', title: 'Payments', subtitle: 'Customer payment records', icon: CreditCard },
-  { resource: 'distributors', title: 'Distributors', subtitle: 'Suppliers and outstanding balances', icon: Truck },
-  { resource: 'purchaseOrders', title: 'Purchase Orders', subtitle: 'Purchases from distributors', icon: ReceiptIndianRupee },
-  { resource: 'distributorPayments', title: 'Distributor Payments', subtitle: 'Payments made to suppliers', icon: Building2 },
+  { resource: 'quotations', title: 'Quotations', subtitle: 'Customer estimates and quote status', icon: FileText, roles: ['ADMIN', 'MANAGER', 'SALES'] },
+  { resource: 'payments', title: 'Payments', subtitle: 'Customer payment records', icon: CreditCard, roles: ['ADMIN', 'MANAGER', 'SALES'] },
+  { resource: 'distributors', title: 'Distributors', subtitle: 'Suppliers and outstanding balances', icon: Truck, roles: ['ADMIN', 'MANAGER'] },
+  { resource: 'purchaseOrders', title: 'Purchase Orders', subtitle: 'Purchases from distributors', icon: ReceiptIndianRupee, roles: ['ADMIN', 'MANAGER'] },
+  { resource: 'distributorPayments', title: 'Distributor Payments', subtitle: 'Payments made to suppliers', icon: Building2, roles: ['ADMIN', 'MANAGER'] },
   { resource: 'brands', title: 'Brands', subtitle: 'Product brand catalog', icon: Tags },
-  { resource: 'categories', title: 'Categories', subtitle: 'Product category tree', icon: FolderTree },
-  { resource: 'settings', title: 'Settings', subtitle: 'Company profile and billing settings', icon: Settings }
+  { resource: 'categories', title: 'Categories', subtitle: 'Product category tree', icon: FolderTree, roles: ['ADMIN', 'MANAGER', 'SALES'] },
+  { resource: 'settings', title: 'Settings', subtitle: 'Company profile and billing settings', icon: Settings, roles: ['ADMIN', 'MANAGER'] }
 ];
 
-const ModuleMenuScreen = ({ navigation }) => (
+const ModuleMenuScreen = ({ navigation }) => {
+  const { user } = useAuth();
+  const visibleModules = modules.filter((module) => !module.roles || module.roles.includes(user?.role));
+
+  return (
   <Screen padded={false}>
     <View style={styles.header}>
       <Text style={styles.title}>More Modules</Text>
@@ -32,7 +37,7 @@ const ModuleMenuScreen = ({ navigation }) => (
     </View>
     <FlatList
       contentContainerStyle={styles.list}
-      data={modules}
+      data={visibleModules}
       keyExtractor={(item) => item.resource}
       renderItem={({ item }) => {
         const Icon = item.icon;
@@ -54,7 +59,8 @@ const ModuleMenuScreen = ({ navigation }) => (
       }}
     />
   </Screen>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   header: {

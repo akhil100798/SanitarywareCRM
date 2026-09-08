@@ -15,18 +15,32 @@ const money = (value) =>
 export const authService = {
   async login(username, password) {
     const response = await api.post('/auth/login', { username, password });
-    const user = response.data;
-    await sessionStorage.setToken(user.token);
+    const { token, ...user } = response.data;
+    await sessionStorage.setToken(token);
     await sessionStorage.setUser(user);
     return user;
   },
 
   async logout() {
-    await sessionStorage.clear();
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      await sessionStorage.clear();
+    }
   },
 
   getStoredUser() {
-    return sessionStorage.getUser();
+    return Promise.all([sessionStorage.getUser(), sessionStorage.getToken()]).then(([storedUser, accessToken]) => {
+      if (!storedUser || !accessToken) {
+        return sessionStorage.clear().then(() => null);
+      }
+      const { token, ...user } = storedUser;
+      if (token) {
+        // Migrate sessions created by versions that stored the bearer token twice.
+        return sessionStorage.setUser(user).then(() => user);
+      }
+      return user;
+    });
   }
 };
 

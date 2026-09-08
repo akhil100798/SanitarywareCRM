@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Plus, Search, Edit, Trash2, Package, Tag, Layers,
@@ -37,6 +37,7 @@ const ProductListPage = () => {
     const [pageSize, setPageSize] = useState(20);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
+    const latestRequestId = useRef(0);
 
     // Modals
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -84,6 +85,7 @@ const ProductListPage = () => {
             return;
         }
 
+        const requestId = ++latestRequestId.current;
         try {
             setLoading(true);
             const params = {
@@ -118,6 +120,8 @@ const ProductListPage = () => {
             const response = await productService.getAll(params);
             const data = response.data;
 
+            if (requestId !== latestRequestId.current) return;
+
             if (data && data.content) {
                 setProducts(data.content);
                 setTotalPages(data.totalPages || 0);
@@ -131,10 +135,11 @@ const ProductListPage = () => {
                 setProducts([]);
             }
         } catch (error) {
+            if (requestId !== latestRequestId.current) return;
             toast.error(error.response?.data?.message || 'Failed to fetch products');
             console.error(error);
         } finally {
-            setLoading(false);
+            if (requestId === latestRequestId.current) setLoading(false);
         }
     }, [
         currentPage, pageSize, searchQuery, selectedCategory, selectedBrand,
@@ -294,8 +299,8 @@ const ProductListPage = () => {
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
                             type="text"
-                            placeholder="Search by name, SKU, or brand, barcode, description..."
-                            aria-label="Search by name, SKU, or brand, barcode, description"
+                            placeholder="Search by name, SKU, size, brand, barcode..."
+                            aria-label="Search by name, SKU, size, brand, barcode"
                             className="input-field pl-10 py-2.5 text-sm w-full"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -455,6 +460,7 @@ const ProductListPage = () => {
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
                                 <th className="px-6 py-4">Product details</th>
+                                <th className="px-6 py-4">Size</th>
                                 <th className="px-6 py-4">Brand / Category</th>
                                 <th className="px-6 py-4">Pricing</th>
                                 <th className="px-6 py-4">Stock level</th>
@@ -466,14 +472,14 @@ const ProductListPage = () => {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 text-sm">
+                                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
                                         <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
                                         <span>Fetching catalog list...</span>
                                     </td>
                                 </tr>
                             ) : products.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400 text-sm">
+                                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
                                         <div className="max-w-xs mx-auto space-y-2">
                                             <p className="font-semibold text-slate-700">No products found</p>
                                             <p className="text-xs text-slate-400">No catalogue items match your current filters or query parameters.</p>
@@ -530,6 +536,15 @@ const ProductListPage = () => {
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {product.size ? (
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200/60">
+                                                        {product.size}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 text-xs">—</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="font-semibold text-slate-700">{product.brandName || '—'}</div>

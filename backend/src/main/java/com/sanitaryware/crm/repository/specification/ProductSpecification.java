@@ -19,14 +19,15 @@ public class ProductSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // 1. Text Query (Search in Name, SKU, Description, Barcode)
+            // 1. Text Query (Search in Name, SKU, Description, Barcode, Size)
             if (StringUtils.hasText(filter.getQuery())) {
                 String searchPattern = "%" + filter.getQuery().trim().toLowerCase() + "%";
                 Predicate nameLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), searchPattern);
                 Predicate skuLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("sku")), searchPattern);
                 Predicate descLike = criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), searchPattern);
                 Predicate barcodeLike = criteriaBuilder.like(criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("barcode"), "")), searchPattern);
-                predicates.add(criteriaBuilder.or(nameLike, skuLike, descLike, barcodeLike));
+                Predicate sizeLike = criteriaBuilder.like(criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("size"), "")), searchPattern);
+                predicates.add(criteriaBuilder.or(nameLike, skuLike, descLike, barcodeLike, sizeLike));
             }
 
             // 2. Category Filter (exact category or category ID)

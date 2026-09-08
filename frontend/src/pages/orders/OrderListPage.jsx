@@ -3,11 +3,16 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, ShoppingBag, Truck, CreditCard, ChevronRight, Download } from 'lucide-react';
 import orderService from '../../services/orderService';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
 
 const OrderListPage = () => {
+    const user = useAuthStore((state) => state.user);
+    const canManageOrders = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
+    const canUpdateFulfillment = ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'].includes(user?.role);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -44,6 +49,21 @@ const OrderListPage = () => {
         }
     };
 
+    const handleStatusChange = async (id, status) => {
+        try {
+            setUpdatingStatusId(id);
+            await orderService.updateStatus(id, status);
+            setOrders((currentOrders) => currentOrders.map((order) => (
+                order.id === id ? { ...order, status } : order
+            )));
+            toast.success('Order status updated');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update order status');
+        } finally {
+            setUpdatingStatusId(null);
+        }
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'PENDING': return 'bg-amber-50 text-amber-700 border-amber-100';
@@ -73,10 +93,10 @@ const OrderListPage = () => {
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customer Orders</h1>
                     <p className="text-slate-500 text-sm">Fulfill confirmed client sales, record invoice payments, and track shipments.</p>
                 </div>
-                <Link to="/orders/new" className="btn-primary text-sm">
+                {canManageOrders && <Link to="/orders/new" className="btn-primary text-sm">
                     <Plus size={16} />
                     <span>New Order</span>
-                </Link>
+                </Link>}
             </div>
 
             {/* List Table Container */}
@@ -132,7 +152,11 @@ const OrderListPage = () => {
                                                         <ShoppingBag size={18} />
                                                     </div>
                                                     <div>
-                                                        <Link to={`/orders/edit/${o.id}`} className="text-teal hover:underline font-extrabold">{o.orderNumber}</Link>
+                                                        {canManageOrders ? (
+                                                            <Link to={`/orders/edit/${o.id}`} className="text-teal hover:underline font-extrabold">{o.orderNumber}</Link>
+                                                        ) : (
+                                                            <span className="font-extrabold">{o.orderNumber}</span>
+                                                        )}
                                                         {o.quotationNumber && (
                                                             <div className="text-xxs text-slate-400 font-mono tracking-wider mt-0.5">Ref: {o.quotationNumber}</div>
                                                         )}
@@ -165,22 +189,35 @@ const OrderListPage = () => {
                                                 <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider ${getStatusColor(o.status)}`}>
                                                     {o.status}
                                                 </span>
+                                                {canUpdateFulfillment && o.status !== 'CANCELLED' && (
+                                                    <select
+                                                        aria-label={`Update status for ${o.orderNumber}`}
+                                                        className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
+                                                        value={o.status}
+                                                        disabled={updatingStatusId === o.id}
+                                                        onChange={(event) => handleStatusChange(o.id, event.target.value)}
+                                                    >
+                                                        {['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
+                                                            <option key={status} value={status}>{status}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end space-x-1.5">
-                                                    <button
+                                                    {canManageOrders && <button
                                                         onClick={() => handleDownloadInvoice(o.id, o.orderNumber)}
                                                         title="Download Invoice PDF"
                                                         className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
                                                     >
                                                         <Download size={16} />
-                                                    </button>
-                                                    <Link
+                                                    </button>}
+                                                    {canManageOrders && <Link
                                                         to={`/orders/edit/${o.id}`}
                                                         className="btn-secondary text-xs px-3.5 py-1.5 hover:text-teal rounded-xl transition-all font-semibold"
                                                     >
                                                         Manage
-                                                    </Link>
+                                                    </Link>}
                                                 </div>
                                             </td>
                                         </tr>

@@ -10,6 +10,7 @@ import com.sanitaryware.crm.security.JwtTokenProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,7 +18,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 
@@ -31,6 +35,8 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final com.sanitaryware.crm.security.TokenRevocationService tokenRevocationService;
+    private final com.sanitaryware.crm.security.LoginRateLimiter loginRateLimiter;
     private final com.sanitaryware.crm.service.AuditService auditService;
 
     @GetMapping("/test")
@@ -39,7 +45,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        String rateLimitKey = httpRequest.getRemoteAddr() + ":" + request.getUsername().trim().toLowerCase();
+        loginRateLimiter.checkAllowed(rateLimitKey);
         try {
             log.info("Attempting login for user: {}", request.getUsername());
             Authentication authentication = authenticationManager.authenticate(
@@ -63,6 +71,7 @@ public class AuthController {
 
             String jwt = jwtTokenProvider.generateToken(user.getUsername(), user.getRole().name());
             log.info("JWT generated for: {}", request.getUsername());
+            loginRateLimiter.reset(rateLimitKey);
 
             // Update last login
             user.setLastLogin(LocalDateTime.now());
@@ -74,17 +83,19 @@ public class AuthController {
                     user.getUsername(),
                     user.getEmail(),
                     user.getFullName(),
+                    user.getPhoneNumber(),
                     user.getRole().name()
             ));
 
         } catch (BadCredentialsException e) {
+            loginRateLimiter.recordFailure(rateLimitKey);
             log.warn("Invalid login attempt for: {}", request.getUsername());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse("Invalid username or password"));
         } catch (Exception e) {
             log.error("Unexpected error during login: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MessageResponse("Login failed: " + e.getMessage()));
+                    .body(new MessageResponse("Login failed"));
         }
     }
 
@@ -134,6 +145,16 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> logout(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ") || authorization.length() <= 7) {
+            throw new IllegalArgumentException("Authorization header must contain a bearer token");
+        }
+        tokenRevocationService.revoke(authorization.substring(7));
+        return ResponseEntity.noContent().build();
+    }
+
     private boolean isCurrentUserAdminOrManager() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null
@@ -160,6 +181,7 @@ public class AuthController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
+                user.getPhoneNumber(),
                 user.getRole().name()
         ));
     }
@@ -206,6 +228,7 @@ public class AuthController {
                 updatedUser.getUsername(),
                 updatedUser.getEmail(),
                 updatedUser.getFullName(),
+                updatedUser.getPhoneNumber(),
                 updatedUser.getRole().name()
         ));
     }

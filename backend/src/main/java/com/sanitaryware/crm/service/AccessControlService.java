@@ -45,6 +45,22 @@ public class AccessControlService {
         }
     }
 
+    public void requireManagementAccess() {
+        User currentUser = currentUser();
+        if (currentUser.getRole() != User.UserRole.ADMIN && currentUser.getRole() != User.UserRole.MANAGER) {
+            throw new AccessDeniedException("You do not have permission to access this resource.");
+        }
+    }
+
+    public boolean hasManagementAccess() {
+        try {
+            User currentUser = currentUser();
+            return currentUser != null && (currentUser.getRole() == User.UserRole.ADMIN || currentUser.getRole() == User.UserRole.MANAGER);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private boolean isOwner(User owner, User currentUser) {
         return owner != null && owner.getUsername() != null && owner.getUsername().equals(currentUser.getUsername());
     }

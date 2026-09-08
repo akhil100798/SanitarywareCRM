@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, CreditCard, Calendar, User, ShoppingBag } from 'lucide-react';
 import paymentService from '../../services/paymentService';
+import { filterPayments } from '../../utils/paymentSearch';
 import toast from 'react-hot-toast';
 
 const PaymentListPage = () => {
@@ -23,6 +24,8 @@ const PaymentListPage = () => {
             setLoading(false);
         }
     };
+
+    const filteredPayments = filterPayments(payments, searchQuery);
 
     return (
         <div className="space-y-6">
@@ -64,12 +67,12 @@ const PaymentListPage = () => {
                                 <tr>
                                     <td colSpan="6" className="px-6 py-10 text-center text-gray-500">Loading...</td>
                                 </tr>
-                            ) : payments.length === 0 ? (
+                            ) : filteredPayments.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-10 text-center text-gray-500">No payments found.</td>
                                 </tr>
                             ) : (
-                                payments.map((p) => (
+                                filteredPayments.map((p) => (
                                     <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">

@@ -4,6 +4,7 @@ import com.sanitaryware.crm.entity.AuditLog;
 import com.sanitaryware.crm.exception.GlobalExceptionHandler;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtTokenProvider;
+import com.sanitaryware.crm.security.TokenRevocationService;
 import com.sanitaryware.crm.service.AuditService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,9 @@ class AuditLogControllerTest {
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private TokenRevocationService tokenRevocationService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;

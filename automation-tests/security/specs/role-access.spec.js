@@ -1,18 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { getClient } = require('../../api/helpers/apiClient');
-const { getAdminToken, getSalesToken } = require('../../api/helpers/authHelper');
-
-async function getManagerToken() {
-  const client = await getClient();
-  const response = await client.post('/api/auth/login', {
-    data: {
-      username: process.env.QA_MANAGER_USERNAME || 'qamanager',
-      password: process.env.QA_MANAGER_PASSWORD || 'Password@123',
-    },
-  });
-  expect(response.status(), 'A QA MANAGER account must be provisioned for role verification').toBe(200);
-  return (await response.json()).token;
-}
+const { getAdminToken, getManagerToken, getSalesToken, getWarehouseToken } = require('../../api/helpers/authHelper');
 
 function productPayload(suffix, categoryId, brandId) {
   return {
@@ -31,20 +19,23 @@ test.describe('Product and settings role authorization', () => {
   let adminClient;
   let managerClient;
   let salesClient;
+  let warehouseClient;
   let anonymousClient;
   let protectedProductId;
   let categoryId;
   let brandId;
 
   test.beforeAll(async () => {
-    const [adminToken, managerToken, salesToken] = await Promise.all([
+    const [adminToken, managerToken, salesToken, warehouseToken] = await Promise.all([
       getAdminToken(),
       getManagerToken(),
       getSalesToken(),
+      getWarehouseToken(),
     ]);
     adminClient = await getClient(adminToken);
     managerClient = await getClient(managerToken);
     salesClient = await getClient(salesToken);
+    warehouseClient = await getClient(warehouseToken);
     anonymousClient = await getClient();
 
     const setupSuffix = Date.now();
@@ -70,7 +61,7 @@ test.describe('Product and settings role authorization', () => {
     if (protectedProductId && adminClient) await adminClient.delete(`/api/products/${protectedProductId}`);
     if (categoryId && adminClient) await adminClient.delete(`/api/categories/${categoryId}`);
     if (brandId && adminClient) await adminClient.delete(`/api/brands/${brandId}`);
-    await Promise.all([adminClient, managerClient, salesClient, anonymousClient]
+    await Promise.all([adminClient, managerClient, salesClient, warehouseClient, anonymousClient]
       .filter(Boolean)
       .map((client) => client.dispose()));
   });
@@ -126,6 +117,17 @@ test.describe('Product and settings role authorization', () => {
       params: { query: 'Authorization' },
     });
     expect(searchResponse.status()).toBe(200);
+  });
+
+  test('WAREHOUSE can view inventory but cannot mutate products', async () => {
+    const listResponse = await warehouseClient.get('/api/products');
+    expect(listResponse.status()).toBe(200);
+    const lowStockResponse = await warehouseClient.get('/api/products/low-stock');
+    expect(lowStockResponse.status()).toBe(200);
+    const updateResponse = await warehouseClient.patch(`/api/products/${protectedProductId}/stock`, {
+      params: { quantity: 10 },
+    });
+    expect(updateResponse.status()).toBe(403);
   });
 
   test('ADMIN and MANAGER can update settings', async () => {

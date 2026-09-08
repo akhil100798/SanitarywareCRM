@@ -14,7 +14,11 @@ import java.util.Optional;
 
 @Repository
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Long> {
+    @Query("SELECT COALESCE(SUM(po.balanceAmount), 0) FROM PurchaseOrder po")
+    BigDecimal getTotalBalance();
+
     Optional<PurchaseOrder> findByPoNumber(String poNumber);
+    Optional<PurchaseOrder> findByInvoicePdfPath(String invoicePdfPath);
     Page<PurchaseOrder> findByStatus(PurchaseOrder.POStatus status, Pageable pageable);
     List<PurchaseOrder> findByDistributorId(Long distributorId);
 

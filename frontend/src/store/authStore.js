@@ -11,10 +11,12 @@ export const useAuthStore = create((set) => ({
         return data;
     },
 
-    logout: () => {
-        authService.logout();
+    logout: async () => {
+        await authService.logout();
         set({ user: null, isAuthenticated: false });
     },
 
     setUser: (user) => set({ user, isAuthenticated: !!user }),
 }));
+
+authService.onLogout(() => useAuthStore.setState({ user: null, isAuthenticated: false }));

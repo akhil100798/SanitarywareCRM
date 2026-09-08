@@ -40,13 +40,13 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<Page<ProductDTO>> getAllProducts(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long categoryId,
@@ -78,7 +78,7 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<Page<ProductDTO>> searchProducts(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
@@ -89,7 +89,7 @@ public class ProductController {
     }
 
     @GetMapping("/category/{categoryId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<Page<ProductDTO>> getProductsByCategory(
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") int page,
@@ -100,7 +100,7 @@ public class ProductController {
     }
 
     @GetMapping("/brand/{brandId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<Page<ProductDTO>> getProductsByBrand(
             @PathVariable Long brandId,
             @RequestParam(defaultValue = "0") int page,
@@ -111,13 +111,13 @@ public class ProductController {
     }
 
     @GetMapping("/barcode/{barcode}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<ProductDTO> getProductByBarcode(@PathVariable String barcode) {
         return ResponseEntity.ok(productService.getProductByBarcode(barcode));
     }
 
     @GetMapping("/hsn/{hsnCode}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<Page<ProductDTO>> getProductsByHsnCode(
             @PathVariable String hsnCode,
             @RequestParam(defaultValue = "0") int page,
@@ -128,13 +128,13 @@ public class ProductController {
     }
 
     @GetMapping("/low-stock")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<List<ProductDTO>> getLowStockProducts() {
         return ResponseEntity.ok(productService.getLowStockProducts());
     }
 
     @GetMapping("/featured")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<List<ProductDTO>> getFeaturedProducts() {
         return ResponseEntity.ok(productService.getFeaturedProducts());
     }
@@ -172,7 +172,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}/images")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
     public ResponseEntity<List<ProductImageDTO>> getProductImages(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductImages(id));
     }

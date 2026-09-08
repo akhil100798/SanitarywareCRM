@@ -313,4 +313,8 @@ console.log(JSON.stringify({
   apiHits
 }, null, 2));
 
-if (!phase1ApiPassed || phase1Results.some((result) => result.status === 'FAIL')) process.exit(1);
+if (!phase1ApiPassed || phase1UiBlocked
+  || phase1Results.some((result) => result.status === 'FAIL')
+  || legacyResults.some((result) => result.status === 'FAIL' || result.status === 'BLOCKED')) {
+  process.exit(1);
+}

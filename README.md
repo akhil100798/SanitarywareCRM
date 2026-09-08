@@ -23,11 +23,11 @@ Enterprise-level Customer Relationship Management system built specifically for 
 
 ### Frontend
 - **Framework**: React 18 with Vite
-- **Language**: JavaScript/TypeScript
+- **Language**: JavaScript
 - **Styling**: TailwindCSS
 - **State Management**: Zustand
 - **HTTP Client**: Axios
-- **UI Components**: Shadcn/ui
+- **UI Components**: TailwindCSS components and Lucide icons
 
 ### Mobile
 - **Framework**: React Native with Expo
@@ -52,7 +52,7 @@ Enterprise-level Customer Relationship Management system built specifically for 
 - Java 17 or higher
 - Maven 3.6+
 - MySQL 8.0+
-- Node.js 18+ and npm
+- Node.js 20.19+ and npm
 - Git
 
 ## Setup Instructions
@@ -64,11 +64,7 @@ Enterprise-level Customer Relationship Management system built specifically for 
 CREATE DATABASE sanitaryware_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. Update database credentials in `backend/src/main/resources/application.properties`:
-```properties
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-```
+2. Set `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD` in your environment. Use `backend/.env.example` as a reference; do not put real credentials in source files.
 
 ### Backend Setup
 
@@ -82,19 +78,19 @@ cd backend
 mvn clean install
 ```
 
-3. Run the application locally with the development profile:
+3. Run the application against your configured MySQL database:
 ```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run
 ```
 
-The backend will start on `http://localhost:8080`
+The backend will start on `http://localhost:8081`
 
 For local QA without MySQL credentials, run the in-memory H2 profile:
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=qa
 ```
 
-The QA profile is intended for manual/mobile endpoint testing only. It starts with an empty in-memory database each run.
+The QA profile uses a disposable in-memory H2 database and creates development test users. Use it for local and automated tests. The `dev` profile also uses H2; neither profile is for production.
 
 ### Frontend Setup
 
@@ -137,12 +133,12 @@ copy .env.example .env
 
 For Android Emulator, use:
 ```env
-EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8080/api
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8081/api
 ```
 
 For a real Android phone on the same Wi-Fi, replace the host with your computer LAN IP:
 ```env
-EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:8080/api
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:8081/api
 ```
 
 For production, use your deployed HTTPS backend URL.

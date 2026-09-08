@@ -3,10 +3,12 @@ package com.sanitaryware.crm.service;
 import com.sanitaryware.crm.dto.ProductDTO;
 import com.sanitaryware.crm.dto.ProductFilterDTO;
 import com.sanitaryware.crm.dto.ProductImageDTO;
+import com.sanitaryware.crm.dto.BulkUploadResponse;
 import com.sanitaryware.crm.entity.Brand;
 import com.sanitaryware.crm.entity.Category;
 import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.entity.ProductImage;
+import com.sanitaryware.crm.entity.User;
 import com.sanitaryware.crm.exception.ConflictException;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.repository.BrandRepository;
@@ -58,6 +60,12 @@ class ProductServiceImplTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private CatalogPdfImportService catalogPdfImportService;
+
+    @Mock
+    private AccessControlService accessControlService;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
@@ -84,9 +92,14 @@ class ProductServiceImplTest {
         testProduct.setBrand(testBrand);
         testProduct.setMrp(BigDecimal.valueOf(2500.00));
         testProduct.setSellingPrice(BigDecimal.valueOf(2200.00));
+        testProduct.setPurchasePrice(BigDecimal.valueOf(1400.00));
         testProduct.setStockQuantity(10);
         testProduct.setReorderLevel(2);
         testProduct.setIsActive(true);
+
+        User managerUser = new User();
+        managerUser.setRole(User.UserRole.MANAGER);
+        lenient().when(accessControlService.currentUser()).thenReturn(managerUser);
     }
 
     @Test
@@ -101,6 +114,29 @@ class ProductServiceImplTest {
 
         assertThrows(ConflictException.class, () -> productService.createProduct(dto));
         verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void bulkCatalogUpload_DelegatesCatalogueParsingAndAuditsSummary() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "ashirvad-catalogue.pdf", "application/pdf", "%PDF".getBytes());
+        BulkUploadResponse expected = BulkUploadResponse.builder()
+                .createdCount(6)
+                .updatedCount(1)
+                .totalProcessed(7)
+                .imagesLinkedCount(6)
+                .skippedCount(0)
+                .errors(Collections.emptyList())
+                .build();
+
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(testBrand));
+        when(catalogPdfImportService.importCatalog(testBrand, file)).thenReturn(expected);
+
+        BulkUploadResponse result = productService.bulkCatalogUpload(1L, file);
+
+        assertSame(expected, result);
+        verify(catalogPdfImportService).importCatalog(testBrand, file);
+        verify(auditService).logEvent(eq("BULK_IMPORT"), eq("PRODUCT"), eq(1L), contains("7 catalogue products"));
     }
 
     @Test
@@ -136,6 +172,30 @@ class ProductServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals("JAQ-BASIN-001", result.getContent().get(0).getSku());
+    }
+
+    @Test
+    void getProductById_SalesDoesNotReceivePurchasePrice() {
+        User salesUser = new User();
+        salesUser.setRole(User.UserRole.SALES);
+        when(accessControlService.currentUser()).thenReturn(salesUser);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+
+        ProductDTO result = productService.getProductById(1L);
+
+        assertNull(result.getPurchasePrice());
+    }
+
+    @Test
+    void getProductById_AdminReceivesPurchasePrice() {
+        User adminUser = new User();
+        adminUser.setRole(User.UserRole.ADMIN);
+        when(accessControlService.currentUser()).thenReturn(adminUser);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+
+        ProductDTO result = productService.getProductById(1L);
+
+        assertEquals(0, new BigDecimal("1400.00").compareTo(result.getPurchasePrice()));
     }
 
     @Test

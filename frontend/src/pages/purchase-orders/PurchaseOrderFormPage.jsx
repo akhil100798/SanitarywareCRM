@@ -5,7 +5,9 @@ import purchaseOrderService from '../../services/purchaseOrderService';
 import distributorService from '../../services/distributorService';
 import { productService } from '../../services/productService';
 import fileUploadService from '../../services/fileUploadService';
+import { useFilePreview } from '../../hooks/useFilePreview';
 import toast from 'react-hot-toast';
+import { calculateDocumentTotals } from '../../utils/documentTotals';
 
 const PurchaseOrderFormPage = () => {
     const { id } = useParams();
@@ -29,20 +31,14 @@ const PurchaseOrderFormPage = () => {
         items: []
     });
 
-    const [totals, setTotals] = useState({
-        subtotal: 0,
-        taxAmount: 0,
-        total: 0
-    });
+    const [localAttachment, setLocalAttachment] = useState(null);
+    const attachment = useFilePreview(formData.invoicePdfPath, 'invoices', localAttachment);
+    const totals = calculateDocumentTotals(formData);
 
     useEffect(() => {
         fetchInitialData();
         if (isEditMode) fetchOrder();
     }, [id]);
-
-    useEffect(() => {
-        calculateTotals();
-    }, [formData.items, formData.taxPercentage]);
 
     useEffect(() => {
         if (!productSearchQuery.trim()) return;
@@ -56,8 +52,8 @@ const PurchaseOrderFormPage = () => {
                     newProds.forEach(p => map.set(p.id, p));
                     return Array.from(map.values());
                 });
-            } catch (err) {
-                // Keep local products
+            } catch {
+                toast.error('Product search failed. Please try again.');
             }
         }, 300);
         return () => clearTimeout(timer);
@@ -89,13 +85,6 @@ const PurchaseOrderFormPage = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const calculateTotals = () => {
-        const subtotal = (formData.items || []).reduce((sum, item) => sum + (Number(item.lineTotal) || 0), 0);
-        const taxAmount = (subtotal * (Number(formData.taxPercentage) || 0)) / 100;
-        const total = subtotal + taxAmount;
-        setTotals({ subtotal, taxAmount, total });
     };
 
     const filteredProducts = useMemo(() => {
@@ -207,6 +196,7 @@ const PurchaseOrderFormPage = () => {
         try {
             setUploadingFile(true);
             const response = await fileUploadService.uploadFile(file, 'invoices');
+            setLocalAttachment(file);
             setFormData(prev => ({ ...prev, invoicePdfPath: response.fileName }));
             toast.success('Invoice uploaded successfully');
         } catch (error) {
@@ -378,9 +368,12 @@ const PurchaseOrderFormPage = () => {
                                         disabled={uploadingFile}
                                     />
                                 </label>
-                                {formData.invoicePdfPath && (
+                            {formData.invoicePdfPath && !attachment.url && (
+                                <p role="status" className="text-sm text-slate-500">{attachment.error || 'Loading attachment...'}</p>
+                            )}
+                                {attachment.url && (
                                     <a
-                                        href={fileUploadService.getFileUrl(formData.invoicePdfPath, 'invoices')}
+                                        href={attachment.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 rounded border border-blue-200"

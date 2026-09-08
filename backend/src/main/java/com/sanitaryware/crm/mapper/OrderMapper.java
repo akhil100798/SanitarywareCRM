@@ -95,14 +95,14 @@ public class OrderMapper {
     public void updateEntity(Order order, OrderDTO dto) {
         if (dto == null || order == null) return;
 
-        order.setOrderDate(dto.getOrderDate());
-        order.setDeliveryDate(dto.getDeliveryDate());
+        if (dto.getOrderDate() != null) order.setOrderDate(dto.getOrderDate());
+        if (dto.getDeliveryDate() != null) order.setDeliveryDate(dto.getDeliveryDate());
         if (dto.getTaxPercentage() != null) order.setTaxPercentage(dto.getTaxPercentage());
         if (dto.getDiscount() != null) order.setDiscount(dto.getDiscount());
         if (dto.getShippingCharge() != null) order.setShippingCharge(dto.getShippingCharge());
-        order.setShippingAddress(dto.getShippingAddress());
-        order.setNotes(dto.getNotes());
-        order.setBillPadImageUrl(dto.getBillPadImageUrl());
+        if (dto.getShippingAddress() != null) order.setShippingAddress(dto.getShippingAddress());
+        if (dto.getNotes() != null) order.setNotes(dto.getNotes());
+        if (dto.getBillPadImageUrl() != null) order.setBillPadImageUrl(dto.getBillPadImageUrl());
 
         if (dto.getCustomerId() != null) {
             order.setCustomer(customerRepository.findById(dto.getCustomerId())

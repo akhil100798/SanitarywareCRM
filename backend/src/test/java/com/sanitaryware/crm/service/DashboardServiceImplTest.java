@@ -2,8 +2,6 @@ package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.DashboardDTO;
 import com.sanitaryware.crm.entity.Order;
-import com.sanitaryware.crm.entity.Product;
-import com.sanitaryware.crm.entity.PurchaseOrder;
 import com.sanitaryware.crm.mapper.OrderMapper;
 import com.sanitaryware.crm.repository.*;
 import org.junit.jupiter.api.Test;
@@ -11,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -48,32 +45,36 @@ class DashboardServiceImplTest {
     @Mock
     private OrderMapper orderMapper;
 
+    @Mock
+    private AccessControlService accessControlService;
+
     @InjectMocks
     private DashboardServiceImpl dashboardService;
 
     @Test
-    void getDashboardStats_NullStockQuantitiesAndEmptyOrders_ExecutesSafely() {
-        Product p1 = new Product();
-        p1.setId(1L);
-        p1.setStockQuantity(null); // null stock check
+    void salesDashboardNeverQueriesOtherUsersRecentOrders() {
+        var sales = new com.sanitaryware.crm.entity.User();
+        sales.setUsername("sales-a");
+        when(accessControlService.currentUser()).thenReturn(sales);
+        when(accessControlService.isSales(sales)).thenReturn(true);
+        when(orderRepository.findByCreatedByUsername(eq("sales-a"), any()))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        Product p2 = new Product();
-        p2.setId(2L);
-        p2.setStockQuantity(5); // low stock (<10)
+        assertTrue(dashboardService.getDashboardStats().getRecentOrders().isEmpty());
+        org.mockito.Mockito.verify(orderRepository, org.mockito.Mockito.never()).findAll(any(PageRequest.class));
+    }
 
-        Product p3 = new Product();
-        p3.setId(3L);
-        p3.setStockQuantity(50); // normal stock (>=10)
-
+    @Test
+    void getDashboardStats_UsesAggregatesAndPreservesEmptyStatusBuckets() {
         when(paymentRepository.getTotalPaymentsBetweenDates(any(), any())).thenReturn(BigDecimal.valueOf(50000));
         when(orderRepository.count()).thenReturn(10L);
-        when(orderRepository.findByStatus(any(Order.OrderStatus.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(orderRepository.countByStatus()).thenReturn(Collections.emptyList());
         when(customerRepository.count()).thenReturn(25L);
-        when(productRepository.findAll()).thenReturn(List.of(p1, p2, p3));
-        when(distributorPaymentRepository.findAll()).thenReturn(Collections.emptyList());
-        when(orderRepository.findAll()).thenReturn(Collections.emptyList());
-        when(purchaseOrderRepository.findAll()).thenReturn(Collections.emptyList());
+        when(productRepository.countByStockQuantityLessThan(10)).thenReturn(1L);
+        when(distributorPaymentRepository.getTotalDistributorPaymentsBetweenDates(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(orderRepository.getTotalBalance()).thenReturn(BigDecimal.valueOf(125));
+        when(orderRepository.findTopProductSales(eq(Order.OrderStatus.CANCELLED), any())).thenReturn(List.of());
+        when(purchaseOrderRepository.getTotalBalance()).thenReturn(BigDecimal.valueOf(75));
         when(orderRepository.findAll(any(PageRequest.class))).thenReturn(new PageImpl<>(Collections.emptyList()));
 
         DashboardDTO stats = dashboardService.getDashboardStats();
@@ -82,7 +83,13 @@ class DashboardServiceImplTest {
         assertEquals(BigDecimal.valueOf(50000), stats.getTotalRevenue());
         assertEquals(10L, stats.getTotalOrders());
         assertEquals(25L, stats.getTotalCustomers());
-        assertEquals(1L, stats.getLowStockProducts()); // only p2 has stock < 10
+        assertEquals(1L, stats.getLowStockProducts());
+        assertEquals(BigDecimal.valueOf(125), stats.getTotalReceivables());
+        assertEquals(BigDecimal.valueOf(75), stats.getTotalPayables());
+        assertEquals(0L, stats.getPendingOrders());
+        assertEquals(Order.OrderStatus.values().length, stats.getOrderStatusBreakdown().size());
+        org.mockito.Mockito.verify(orderRepository, org.mockito.Mockito.never()).findAll();
+        org.mockito.Mockito.verify(productRepository, org.mockito.Mockito.never()).findAll();
         assertNotNull(stats.getMonthlyRevenue());
         assertEquals(6, stats.getMonthlyRevenue().size());
         assertNotNull(stats.getTopProducts());

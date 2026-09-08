@@ -6,6 +6,7 @@ import com.sanitaryware.crm.controller.ProductController;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtAuthenticationFilter;
 import com.sanitaryware.crm.security.JwtTokenProvider;
+import com.sanitaryware.crm.security.TokenRevocationService;
 import com.sanitaryware.crm.service.ProductService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,9 @@ class GlobalExceptionHandlerTest {
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private TokenRevocationService tokenRevocationService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;

@@ -88,14 +88,6 @@
             <optional>true</optional>
         </dependency>
         
-        <!-- PDF Generation -->
-        <dependency>
-            <groupId>com.itextpdf</groupId>
-            <artifactId>itext-core</artifactId>
-            <version>8.0.3</version>
-            <type>pom</type>
-        </dependency>
-        
         <!-- PDFBox for Text Extraction -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
@@ -115,13 +107,6 @@
             <groupId>com.twilio.sdk</groupId>
             <artifactId>twilio</artifactId>
             <version>9.14.1</version>
-        </dependency>
-        
-        <!-- ModelMapper for DTO conversion -->
-        <dependency>
-            <groupId>org.modelmapper</groupId>
-            <artifactId>modelmapper</artifactId>
-            <version>3.2.0</version>
         </dependency>
         
         <!-- Spring Boot DevTools -->
@@ -154,15 +139,10 @@
             <artifactId>flyway-mysql</artifactId>
         </dependency>
 
-        <!-- iText 7 PDF dependencies -->
+        <!-- iText 8 PDF generation; parsing catalogue PDFs uses PDFBox. -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>kernel</artifactId>
-            <version>8.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.itextpdf</groupId>
-            <artifactId>io</artifactId>
             <version>8.0.3</version>
         </dependency>
         <dependency>

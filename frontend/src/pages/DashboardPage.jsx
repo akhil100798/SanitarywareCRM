@@ -22,12 +22,19 @@ import { useAuthStore } from '../store/authStore';
 const fallbackName = {
     ADMIN: 'Administrator',
     MANAGER: 'Manager',
-    SALES: 'Sales Staff'
+    SALES: 'Sales Staff',
+    WAREHOUSE: 'Warehouse Staff'
 };
+
+const DashboardLink = ({ allowed = true, to, children, ...props }) => allowed
+    ? <Link to={to} {...props}>{children}</Link>
+    : <div {...props}>{children}</div>;
 
 const DashboardPage = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
+    const canManageSales = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
+    const canManageSuppliers = ['ADMIN', 'MANAGER'].includes(user?.role);
     const displayName = user?.fullName?.trim()
         || user?.name?.trim()
         || fallbackName[user?.role]
@@ -98,7 +105,7 @@ const DashboardPage = () => {
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Customers */}
-                <Link to="/customers" className="card-container flex flex-col justify-between group">
+                <DashboardLink allowed={canManageSales} to="/customers" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Customers</span>
@@ -109,10 +116,10 @@ const DashboardPage = () => {
                         </div>
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-50 flex items-center gap-1 text-xs text-blue-600 font-semibold">
-                        <span>View Directory</span>
+                        <span>{canManageSales ? 'View Directory' : 'Customer count'}</span>
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </div>
-                </Link>
+                </DashboardLink>
 
                 {/* Orders */}
                 <Link to="/orders" className="card-container flex flex-col justify-between group">
@@ -131,7 +138,7 @@ const DashboardPage = () => {
                 </Link>
 
                 {/* Revenue */}
-                <Link to="/payments" className="card-container flex flex-col justify-between group">
+                <DashboardLink allowed={canManageSales} to="/payments" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Gross Revenue</span>
@@ -145,10 +152,10 @@ const DashboardPage = () => {
                         <span>Recorded Payments</span>
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </div>
-                </Link>
+                </DashboardLink>
 
                 {/* Payables */}
-                <Link to="/distributor-payments" className="card-container flex flex-col justify-between group">
+                <DashboardLink allowed={canManageSuppliers} to="/distributor-payments" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Supplier Payments</span>
@@ -161,7 +168,7 @@ const DashboardPage = () => {
                     <div className="mt-4 pt-3 border-t border-slate-50 text-slate-500 text-xs font-medium">
                         To pay: <span className="text-amber-600 font-bold">₹{(stats?.totalPayables || 0).toLocaleString('en-IN')}</span>
                     </div>
-                </Link>
+                </DashboardLink>
             </div>
 
             {/* Financial Overview & Interactive charts */}
@@ -254,7 +261,7 @@ const DashboardPage = () => {
                         <p className="text-slate-400 text-xs">Instantly initialize CRM transactions</p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 flex-1">
-                        <button 
+                        {canManageSales && (<button
                             onClick={() => navigate('/customers/new')} 
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
@@ -265,8 +272,8 @@ const DashboardPage = () => {
                                 <span className="font-semibold text-slate-700 text-sm">Add New Customer</span>
                             </div>
                             <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
-                        </button>
-                        <button 
+                        </button>)}
+                        {canManageSales && (<button
                             onClick={() => navigate('/quotations/new')} 
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
@@ -277,8 +284,8 @@ const DashboardPage = () => {
                                 <span className="font-semibold text-slate-700 text-sm">Create Quotation</span>
                             </div>
                             <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
-                        </button>
-                        <button 
+                        </button>)}
+                        {canManageSales && (<button
                             onClick={() => navigate('/orders/new')} 
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
@@ -289,8 +296,8 @@ const DashboardPage = () => {
                                 <span className="font-semibold text-slate-700 text-sm">Create Customer Order</span>
                             </div>
                             <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
-                        </button>
-                        <button 
+                        </button>)}
+                        {canManageSuppliers && (<button
                             onClick={() => navigate('/purchase-orders/new')} 
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
@@ -301,7 +308,7 @@ const DashboardPage = () => {
                                 <span className="font-semibold text-slate-700 text-sm">Create Purchase Order</span>
                             </div>
                             <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
-                        </button>
+                        </button>)}
                     </div>
                 </div>
 
@@ -328,7 +335,7 @@ const DashboardPage = () => {
                                 <div 
                                     key={order.id} 
                                     className="flex items-center justify-between p-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50/50 transition-colors cursor-pointer"
-                                    onClick={() => navigate(`/orders/edit/${order.id}`)}
+                                    onClick={() => navigate(canManageSales ? `/orders/edit/${order.id}` : '/orders')}
                                 >
                                     <div className="flex items-center space-x-3.5">
                                         <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-slate-700">

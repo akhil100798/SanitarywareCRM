@@ -20,29 +20,31 @@ import {
     Droplet,
     ShieldCheck
 } from 'lucide-react';
-
-const Sidebar = ({ isOpen, setIsOpen }) => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const handleLogout = () => {
-        logout();
-        toast.success('Logged out successfully');
-        navigate('/login');
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } finally {
+            toast.success('Logged out successfully');
+            navigate('/login');
+        }
     };
 
     const menuItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: Users, label: 'Customers', path: '/customers' },
-        { icon: Package, label: 'Products', path: '/products' },
-        { icon: FolderTree, label: 'Categories', path: '/categories' },
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'] },
+        { icon: Users, label: 'Customers', path: '/customers', roles: ['ADMIN', 'MANAGER', 'SALES'] },
+        { icon: Package, label: 'Products', path: '/products', roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'] },
+        { icon: FolderTree, label: 'Categories', path: '/categories', roles: ['ADMIN', 'MANAGER', 'SALES'] },
         { icon: Truck, label: 'Distributors', path: '/distributors', roles: ['ADMIN', 'MANAGER'] },
         { icon: ShoppingCartIcon, label: 'Purchase Orders', path: '/purchase-orders', roles: ['ADMIN', 'MANAGER'] },
         { icon: CreditCard, label: 'Distributor Payments', path: '/distributor-payments', roles: ['ADMIN', 'MANAGER'] },
-        { icon: FileText, label: 'Quotations', path: '/quotations' },
-        { icon: ShoppingCart, label: 'Orders', path: '/orders' },
-        { icon: CreditCard, label: 'Payments', path: '/payments' },
+        { icon: FileText, label: 'Quotations', path: '/quotations', roles: ['ADMIN', 'MANAGER', 'SALES'] },
+        { icon: ShoppingCart, label: 'Orders', path: '/orders', roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'] },
+        { icon: CreditCard, label: 'Payments', path: '/payments', roles: ['ADMIN', 'MANAGER', 'SALES'] },
         { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
         { icon: ShieldCheck, label: 'Audit Logs', path: '/audit-logs', roles: ['ADMIN', 'MANAGER'] },
         { icon: Settings, label: 'Settings', path: '/settings', roles: ['ADMIN', 'MANAGER'] },

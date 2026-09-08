@@ -30,7 +30,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
-        if (selectedFile && selectedFile.type === 'application/pdf') {
+        if (selectedFile && (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf'))) {
             setFile(selectedFile);
         } else {
             toast.error('Please select a valid PDF file');
@@ -121,7 +121,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                                 <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-800">
                                     <p className="font-bold mb-1">Important Note:</p>
-                                    <p>The PDF must be in the standard brand catalog table format (Material Group, Material Code, Description, MRP). Existing products will be updated by SKU, and new ones will be created.</p>
+                                    <p>Product families, SKU variants, HSN codes, sizes, prices, descriptions, and catalogue pictures will be extracted. Existing products are updated by SKU; stock and manually uploaded images are preserved.</p>
                                 </div>
                             </div>
 
@@ -153,7 +153,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                                 <p className="text-gray-500">Processing complete for {file?.name}</p>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 <div className="bg-blue-50 p-4 rounded-xl text-center">
                                     <div className="text-2xl font-bold text-blue-600">{result.totalProcessed}</div>
                                     <div className="text-xs text-blue-600 uppercase font-bold tracking-wider">Total</div>
@@ -166,7 +166,17 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                                     <div className="text-2xl font-bold text-indigo-600">{result.updatedCount}</div>
                                     <div className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Updated</div>
                                 </div>
+                                <div className="bg-purple-50 p-4 rounded-xl text-center">
+                                    <div className="text-2xl font-bold text-purple-600">{result.imagesLinkedCount || 0}</div>
+                                    <div className="text-xs text-purple-600 uppercase font-bold tracking-wider">Images</div>
+                                </div>
                             </div>
+
+                            {result.skippedCount > 0 && (
+                                <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+                                    {result.skippedCount} catalogue rows were skipped because their commercial data could not be validated.
+                                </p>
+                            )}
 
                             {result.errors && result.errors.length > 0 && (
                                 <div className="space-y-2">
