@@ -175,21 +175,14 @@ const OrderFormPage = () => {
             item.unitPrice = prod.sellingPrice || 0;
             item.productName = prod.name;
             item.productSku = prod.sku;
-            item.mrp = prod.mrp || 0;
             item.barcode = prod.barcode;
             item.hsnCode = prod.hsnCode;
             item.gstRate = prod.gstRate;
-            const mrp = item.mrp || 0;
-            if (mrp > 0 && item.unitPrice <= mrp) {
-                item.discountPercentage = parseFloat(((mrp - item.unitPrice) * 100 / mrp).toFixed(2));
-            } else {
-                item.discountPercentage = 0;
-            }
+            item.discountPercentage = 0;
         } else if (!productId) {
             item.unitPrice = 0;
             item.productName = '';
             item.productSku = '';
-            item.mrp = 0;
             item.barcode = '';
             item.hsnCode = '';
             item.gstRate = 0;
@@ -198,7 +191,8 @@ const OrderFormPage = () => {
 
         const qty = Number(item.quantity) || 0;
         const price = Number(item.unitPrice) || 0;
-        item.lineTotal = price * qty;
+        const discountPercentage = Number(item.discountPercentage) || 0;
+        item.lineTotal = price * qty * (1 - discountPercentage / 100);
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
     };
@@ -213,35 +207,17 @@ const OrderFormPage = () => {
                 item.unitPrice = product.sellingPrice || 0;
                 item.productName = product.name;
                 item.productSku = product.sku;
-                item.mrp = product.mrp || 0;
                 item.barcode = product.barcode;
                 item.hsnCode = product.hsnCode;
                 item.gstRate = product.gstRate;
-            }
-        }
-
-        if (field === 'unitPrice' || field === 'productId') {
-            const mrp = item.mrp || 0;
-            const currentPrice = field === 'unitPrice' ? parseFloat(value) || 0 : item.unitPrice;
-
-            if (mrp > 0 && currentPrice <= mrp) {
-                item.discountPercentage = parseFloat(((mrp - currentPrice) * 100 / mrp).toFixed(2));
-            } else {
                 item.discountPercentage = 0;
-            }
-        }
-
-        if (field === 'discountPercentage') {
-            const mrp = item.mrp || 0;
-            const disc = parseFloat(value) || 0;
-            if (mrp > 0) {
-                item.unitPrice = parseFloat((mrp - (mrp * disc / 100)).toFixed(2));
             }
         }
 
         const qty = Number(item.quantity) || 0;
         const price = Number(item.unitPrice) || 0;
-        item.lineTotal = price * qty;
+        const discountPercentage = Number(item.discountPercentage) || 0;
+        item.lineTotal = price * qty * (1 - discountPercentage / 100);
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
     };
@@ -290,6 +266,10 @@ const OrderFormPage = () => {
             }
             if (Number(item.unitPrice) < 0) {
                 toast.error('Unit price cannot be negative');
+                return;
+            }
+            if (Number(item.discountPercentage) < 0 || Number(item.discountPercentage) > 100) {
+                toast.error('Discount percentage must be between 0 and 100');
                 return;
             }
         }
@@ -474,7 +454,7 @@ const OrderFormPage = () => {
                                     <th className="px-4 py-3 min-w-[280px]">Product SKU / Name</th>
                                     <th className="px-4 py-3 w-28">Quantity</th>
                                     <th className="px-4 py-3 w-36">Selling Price</th>
-                                    <th className="px-4 py-3 w-28">Calculated Disc %</th>
+                                    <th className="px-4 py-3 w-28">Discount %</th>
                                     <th className="px-4 py-3 w-36">Line Total</th>
                                     <th className="px-4 py-3 w-16 text-right"></th>
                                 </tr>
@@ -545,19 +525,17 @@ const OrderFormPage = () => {
                                                             onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                                                         />
                                                     </div>
-                                                    {item.mrp > 0 && (
-                                                        <div className="text-[10px] text-slate-400 font-medium mt-1 pl-1">MRP: ₹{item.mrp.toLocaleString()}</div>
-                                                    )}
-                                                </td>
+                                                    </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex bg-slate-100 border border-slate-200 rounded-xl items-center px-2">
                                                         <input
                                                             type="number"
-                                                            className="w-full py-2 bg-transparent text-slate-500 outline-none text-center text-xs font-semibold"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.01"
+                                                            className="w-full py-2 bg-transparent text-slate-800 outline-none text-center text-xs font-semibold"
                                                             value={item.discountPercentage}
-                                                            readOnly
-                                                            disabled
-                                                            title="Auto-calculated from MRP"
+                                                            onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
                                                         />
                                                         <span className="text-slate-400 text-xs font-semibold">%</span>
                                                     </div>

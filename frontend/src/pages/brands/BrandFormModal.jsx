@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save } from 'lucide-react';
 import { brandService } from '../../services/productService';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         logoUrl: '',
         isActive: true
     });
+    const firstInputRef = useRef(null);
 
     useEffect(() => {
         if (initialData) {
@@ -29,6 +30,9 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 isActive: true
             });
         }
+        if (isOpen && firstInputRef.current) {
+            setTimeout(() => firstInputRef.current.focus(), 50);
+        }
     }, [initialData, isOpen]);
 
     const handleChange = (e) => {
@@ -37,6 +41,26 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            onClose();
+        }
+        if (e.key === 'Tab') {
+            const focusable = e.currentTarget.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -61,8 +85,16 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
     if (!isOpen) return null;
 
+    const headingId = 'brand-dialog-heading';
+
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div
+            className="fixed inset-0 z-50 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={headingId}
+            onKeyDown={handleKeyDown}
+        >
             <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div className="fixed inset-0 transition-opacity" aria-hidden="true">
                     <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
@@ -73,18 +105,24 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                     <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg leading-6 font-medium text-gray-900">
+                            <h3 id={headingId} className="text-lg leading-6 font-medium text-gray-900">
                                 {isEditMode ? 'Edit Brand' : 'Add New Brand'}
                             </h3>
-                            <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+                            <button
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-gray-500"
+                                aria-label="Close dialog"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name *</label>
+                                <label htmlFor="brand-name" className="block text-sm font-medium text-gray-700 mb-1">Brand Name *</label>
                                 <input
+                                    ref={firstInputRef}
+                                    id="brand-name"
                                     type="text"
                                     name="name"
                                     required
@@ -95,8 +133,9 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <label htmlFor="brand-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                                 <textarea
+                                    id="brand-description"
                                     name="description"
                                     rows="3"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
@@ -106,8 +145,9 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                                <label htmlFor="brand-logo-url" className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
                                 <input
+                                    id="brand-logo-url"
                                     type="text"
                                     name="logoUrl"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"

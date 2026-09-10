@@ -113,7 +113,12 @@ class OrderServiceImplTest {
         orderService.createOrderFromQuotation(1L);
 
         verify(orderRepository).save(org.mockito.ArgumentMatchers.argThat(order ->
-                BigDecimal.valueOf(2242).compareTo(order.getBalanceAmount()) == 0
+                BigDecimal.valueOf(1900).compareTo(order.getItems().get(0).getLineTotal()) == 0
+                        && BigDecimal.valueOf(5).compareTo(order.getItems().get(0).getDiscountPercentage()) == 0
+                        && BigDecimal.valueOf(1900).compareTo(order.getSubtotal()) == 0
+                        && BigDecimal.valueOf(342).compareTo(order.getTaxAmount()) == 0
+                        && BigDecimal.valueOf(2242).compareTo(order.getTotal()) == 0
+                        && BigDecimal.valueOf(2242).compareTo(order.getBalanceAmount()) == 0
                         && BigDecimal.ZERO.compareTo(order.getPaidAmount()) == 0));
     }
 

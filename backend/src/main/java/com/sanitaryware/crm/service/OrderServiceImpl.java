@@ -100,12 +100,8 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderDate(LocalDate.now());
         order.setStatus(Order.OrderStatus.PENDING);
         order.setPaymentStatus(Order.PaymentStatus.UNPAID);
-        order.setSubtotal(quotation.getSubtotal());
         order.setTaxPercentage(quotation.getTaxPercentage());
-        order.setTaxAmount(quotation.getTaxAmount());
         order.setDiscount(quotation.getDiscount());
-        order.setTotal(quotation.getTotal());
-        order.calculateBalance();
         order.setNotes("Created from Quotation: " + quotation.getQuotationNumber());
 
         order.setCreatedBy(accessControlService.currentUser());
@@ -125,6 +121,10 @@ public class OrderServiceImpl implements OrderService {
                     return oItem;
                 }).collect(Collectors.toList());
         order.setItems(orderItems);
+        // Recalculate from the copied primitive values so headers cannot retain
+        // a total that disagrees with converted line items.
+        orderItems.forEach(OrderItem::calculateLineTotal);
+        order.calculateTotal();
 
         // Update quotation status
         quotation.setStatus(Quotation.QuotationStatus.CONVERTED);
@@ -156,6 +156,12 @@ public class OrderServiceImpl implements OrderService {
         List<OrderItem> previousItems = List.copyOf(existingOrder.getItems());
 
         orderMapper.updateEntity(existingOrder, orderDTO);
+
+        if (orderDTO.getStatus() != null && !orderDTO.getStatus().equals(existingOrder.getStatus().name())) {
+            Order.OrderStatus newStatus = parseOrderStatus(orderDTO.getStatus());
+            OrderStateValidator.validateTransition(existingOrder.getStatus(), newStatus, existingOrder.getPaymentStatus(), existingOrder.getPaidAmount());
+            existingOrder.setStatus(newStatus);
+        }
 
         if (orderDTO.getItems() != null) {
             if (stockReserved) {

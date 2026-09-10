@@ -53,7 +53,7 @@ const LoginPage = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        <label htmlFor="username" className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
                             Username
                         </label>
                         <div className="relative">
@@ -61,6 +61,7 @@ const LoginPage = () => {
                                 <User size={16} />
                             </span>
                             <input
+                                id="username"
                                 type="text"
                                 name="username"
                                 autoComplete="username"
@@ -74,7 +75,7 @@ const LoginPage = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        <label htmlFor="password" className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
                             Password
                         </label>
                         <div className="relative">
@@ -82,6 +83,7 @@ const LoginPage = () => {
                                 <Lock size={16} />
                             </span>
                             <input
+                                id="password"
                                 type="password"
                                 name="password"
                                 autoComplete="current-password"

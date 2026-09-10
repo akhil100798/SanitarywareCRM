@@ -88,7 +88,7 @@ function App() {
                     <Route
                         path="/brands"
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={managementRoles}>
                                 <BrandListPage />
                             </ProtectedRoute>
                         }
@@ -184,7 +184,7 @@ function App() {
                     <Route
                         path="/categories"
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'SALES']}>
                                 <CategoryListPage />
                             </ProtectedRoute>
                         }
