@@ -31,4 +31,12 @@ public class RegisterRequest {
 
     @Pattern(regexp = "ADMIN|MANAGER|SALES|WAREHOUSE", message = "Role must be ADMIN, MANAGER, SALES, or WAREHOUSE")
     private String role;
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 }
