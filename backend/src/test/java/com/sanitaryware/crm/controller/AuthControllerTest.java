@@ -20,6 +20,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
@@ -84,6 +86,29 @@ class AuthControllerTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(User.UserRole.ADMIN, userCaptor.getValue().getRole());
         assertEquals("encoded", userCaptor.getValue().getPassword());
+    }
+
+    @Test
+    void register_AdminCanCreateRequestedRole() {
+        when(userRepository.count()).thenReturn(1L);
+        when(userRepository.existsByUsername("warehouse")).thenReturn(false);
+        when(userRepository.existsByEmail("warehouse@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("Admin@123")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("admin", null,
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
+        RegisterRequest request = registerRequest();
+        request.setUsername("warehouse");
+        request.setEmail("warehouse@example.com");
+        request.setRole("WAREHOUSE");
+
+        authController.register(request);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals(User.UserRole.WAREHOUSE, userCaptor.getValue().getRole());
     }
 
     @Test

@@ -139,8 +139,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
     @Override
     public PurchaseOrderDTO getPurchaseOrderById(Long id) {
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder po = purchaseOrderRepository.findByIdForUpdate(id)
+                .orElseGet(() -> purchaseOrderRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id)));
         return purchaseOrderMapper.toDTO(po);
     }
 
@@ -202,8 +203,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public PurchaseOrderDTO receivePurchaseOrder(Long id) {
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder po = purchaseOrderRepository.findByIdForUpdate(id)
+                .orElseGet(() -> purchaseOrderRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id)));
 
         if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Purchase Order has already been received");
@@ -216,7 +218,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         for (PurchaseOrderItem item : po.getItems()) {
-            Product product = item.getProduct();
+            Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
+                    .orElse(item.getProduct());
+            item.setProduct(product);
             if (product == null) {
                 throw new ResourceNotFoundException("Product reference missing on line item");
             }
@@ -245,7 +249,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             po.setReceivedDate(LocalDate.now());
         }
 
-        Distributor distributor = po.getDistributor();
+        Distributor distributor = po.getDistributor() == null ? null
+                : distributorRepository.findByIdForUpdate(po.getDistributor().getId()).orElse(po.getDistributor());
         if (distributor != null) {
             BigDecimal currentBalance = distributor.getOutstandingBalance() != null ? distributor.getOutstandingBalance() : BigDecimal.ZERO;
             BigDecimal poBalance = po.getBalanceAmount() != null ? po.getBalanceAmount() : BigDecimal.ZERO;

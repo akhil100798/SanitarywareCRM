@@ -32,7 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentDTO recordPayment(PaymentDTO dto) {
-        Order order = orderRepository.findById(dto.getOrderId())
+        Order order = findOrderForUpdate(dto.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + dto.getOrderId()));
         accessControlService.requireOrderAccess(order);
 
@@ -102,7 +102,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
         accessControlService.requireOrderAccess(payment.getOrder());
 
-        Order order = payment.getOrder();
+        Order order = findOrderForUpdate(payment.getOrder().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + payment.getOrder().getId()));
         order.setPaidAmount(order.getPaidAmount().subtract(payment.getAmount()));
         order.calculateBalance();
 
@@ -148,5 +149,10 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Payment amount INR " + dto.getAmount()
                     + " exceeds the balance due INR " + order.getBalanceAmount());
         }
+    }
+
+    private java.util.Optional<Order> findOrderForUpdate(Long id) {
+        java.util.Optional<Order> locked = orderRepository.findByIdForUpdate(id);
+        return locked.isPresent() ? locked : orderRepository.findById(id);
     }
 }

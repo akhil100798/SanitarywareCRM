@@ -3,6 +3,7 @@ package com.sanitaryware.crm.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
@@ -27,4 +28,7 @@ public class RegisterRequest {
     
     @Size(max = 15, message = "Phone number must not exceed 15 characters")
     private String phoneNumber;
+
+    @Pattern(regexp = "ADMIN|MANAGER|SALES|WAREHOUSE", message = "Role must be ADMIN, MANAGER, SALES, or WAREHOUSE")
+    private String role;
 }

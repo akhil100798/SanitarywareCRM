@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, FileText, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { brandService, productService } from '../../services/productService';
 import toast from 'react-hot-toast';
+import Modal from '../../components/ui/Modal';
+import { Field } from '../../components/ui/Field';
+import { Button } from '../../components/ui/Button';
 
 const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
     const [brands, setBrands] = useState([]);
@@ -13,19 +16,13 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
     useEffect(() => {
         if (isOpen) {
             fetchBrands();
-            setResult(null);
-            setFile(null);
-            setSelectedBrand('');
+            setResult(null); setFile(null); setSelectedBrand('');
         }
     }, [isOpen]);
 
     const fetchBrands = async () => {
-        try {
-            const response = await brandService.getAll();
-            setBrands(response.data);
-        } catch (error) {
-            toast.error('Failed to load brands');
-        }
+        try { const response = await brandService.getAll(); setBrands(response.data); }
+        catch (error) { toast.error('Failed to load brands'); }
     };
 
     const handleFileChange = (e) => {
@@ -40,169 +37,73 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
 
     const handleUpload = async (e) => {
         e.preventDefault();
-        if (!selectedBrand || !file) {
-            toast.error('Please select a brand and a file');
-            return;
-        }
-
+        if (!selectedBrand || !file) { toast.error('Select a brand and a file'); return; }
         try {
             setUploading(true);
             const response = await productService.bulkCatalogUpload(selectedBrand, file);
             setResult(response.data);
-            toast.success('Upload completed!');
+            toast.success('Upload complete!');
             if (onUploadSuccess) onUploadSuccess();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Upload failed');
-        } finally {
-            setUploading(false);
-        }
+        } finally { setUploading(false); }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900">Bulk Import Catalog (PDF)</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <X size={20} className="text-gray-500" />
-                    </button>
-                </div>
+        <Modal open={isOpen} onClose={onClose} title="Bulk Import Catalog (PDF)">
+            {!result ? (
+                <form onSubmit={handleUpload} className="space-y-5">
+                    <Field label="Select Brand" required>
+                        <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="input-field" required>
+                            <option value="">Select a brand</option>
+                            {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                        </select>
+                    </Field>
 
-                <div className="p-6">
-                    {!result ? (
-                        <form onSubmit={handleUpload} className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Select Brand
-                                </label>
-                                <select
-                                    value={selectedBrand}
-                                    onChange={(e) => setSelectedBrand(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
-                                >
-                                    <option value="">Select a brand</option>
-                                    {brands.map((brand) => (
-                                        <option key={brand.id} value={brand.id}>
-                                            {brand.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                    <div className="surface" style={{ padding: 32, textAlign: 'center', borderStyle: 'dashed', cursor: 'pointer', position: 'relative' }}>
+                        <input type="file" accept=".pdf" onChange={handleFileChange} disabled={uploading} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                        <Upload size={28} className="mx-auto text-muted" />
+                        <p className="text-sm font-semibold mt-2">{file ? file.name : <><span className="text-primary">Click to upload</span> or drag and drop</>}</p>
+                        <p className="text-xs text-muted mt-1">PDF files only</p>
+                    </div>
 
-                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 transition-all cursor-pointer relative">
-                                <input
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleFileChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    disabled={uploading}
-                                />
-                                <div className="space-y-2">
-                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
-                                        <Upload size={24} />
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        {file ? (
-                                            <span className="font-medium text-blue-600 underline">{file.name}</span>
-                                        ) : (
-                                            <>
-                                                <span className="font-medium text-blue-600 underline">Click to upload</span> or drag and drop
-                                            </>
-                                        )}
-                                    </div>
-                                    <div className="text-xs text-gray-400">PDF files only (Max 10MB)</div>
-                                </div>
-                            </div>
+                    <div className="error-panel" style={{ background: 'var(--warning-soft)', borderColor: 'var(--warning)', color: 'var(--warning)' }}>
+                        <p className="font-semibold text-sm">Important Note:</p>
+                        <p className="text-xs mt-1">Product families, SKU variants, HSN codes, sizes, prices, descriptions and catalogue pictures will be extracted. Existing products are updated by SKU; stock and manually uploaded images are preserved.</p>
+                    </div>
 
-                            <div className="bg-amber-50 rounded-lg p-4 flex items-start space-x-3">
-                                <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                                <div className="text-xs text-amber-800">
-                                    <p className="font-bold mb-1">Important Note:</p>
-                                    <p>Product families, SKU variants, HSN codes, sizes, prices, descriptions, and catalogue pictures will be extracted. Existing products are updated by SKU; stock and manually uploaded images are preserved.</p>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={uploading || !file || !selectedBrand}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
-                            >
-                                {uploading ? (
-                                    <>
-                                        <Loader2 size={20} className="animate-spin" />
-                                        <span>Processing PDF...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload size={20} />
-                                        <span>Start Import</span>
-                                    </>
-                                )}
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="text-center">
-                                <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <CheckCircle size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900">Import Summary</h3>
-                                <p className="text-gray-500">Processing complete for {file?.name}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div className="bg-blue-50 p-4 rounded-xl text-center">
-                                    <div className="text-2xl font-bold text-blue-600">{result.totalProcessed}</div>
-                                    <div className="text-xs text-blue-600 uppercase font-bold tracking-wider">Total</div>
-                                </div>
-                                <div className="bg-green-50 p-4 rounded-xl text-center">
-                                    <div className="text-2xl font-bold text-green-600">{result.createdCount}</div>
-                                    <div className="text-xs text-green-600 uppercase font-bold tracking-wider">Created</div>
-                                </div>
-                                <div className="bg-indigo-50 p-4 rounded-xl text-center">
-                                    <div className="text-2xl font-bold text-indigo-600">{result.updatedCount}</div>
-                                    <div className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Updated</div>
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-xl text-center">
-                                    <div className="text-2xl font-bold text-purple-600">{result.imagesLinkedCount || 0}</div>
-                                    <div className="text-xs text-purple-600 uppercase font-bold tracking-wider">Images</div>
-                                </div>
-                            </div>
-
-                            {result.skippedCount > 0 && (
-                                <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
-                                    {result.skippedCount} catalogue rows were skipped because their commercial data could not be validated.
-                                </p>
-                            )}
-
-                            {result.errors && result.errors.length > 0 && (
-                                <div className="space-y-2">
-                                    <h4 className="text-sm font-bold text-red-600 flex items-center">
-                                        <AlertTriangle size={16} className="mr-1" />
-                                        Warnings ({result.errors.length})
-                                    </h4>
-                                    <div className="max-h-40 overflow-y-auto bg-red-50 rounded-lg p-3 text-xs text-red-700 space-y-1 font-mono">
-                                        {result.errors.map((error, idx) => (
-                                            <div key={idx}>• {error}</div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <button
-                                onClick={onClose}
-                                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition-all"
-                            >
-                                Close Summary
-                            </button>
+                    <Button type="submit" disabled={uploading || !file || !selectedBrand} className="btn-primary" style={{ width: '100%' }}>
+                        {uploading ? <><Loader2 size={18} className="animate-spin" /> Processing PDF...</> : <><Upload size={18} /> Start Import</>}
+                    </Button>
+                </form>
+            ) : (
+                <div className="space-y-5">
+                    <div className="text-center">
+                        <CheckCircle size={40} className="mx-auto text-success" />
+                        <h3 className="text-lg font-bold mt-2">Import Summary</h3>
+                        <p className="text-sm text-secondary">Processed {file?.name}</p>
+                    </div>
+                    <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                        <div className="stat-card"><p className="stat-label">Total</p><p className="stat-value" style={{ fontSize: 22 }}>{result.totalProcessed}</p></div>
+                        <div className="stat-card"><p className="stat-label">Created</p><p className="stat-value" style={{ fontSize: 22, color: 'var(--success)' }}>{result.createdCount}</p></div>
+                        <div className="stat-card"><p className="stat-label">Updated</p><p className="stat-value" style={{ fontSize: 22, color: 'var(--info)' }}>{result.updatedCount}</p></div>
+                        <div className="stat-card"><p className="stat-label">Images</p><p className="stat-value" style={{ fontSize: 22, color: 'var(--primary)' }}>{result.imagesLinkedCount || 0}</p></div>
+                    </div>
+                    {result.skippedCount > 0 && (
+                        <div className="error-panel" style={{ background: 'var(--warning-soft)', borderColor: 'var(--warning)', color: 'var(--warning)' }}>
+                            {result.skippedCount} rows skipped.
                         </div>
                     )}
+                    {result.errors?.length > 0 && (
+                        <div className="error-panel" style={{ maxHeight: 120, overflowY: 'auto' }}>
+                            <p className="font-semibold text-sm">Warnings ({result.errors.length})</p>
+                            {result.errors.map((err, idx) => <p key={idx} className="text-xs mt-1">• {err}</p>)}
+                        </div>
+                    )}
+                    <Button onClick={onClose} className="btn-primary" style={{ width: '100%' }}>Close Summary</Button>
                 </div>
-            </div>
-        </div>
+            )}
+        </Modal>
     );
 };
 

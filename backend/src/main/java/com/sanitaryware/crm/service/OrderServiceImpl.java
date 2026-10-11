@@ -140,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updateOrder(Long id, OrderDTO orderDTO) {
-        Order existingOrder = orderRepository.findById(id)
+        Order existingOrder = findOrderForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
         accessControlService.requireOrderAccess(existingOrder);
@@ -152,19 +152,20 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Cannot update a delivered order");
         }
 
-        boolean stockReserved = reservesStock(existingOrder.getStatus());
+        Order.OrderStatus previousStatus = existingOrder.getStatus();
+        Order.OrderStatus targetStatus = previousStatus;
+        if (orderDTO.getStatus() != null && !orderDTO.getStatus().isBlank()) {
+            targetStatus = parseOrderStatus(orderDTO.getStatus());
+            OrderStateValidator.validateTransition(previousStatus, targetStatus,
+                    existingOrder.getPaymentStatus(), existingOrder.getPaidAmount());
+        }
         List<OrderItem> previousItems = List.copyOf(existingOrder.getItems());
 
         orderMapper.updateEntity(existingOrder, orderDTO);
-
-        if (orderDTO.getStatus() != null && !orderDTO.getStatus().equals(existingOrder.getStatus().name())) {
-            Order.OrderStatus newStatus = parseOrderStatus(orderDTO.getStatus());
-            OrderStateValidator.validateTransition(existingOrder.getStatus(), newStatus, existingOrder.getPaymentStatus(), existingOrder.getPaidAmount());
-            existingOrder.setStatus(newStatus);
-        }
+        existingOrder.setStatus(targetStatus);
 
         if (orderDTO.getItems() != null) {
-            if (stockReserved) {
+            if (reservesStock(previousStatus)) {
                 restoreStock(previousItems);
             }
             existingOrder.getItems().clear();
@@ -172,9 +173,13 @@ public class OrderServiceImpl implements OrderService {
                     .map(itemDTO -> orderMapper.toItemEntity(itemDTO, existingOrder))
                     .collect(Collectors.toList());
             existingOrder.getItems().addAll(updatedItems);
-            if (stockReserved) {
+            if (reservesStock(targetStatus)) {
                 deductStock(updatedItems);
             }
+        } else if (reservesStock(targetStatus) && !reservesStock(previousStatus)) {
+            deductStock(existingOrder.getItems());
+        } else if (!reservesStock(targetStatus) && reservesStock(previousStatus)) {
+            restoreStock(existingOrder.getItems());
         }
 
         existingOrder.calculateTotal();
@@ -188,7 +193,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO getOrderById(Long id) {
-        Order order = orderRepository.findById(id)
+        Order order = findOrderForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
         return orderMapper.toDTO(order);
@@ -205,7 +210,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void deleteOrder(Long id) {
-        Order order = orderRepository.findById(id)
+        Order order = findOrderForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
 
@@ -221,7 +226,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updateStatus(Long id, String statusString) {
-        Order order = orderRepository.findById(id)
+        Order order = findOrderForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
         
@@ -246,11 +251,21 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updatePaymentStatus(Long id, String paymentStatus) {
-        Order order = orderRepository.findById(id)
+        Order order = findOrderForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
         
-        order.setPaymentStatus(Order.PaymentStatus.valueOf(paymentStatus.toUpperCase()));
+        Order.PaymentStatus requested;
+        try {
+            requested = Order.PaymentStatus.valueOf(paymentStatus.toUpperCase());
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Invalid payment status: " + paymentStatus);
+        }
+        Order.PaymentStatus derived = derivePaymentStatus(order);
+        if (requested != derived) {
+            throw new IllegalArgumentException("Payment status is derived from the payment ledger; record or reverse a payment instead");
+        }
+        order.setPaymentStatus(derived);
         Order saved = orderRepository.save(order);
 
         auditService.logEvent("PAYMENT_STATUS_CHANGE", "ORDER", id,
@@ -333,6 +348,17 @@ public class OrderServiceImpl implements OrderService {
             productRepository.save(product);
             item.setProduct(product);
         }
+    }
+
+    private java.util.Optional<Order> findOrderForUpdate(Long id) {
+        java.util.Optional<Order> locked = orderRepository.findByIdForUpdate(id);
+        return locked.isPresent() ? locked : orderRepository.findById(id);
+    }
+
+    private Order.PaymentStatus derivePaymentStatus(Order order) {
+        if (order.getPaidAmount() == null || order.getPaidAmount().signum() <= 0) return Order.PaymentStatus.UNPAID;
+        if (order.getBalanceAmount() != null && order.getBalanceAmount().signum() <= 0) return Order.PaymentStatus.PAID;
+        return Order.PaymentStatus.PARTIAL;
     }
 
     @Override

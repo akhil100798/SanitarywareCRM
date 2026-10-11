@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 
 const appUrl = process.env.UI_URL || 'http://localhost:19006';
-const apiUrl = process.env.API_URL || 'http://localhost:8080/api';
+const apiUrl = process.env.API_URL || 'http://localhost:8081/api';
 const username = process.env.QA_USERNAME || 'qaadmin';
 const password = process.env.QA_PASSWORD || 'Admin123!';
 const runLegacySmoke = process.env.RUN_LEGACY_SMOKE === '1';

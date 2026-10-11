@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-11",
+  "url": "http://127.0.0.1:5173",
+  "healthScore": null,
+  "status": "partial-coverage",
+  "issues": [
+    {"id": "QA-001", "title": "Authenticated workflows could not be verified", "severity": "high", "category": "coverage"},
+    {"id": "QA-002", "title": "Test server artifact is stale relative to the working tree", "severity": "high", "category": "build"},
+    {"id": "QA-003", "title": "Endpoint and Playwright suites are blocked by environment permissions", "severity": "high", "category": "test-infrastructure"},
+    {"id": "QA-004", "title": "Browser test surface is limited to public flows", "severity": "medium", "category": "coverage"}
+  ],
+  "categoryScores": {},
+  "notes": ["No numeric score assigned because authenticated coverage was unavailable."]
+}

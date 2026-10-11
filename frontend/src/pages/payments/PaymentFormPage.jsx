@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, CreditCard, DollarSign } from 'lucide-react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import paymentService from '../../services/paymentService';
 import orderService from '../../services/orderService';
 import toast from 'react-hot-toast';
+import { Field } from '../../components/ui/Field';
+import { Button } from '../../components/ui/Button';
 
 const PaymentFormPage = () => {
     const [searchParams] = useSearchParams();
@@ -21,9 +23,7 @@ const PaymentFormPage = () => {
         notes: ''
     });
 
-    useEffect(() => {
-        if (orderId) fetchOrder();
-    }, [orderId]);
+    useEffect(() => { if (orderId) fetchOrder(); }, [orderId]);
 
     const fetchOrder = async () => {
         try {
@@ -37,137 +37,92 @@ const PaymentFormPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.amount <= 0) {
-            toast.error('Amount must be greater than 0');
-            return;
-        }
-
+        if (formData.amount <= 0) { toast.error('Amount must be greater than 0'); return; }
         if (order && formData.amount > order.balanceAmount) {
             toast.error(`Amount cannot exceed the balance due (₹${order.balanceAmount.toLocaleString()})`);
             return;
         }
-
         try {
             setLoading(true);
             await paymentService.create(formData);
-            toast.success('Payment recorded successfully');
+            toast.success('Payment recorded');
             navigate(`/orders/edit/${formData.orderId}`);
         } catch (error) {
             toast.error('Failed to record payment');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
-            <button onClick={() => navigate(-1)} className="flex items-center text-gray-600 hover:text-gray-900">
-                <ArrowLeft size={20} className="mr-2" /> Back
-            </button>
+        <div className="max-w-2xl mx-auto">
+            <button onClick={() => navigate(-1)} className="btn-ghost mb-6"><ArrowLeft size={16} /> Back</button>
+            <h1 className="text-2xl font-bold mb-6">Record Payment</h1>
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
-                <h2 className="text-xl font-bold flex items-center">
-                    <CreditCard size={24} className="mr-2 text-blue-600" />
-                    Record Payment
-                </h2>
-
-                {orderId && !order && !loading && (
-                    <div className="bg-yellow-50 p-4 rounded-lg text-sm text-yellow-700">
-                        Order details not found or failed to load.
-                    </div>
-                )}
-
-                {loading && (
-                    <div className="bg-gray-50 p-4 rounded-lg flex justify-center items-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                )}
-
-                {order && (
-                    <div className="bg-blue-50 p-4 rounded-lg flex justify-between items-center text-sm">
-                        <div>
-                            <p className="text-blue-800 font-semibold">{order.orderNumber}</p>
-                            <p className="text-blue-600">Total: ₹{(order.total || 0).toLocaleString()}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-blue-800 font-semibold">Balance Due</p>
-                            <p className="text-lg font-bold text-blue-900">₹{(order.balanceAmount || 0).toLocaleString()}</p>
-                        </div>
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Payment Amount *</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
-                            <input
-                                type="number" step="0.01" required
-                                name="amount"
-                                className="w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={formData.amount}
-                                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Payment Date</label>
-                            <input
-                                type="date" required
-                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={formData.paymentDate}
-                                onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Method</label>
-                            <select
-                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={formData.paymentMethod}
-                                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                            >
-                                <option value="CASH">Cash</option>
-                                <option value="BANK_TRANSFER">Bank Transfer</option>
-                                <option value="UPI">UPI / GPay / PhonePe</option>
-                                <option value="CHEQUE">Cheque</option>
-                                <option value="CREDIT_CARD">Credit Card</option>
-                                <option value="DEBIT_CARD">Debit Card</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Reference # (Check #, Transaction ID)</label>
-                        <input
-                            type="text"
-                            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="e.g. TXN123456"
-                            value={formData.referenceNumber}
-                            onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Notes</label>
-                        <textarea
-                            className="w-full p-2 border rounded-lg h-24 outline-none"
-                            value={formData.notes}
-                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        />
-                    </div>
+            {!orderId && !order && (
+                <div className="surface" style={{ padding: 24 }}>
+                    <p className="text-secondary mb-4">Select an order to record a payment against.</p>
+                    <Link to="/orders"><Button variant="secondary">Choose an Order</Button></Link>
                 </div>
+            )}
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg flex justify-center items-center shadow-md transition-colors"
-                >
-                    <Save size={20} className="mr-2" />
-                    {loading ? 'Processing...' : 'Record Receipt'}
-                </button>
-            </form>
+            {(orderId || order) && (
+                <form onSubmit={handleSubmit} className="surface space-y-6">
+                    {orderId && !order && !loading && (
+                        <div className="error-panel"><p>Order details not found.</p></div>
+                    )}
+                    {loading && <p className="text-slate-500 py-8 text-center">Loading order...</p>}
+                    {order && (
+                        <div className="financial-summary surface" style={{ padding: 16 }}>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold">{order.orderNumber}</p>
+                                    <p className="text-sm text-secondary">Total: ₹{(order.total || 0).toLocaleString()}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-semibold">Balance Due</p>
+                                    <p className="text-xl font-bold">₹{(order.balanceAmount || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {order && (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <Field label="Payment Amount" required>
+                                    <input type="number" step="0.01" min="0" required name="amount" className="input-field" value={formData.amount}
+                                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} />
+                                </Field>
+                                <Field label="Payment Date" required>
+                                    <input type="date" required className="input-field" value={formData.paymentDate}
+                                        onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })} />
+                                </Field>
+                                <Field label="Method" required>
+                                    <select className="input-field" value={formData.paymentMethod}
+                                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="CHEQUE">Cheque</option>
+                                        <option value="CREDIT_CARD">Credit Card</option>
+                                        <option value="DEBIT_CARD">Debit Card</option>
+                                    </select>
+                                </Field>
+                                <Field label="Reference #">
+                                    <input type="text" className="input-field" value={formData.referenceNumber}
+                                        onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })} />
+                                </Field>
+                                <Field label="Notes">
+                                    <textarea className="input-field" rows="3" value={formData.notes}
+                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}></textarea>
+                                </Field>
+                            </div>
+                            <div className="form-actions">
+                                <Button variant="secondary" onClick={() => navigate('/payments')}>Cancel</Button>
+                                <Button type="submit" loading={loading}>{loading ? 'Recording...' : 'Record Receipt'}</Button>
+                            </div>
+                        </>
+                    )}
+                </form>
+            )}
         </div>
     );
 };

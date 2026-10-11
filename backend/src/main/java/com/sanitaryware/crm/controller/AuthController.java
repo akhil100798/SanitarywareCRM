@@ -20,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -127,8 +128,25 @@ public class AuthController {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             user.setFullName(request.getFullName());
             user.setPhoneNumber(request.getPhoneNumber());
-            user.setRole(firstUser ? User.UserRole.ADMIN : User.UserRole.SALES);
+            User.UserRole requestedRole = request.getRole() == null
+                    ? User.UserRole.SALES
+                    : User.UserRole.valueOf(request.getRole());
+            if (firstUser) {
+                user.setRole(User.UserRole.ADMIN);
+            } else {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                boolean currentUserIsAdmin = authentication != null && authentication.getAuthorities().stream()
+                        .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+                if (!currentUserIsAdmin && requestedRole == User.UserRole.ADMIN) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(new MessageResponse("Only administrators can create administrator accounts"));
+                }
+                user.setRole(requestedRole);
+            }
             user.setIsActive(true);
+            if (firstUser) {
+                user.setBootstrapMarker("INITIAL_ADMIN");
+            }
 
             User savedUser = userRepository.save(user);
             User effectiveUser = savedUser != null ? savedUser : user;
@@ -139,6 +157,12 @@ public class AuthController {
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new MessageResponse("User registered successfully"));
+        } catch (DataIntegrityViolationException e) {
+            if (firstUser) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new MessageResponse("Initial administrator has already been created"));
+            }
+            throw e;
         } catch (Exception e) {
             log.error("Error during user registration: ", e);
             throw e; // Let global handler take it
@@ -164,6 +188,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
@@ -186,6 +211,7 @@ public class AuthController {
         ));
     }
     @PutMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody com.sanitaryware.crm.dto.UpdateProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();

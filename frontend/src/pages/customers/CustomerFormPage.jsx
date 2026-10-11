@@ -1,39 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import customerService from '../../services/customerService';
 import toast from 'react-hot-toast';
+import { Field } from '../../components/ui/Field';
+import { Button } from '../../components/ui/Button';
+import { PageSection } from '../../components/ui/Page';
+
+const emptyForm = {
+    name: '', email: '', phoneNumber: '', alternatePhone: '', company: '',
+    gstNumber: '', customerType: 'RETAIL', billingAddress: '', shippingAddress: '',
+    city: '', state: '', pincode: '', notes: '', isActive: true,
+};
 
 const CustomerFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditMode = !!id;
 
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        alternatePhone: '',
-        company: '',
-        gstNumber: '',
-        customerType: 'RETAIL',
-        billingAddress: '',
-        shippingAddress: '',
-        city: '',
-        state: '',
-        pincode: '',
-        notes: '',
-        isActive: true
-    });
-
+    const [formData, setFormData] = useState(emptyForm);
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [emailError, setEmailError] = useState('');
 
-    useEffect(() => {
-        if (isEditMode) {
-            fetchCustomer();
-        }
-    }, [id]);
+    useEffect(() => { if (isEditMode) fetchCustomer(); }, [id]);
 
     const fetchCustomer = async () => {
         try {
@@ -50,23 +40,17 @@ const CustomerFormPage = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
         if (name === 'email') {
-            if (value && !value.includes('@')) {
-                setEmailError('Invalid email format');
-            } else {
-                setEmailError('');
-            }
+            if (value && !value.includes('@')) setEmailError('Invalid email format');
+            else setEmailError('');
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            setLoading(true);
+            setSaving(true);
             if (isEditMode) {
                 await customerService.update(id, formData);
                 toast.success('Customer updated successfully');
@@ -78,240 +62,91 @@ const CustomerFormPage = () => {
         } catch (error) {
             toast.error(error.response?.data?.message || 'Something went wrong');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
     if (loading && isEditMode) {
-        return (
-            <div className="flex flex-col justify-center items-center h-96 space-y-4">
-                <div className="w-10 h-10 border-4 border-teal border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-500 font-semibold text-sm">Assembling customer record...</p>
-            </div>
-        );
+        return <div className="flex flex-col justify-center items-center h-96"><p className="text-slate-500 font-semibold">Loading customer...</p></div>;
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center">
-                <button
-                    onClick={() => navigate('/customers')}
-                    className="flex items-center text-slate-500 hover:text-slate-900 transition-colors font-semibold text-sm group"
-                >
-                    <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-0.5 transition-transform" />
-                    Back to Directory
-                </button>
-            </div>
+        <div className="max-w-4xl mx-auto">
+            <button onClick={() => navigate('/customers')} className="btn-ghost mb-6">
+                <ArrowLeft size={16} /> Back to Directory
+            </button>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                        {isEditMode ? 'Edit Customer Profile' : 'Register New Customer'}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-1">Configure client details, business designations, GST metrics, and dispatch locations.</p>
-                </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-6">{isEditMode ? 'Edit Customer' : 'Add Customer'}</h1>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                    {/* Basic Information */}
-                    <section className="space-y-4">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Basic Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-name" className="text-xs font-semibold text-slate-500">Full Name *</label>
-                                <input
-                                    id="customer-name"
-                                    type="text"
-                                    name="name"
-                                    required
-                                    className="input-field text-sm"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-type" className="text-xs font-semibold text-slate-500">Customer Type</label>
-                                <select
-                                    id="customer-type"
-                                    name="customerType"
-                                    className="input-field text-sm font-medium"
-                                    value={formData.customerType}
-                                    onChange={handleChange}
-                                >
-                                    <option value="RETAIL">Retail</option>
-                                    <option value="WHOLESALE">Wholesale</option>
-                                    <option value="CONTRACTOR">Contractor</option>
-                                    <option value="BUILDER">Builder</option>
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-email" className="text-xs font-semibold text-slate-500">Email Address</label>
-                                <input
-                                    id="customer-email"
-                                    type="text"
-                                    name="email"
-                                    className="input-field text-sm"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    aria-invalid={!!emailError}
-                                    aria-describedby={emailError ? 'customer-email-error' : undefined}
-                                />
-                                {emailError && <p id="customer-email-error" className="text-danger text-xs text-red-500 font-semibold mt-1">{emailError}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-phone" className="text-xs font-semibold text-slate-500">Phone Number *</label>
-                                <input
-                                    id="customer-phone"
-                                    type="text"
-                                    name="phoneNumber"
-                                    required
-                                    className="input-field text-sm"
-                                    value={formData.phoneNumber}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-alternate-phone" className="text-xs font-semibold text-slate-500">Alternate Phone</label>
-                                <input
-                                    id="customer-alternate-phone"
-                                    type="text"
-                                    name="alternatePhone"
-                                    className="input-field text-sm"
-                                    value={formData.alternatePhone}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-company" className="text-xs font-semibold text-slate-500">Company Name</label>
-                                <input
-                                    id="customer-company"
-                                    type="text"
-                                    name="company"
-                                    className="input-field text-sm"
-                                    value={formData.company}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-gst" className="text-xs font-semibold text-slate-500">GST Number</label>
-                                <input
-                                    id="customer-gst"
-                                    type="text"
-                                    name="gstNumber"
-                                    className="input-field text-sm"
-                                    value={formData.gstNumber}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="flex items-center space-x-2 pt-6">
-                                <input
-                                    type="checkbox"
-                                    id="isActive"
-                                    name="isActive"
-                                    className="w-4 h-4 text-teal border-slate-300 rounded focus:ring-teal"
-                                    checked={formData.isActive}
-                                    onChange={handleChange}
-                                />
-                                <label htmlFor="isActive" className="text-xs font-semibold text-slate-700">Active Account</label>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Address Information */}
-                    <section className="space-y-4">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Address Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="md:col-span-2 space-y-1.5">
-                                <label htmlFor="customer-billing-address" className="text-xs font-semibold text-slate-500">Billing Address</label>
-                                <textarea
-                                    id="customer-billing-address"
-                                    name="billingAddress"
-                                    rows="2"
-                                    className="input-field text-sm resize-none"
-                                    value={formData.billingAddress}
-                                    onChange={handleChange}
-                                ></textarea>
-                            </div>
-                            <div className="md:col-span-2 space-y-1.5">
-                                <label htmlFor="customer-shipping-address" className="text-xs font-semibold text-slate-500">Shipping Address</label>
-                                <textarea
-                                    id="customer-shipping-address"
-                                    name="shippingAddress"
-                                    rows="2"
-                                    className="input-field text-sm resize-none"
-                                    value={formData.shippingAddress}
-                                    onChange={handleChange}
-                                ></textarea>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-city" className="text-xs font-semibold text-slate-500">City</label>
-                                <input
-                                    id="customer-city"
-                                    type="text"
-                                    name="city"
-                                    className="input-field text-sm"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-state" className="text-xs font-semibold text-slate-500">State</label>
-                                <input
-                                    id="customer-state"
-                                    type="text"
-                                    name="state"
-                                    className="input-field text-sm"
-                                    value={formData.state}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label htmlFor="customer-pincode" className="text-xs font-semibold text-slate-500">Pincode</label>
-                                <input
-                                    id="customer-pincode"
-                                    type="text"
-                                    name="pincode"
-                                    className="input-field text-sm"
-                                    value={formData.pincode}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Additional Notes</h3>
-                        <div className="space-y-1.5">
-                            <label htmlFor="customer-notes" className="sr-only">Additional Notes</label>
-                            <textarea
-                                id="customer-notes"
-                                name="notes"
-                                rows="3"
-                                className="input-field text-sm resize-none"
-                                value={formData.notes}
-                                onChange={handleChange}
-                            ></textarea>
-                        </div>
-                    </section>
-
-                    <div className="flex justify-end space-x-3 pt-6 border-t border-slate-100">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/customers')}
-                            className="btn-secondary text-sm px-6"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary text-sm px-8"
-                        >
-                            <Save size={16} />
-                            <span>{loading ? 'Saving...' : 'Save Customer'}</span>
-                        </button>
+            <form onSubmit={handleSubmit}>
+                <PageSection>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <Field label="Full Name" required>
+                            <input type="text" name="name" required className="input-field" value={formData.name} onChange={handleChange} />
+                        </Field>
+                        <Field label="Customer Type">
+                            <select name="customerType" className="input-field" value={formData.customerType} onChange={handleChange}>
+                                <option value="RETAIL">Retail</option>
+                                <option value="WHOLESALE">Wholesale</option>
+                                <option value="CONTRACTOR">Contractor</option>
+                                <option value="BUILDER">Builder</option>
+                            </select>
+                        </Field>
+                        <Field label="Email Address" error={emailError}>
+                            <input type="text" name="email" className="input-field" value={formData.email} onChange={handleChange} />
+                        </Field>
+                        <Field label="Phone Number" required>
+                            <input type="text" name="phoneNumber" required className="input-field" value={formData.phoneNumber} onChange={handleChange} />
+                        </Field>
+                        <Field label="Alternate Phone">
+                            <input type="text" name="alternatePhone" className="input-field" value={formData.alternatePhone} onChange={handleChange} />
+                        </Field>
+                        <Field label="Company Name">
+                            <input type="text" name="company" className="input-field" value={formData.company} onChange={handleChange} />
+                        </Field>
+                        <Field label="GST Number">
+                            <input type="text" name="gstNumber" className="input-field" value={formData.gstNumber} onChange={handleChange} />
+                        </Field>
+                        <Field label="Active Account">
+                            <label className="flex items-center gap-2 text-sm" style={{ minHeight: 40 }}>
+                                <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} style={{ width: 16, height: 16 }} />
+                                <span>Active</span>
+                            </label>
+                        </Field>
                     </div>
-                </form>
-            </div>
+                </PageSection>
+
+                <PageSection>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <Field label="Billing Address">
+                            <textarea name="billingAddress" rows="2" className="input-field" value={formData.billingAddress} onChange={handleChange}></textarea>
+                        </Field>
+                        <Field label="Shipping Address">
+                            <textarea name="shippingAddress" rows="2" className="input-field" value={formData.shippingAddress} onChange={handleChange}></textarea>
+                        </Field>
+                        <Field label="City">
+                            <input type="text" name="city" className="input-field" value={formData.city} onChange={handleChange} />
+                        </Field>
+                        <Field label="State">
+                            <input type="text" name="state" className="input-field" value={formData.state} onChange={handleChange} />
+                        </Field>
+                        <Field label="Pincode">
+                            <input type="text" name="pincode" className="input-field" value={formData.pincode} onChange={handleChange} />
+                        </Field>
+                    </div>
+                </PageSection>
+
+                <PageSection>
+                    <Field label="Notes">
+                        <textarea name="notes" rows="3" className="input-field" value={formData.notes} onChange={handleChange}></textarea>
+                    </Field>
+                </PageSection>
+
+                <div className="form-actions">
+                    <Button variant="secondary" onClick={() => navigate('/customers')}>Cancel</Button>
+                    <Button type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Customer'}</Button>
+                </div>
+            </form>
         </div>
     );
 };

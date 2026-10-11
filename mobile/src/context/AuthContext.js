@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authService } from '../api/services';
+import { sessionEvents } from '../api/sessionEvents';
 
 const AuthContext = createContext(null);
 
@@ -8,10 +9,12 @@ export const AuthProvider = ({ children }) => {
   const [bootstrapping, setBootstrapping] = useState(true);
 
   useEffect(() => {
+    const unsubscribe = sessionEvents.subscribe(() => setUser(null));
     authService
       .getStoredUser()
       .then(setUser)
       .finally(() => setBootstrapping(false));
+    return unsubscribe;
   }, []);
 
   const value = useMemo(

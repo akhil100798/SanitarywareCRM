@@ -59,6 +59,10 @@ public class User {
     @Column
     private LocalDateTime lastLogin;
 
+    /** Non-null only for the single row that wins initial-admin bootstrap. */
+    @Column(name = "bootstrap_marker", unique = true, length = 32)
+    private String bootstrapMarker;
+
     public enum UserRole {
         ADMIN,
         MANAGER,

@@ -1,0 +1,26 @@
+import React, { useId } from 'react';
+import { Button } from './Button';
+
+export function Field({ label, help, error, required, children, id: suppliedId, className = '' }) {
+    const generatedId = useId();
+    const childProps = children?.props || {};
+    const id = suppliedId || childProps.id || generatedId;
+    const description = [help && `${id}-help`, error && `${id}-error`, childProps['aria-describedby']].filter(Boolean).join(' ') || undefined;
+    return <div className={`field ${className}`}>
+        <label className="field-label" htmlFor={id}>{label}{required && <span aria-hidden="true"> *</span>}</label>
+        {children && React.cloneElement(children, { id, required: required || childProps.required, 'aria-invalid': error ? true : childProps['aria-invalid'], 'aria-describedby': description })}
+        {!children && <div style={{ minHeight: 40 }} aria-hidden="true" />}
+        {help && <p className="field-help" id={`${id}-help`}>{help}</p>}
+        {error && <p className="field-error" id={`${id}-error`} role="alert">{error}</p>}
+    </div>;
+}
+
+export function SearchInput({ value, onChange, onSearch, onClear, label = 'Search records', placeholder = 'Search…', disabled }) {
+    return <form className="search-field" onSubmit={e => { e.preventDefault(); onSearch?.(); }}>
+        <Field label={label}><div className="search-control">
+            <input className="input-field" type="search" aria-label={label} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)} disabled={disabled} />
+            {onSearch && <Button type="submit" variant="secondary" disabled={disabled}>Search</Button>}
+            {value && <Button variant="ghost" onClick={() => { onChange(''); onClear?.(); }} aria-label={`Clear ${label.toLowerCase()}`}>Clear</Button>}
+        </div></Field>
+    </form>;
+}

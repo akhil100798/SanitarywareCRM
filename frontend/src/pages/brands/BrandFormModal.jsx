@@ -1,18 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { brandService } from '../../services/productService';
 import toast from 'react-hot-toast';
+import Modal from '../../components/ui/Modal';
+import { Field } from '../../components/ui/Field';
+import { Button } from '../../components/ui/Button';
 
 const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const isEditMode = !!initialData;
-    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        logoUrl: '',
-        isActive: true
+        name: '', description: '', logoUrl: '', isActive: true
     });
-    const firstInputRef = useRef(null);
 
     useEffect(() => {
         if (initialData) {
@@ -23,50 +21,19 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 isActive: initialData.isActive !== undefined ? initialData.isActive : true
             });
         } else {
-            setFormData({
-                name: '',
-                description: '',
-                logoUrl: '',
-                isActive: true
-            });
-        }
-        if (isOpen && firstInputRef.current) {
-            setTimeout(() => firstInputRef.current.focus(), 50);
+            setFormData({ name: '', description: '', logoUrl: '', isActive: true });
         }
     }, [initialData, isOpen]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            onClose();
-        }
-        if (e.key === 'Tab') {
-            const focusable = e.currentTarget.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            const first = focusable[0];
-            const last = focusable[focusable.length - 1];
-            if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault();
-                last.focus();
-            } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault();
-                first.focus();
-            }
-        }
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            setLoading(true);
+            setSaving(true);
             if (isEditMode) {
                 await brandService.update(initialData.id, formData);
                 toast.success('Brand updated successfully');
@@ -79,119 +46,36 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to save brand');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
-    if (!isOpen) return null;
-
-    const headingId = 'brand-dialog-heading';
-
     return (
-        <div
-            className="fixed inset-0 z-50 overflow-y-auto"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={headingId}
-            onKeyDown={handleKeyDown}
-        >
-            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+        <Modal open={isOpen} onClose={onClose} title={isEditMode ? 'Edit Brand' : 'Add Brand'}>
+            <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                    <Field label="Brand Name" required>
+                        <input type="text" name="name" required className="input-field" value={formData.name} onChange={handleChange} />
+                    </Field>
+                    <Field label="Description">
+                        <textarea name="description" rows="3" className="input-field" value={formData.description} onChange={handleChange}></textarea>
+                    </Field>
+                    <Field label="Logo URL" help="Enter a URL for the brand logo image.">
+                        <input type="text" name="logoUrl" className="input-field" value={formData.logoUrl} onChange={handleChange} placeholder="https://example.com/logo.png" />
+                    </Field>
+                    <Field label="Active">
+                        <label className="flex items-center gap-2" style={{ minHeight: 40 }}>
+                            <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} style={{ width: 16, height: 16 }} />
+                            <span className="text-sm">Active</span>
+                        </label>
+                    </Field>
                 </div>
-
-                <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 id={headingId} className="text-lg leading-6 font-medium text-gray-900">
-                                {isEditMode ? 'Edit Brand' : 'Add New Brand'}
-                            </h3>
-                            <button
-                                onClick={onClose}
-                                className="text-gray-400 hover:text-gray-500"
-                                aria-label="Close dialog"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label htmlFor="brand-name" className="block text-sm font-medium text-gray-700 mb-1">Brand Name *</label>
-                                <input
-                                    ref={firstInputRef}
-                                    id="brand-name"
-                                    type="text"
-                                    name="name"
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="brand-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea
-                                    id="brand-description"
-                                    name="description"
-                                    rows="3"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                ></textarea>
-                            </div>
-
-                            <div>
-                                <label htmlFor="brand-logo-url" className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
-                                <input
-                                    id="brand-logo-url"
-                                    type="text"
-                                    name="logoUrl"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    value={formData.logoUrl}
-                                    onChange={handleChange}
-                                    placeholder="https://example.com/logo.png"
-                                />
-                            </div>
-
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="isActive"
-                                    name="isActive"
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    checked={formData.isActive}
-                                    onChange={handleChange}
-                                />
-                                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-                                    Active
-                                </label>
-                            </div>
-
-                            <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm disabled:opacity-50"
-                                >
-                                    {loading ? 'Saving...' : 'Save'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                <div className="form-actions">
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button type="submit" loading={saving}>{saving ? 'Saving...' : 'Save'}</Button>
                 </div>
-            </div>
-        </div>
+            </form>
+        </Modal>
     );
 };
 

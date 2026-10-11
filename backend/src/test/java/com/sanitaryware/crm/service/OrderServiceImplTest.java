@@ -353,4 +353,95 @@ class OrderServiceImplTest {
                 () -> orderService.updateOrder(205L, new OrderDTO()));
         assertEquals("Cannot update a delivered order", ex.getMessage());
     }
+
+    @Test
+    void updateOrder_PendingToConfirmedWithItems_DeductsNewReservationOnce() {
+        Product product = product(1L, "SKU-1", 10);
+        OrderItem oldItem = new OrderItem();
+        oldItem.setProduct(product);
+        oldItem.setQuantity(4);
+
+        Order order = new Order();
+        order.setId(300L);
+        order.setStatus(Order.OrderStatus.PENDING);
+        order.setPaymentStatus(Order.PaymentStatus.UNPAID);
+        order.setItems(new java.util.ArrayList<>(List.of(oldItem)));
+
+        OrderDTO dto = new OrderDTO();
+        dto.setStatus("CONFIRMED");
+        OrderDTO.OrderItemDTO newItem = new OrderDTO.OrderItemDTO();
+        newItem.setProductId(1L);
+        newItem.setQuantity(4);
+        newItem.setUnitPrice(BigDecimal.TEN);
+        dto.setItems(List.of(newItem));
+
+        OrderItem mappedItem = new OrderItem();
+        mappedItem.setProduct(product);
+        mappedItem.setQuantity(4);
+        mappedItem.setUnitPrice(BigDecimal.TEN);
+        when(orderRepository.findById(300L)).thenReturn(Optional.of(order));
+        when(orderMapper.toItemEntity(any(OrderDTO.OrderItemDTO.class), any(Order.class))).thenReturn(mappedItem);
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
+        when(orderRepository.save(order)).thenReturn(order);
+        when(orderMapper.toDTO(order)).thenReturn(new OrderDTO());
+
+        orderService.updateOrder(300L, dto);
+
+        assertEquals(Order.OrderStatus.CONFIRMED, order.getStatus());
+        assertEquals(6, product.getStockQuantity());
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    void updateOrder_ConfirmedToPendingWithItems_RestoresOldReservationWithoutDeductingNewItems() {
+        Product product = product(1L, "SKU-1", 6);
+        OrderItem oldItem = new OrderItem();
+        oldItem.setProduct(product);
+        oldItem.setQuantity(4);
+
+        Order order = new Order();
+        order.setId(301L);
+        order.setStatus(Order.OrderStatus.CONFIRMED);
+        order.setPaymentStatus(Order.PaymentStatus.UNPAID);
+        order.setItems(new java.util.ArrayList<>(List.of(oldItem)));
+
+        OrderDTO dto = new OrderDTO();
+        dto.setStatus("PENDING");
+        OrderDTO.OrderItemDTO newItem = new OrderDTO.OrderItemDTO();
+        newItem.setProductId(1L);
+        newItem.setQuantity(2);
+        newItem.setUnitPrice(BigDecimal.TEN);
+        dto.setItems(List.of(newItem));
+
+        OrderItem mappedItem = new OrderItem();
+        mappedItem.setProduct(product);
+        mappedItem.setQuantity(2);
+        mappedItem.setUnitPrice(BigDecimal.TEN);
+        when(orderRepository.findById(301L)).thenReturn(Optional.of(order));
+        when(orderMapper.toItemEntity(any(OrderDTO.OrderItemDTO.class), any(Order.class))).thenReturn(mappedItem);
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
+        when(orderRepository.save(order)).thenReturn(order);
+        when(orderMapper.toDTO(order)).thenReturn(new OrderDTO());
+
+        orderService.updateOrder(301L, dto);
+
+        assertEquals(Order.OrderStatus.PENDING, order.getStatus());
+        assertEquals(10, product.getStockQuantity());
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    void updatePaymentStatus_CannotSetPaidWithoutLedgerPayment() {
+        Order order = new Order();
+        order.setId(400L);
+        order.setPaidAmount(BigDecimal.ZERO);
+        order.setBalanceAmount(BigDecimal.valueOf(100));
+        order.setPaymentStatus(Order.PaymentStatus.UNPAID);
+
+        when(orderRepository.findById(400L)).thenReturn(Optional.of(order));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.updatePaymentStatus(400L, "PAID"));
+        verify(orderRepository, never()).save(any(Order.class));
+    }
 }

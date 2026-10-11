@@ -2,29 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/authService';
 import toast from 'react-hot-toast';
-import { User, Mail, Phone, Lock, Save } from 'lucide-react';
+import { User, Mail, Phone, Lock } from 'lucide-react';
+import { PageHeader } from '../components/ui/Page';
+import { PageSection } from '../components/ui/Page';
+import { Field } from '../components/ui/Field';
+import { Button } from '../components/ui/Button';
 
 const ProfilePage = () => {
     const { user, setUser } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        fullName: '',
-        email: '',
-        phoneNumber: '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        fullName: '', email: '', phoneNumber: '', currentPassword: '', newPassword: '', confirmPassword: ''
     });
 
     useEffect(() => {
-        if (user) {
-            setFormData(prev => ({
-                ...prev,
-                fullName: user.fullName || '',
-                email: user.email || '',
-                phoneNumber: user.phoneNumber || ''
-            }));
-        }
+        if (user) setFormData(prev => ({ ...prev, fullName: user.fullName || '', email: user.email || '', phoneNumber: user.phoneNumber || '' }));
     }, [user]);
 
     const handleChange = (e) => {
@@ -34,173 +26,56 @@ const ProfilePage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-            toast.error("New passwords don't match");
-            return;
-        }
-
+        if (formData.newPassword && formData.newPassword !== formData.confirmPassword) { toast.error("Passwords don't match"); return; }
         try {
             setLoading(true);
             const updateData = {
-                fullName: formData.fullName,
-                email: formData.email,
-                phoneNumber: formData.phoneNumber,
-                currentPassword: formData.currentPassword,
-                newPassword: formData.newPassword
+                fullName: formData.fullName, email: formData.email, phoneNumber: formData.phoneNumber,
+                currentPassword: formData.currentPassword, newPassword: formData.newPassword
             };
-
             const response = await authService.updateProfile(updateData);
-
-            // Update local state and storage
-            const updatedUser = {
-                ...user,
-                fullName: response.data.fullName,
-                email: response.data.email,
-                phoneNumber: response.data.phoneNumber // Ensure we capture phone if returned
-            };
-
-            // Update store
-            setUser(updatedUser);
-
-            toast.success('Profile updated successfully');
-
-            // Clear password fields
-            setFormData(prev => ({
-                ...prev,
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: ''
-            }));
-
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update profile');
-        } finally {
-            setLoading(false);
-        }
+            setUser({ ...user, fullName: response.data.fullName, email: response.data.email, phoneNumber: response.data.phoneNumber });
+            toast.success('Profile updated');
+            setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
+        } catch (error) { toast.error(error.response?.data?.message || 'Failed to update profile'); }
+        finally { setLoading(false); }
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 flex items-center space-x-4 bg-gray-50">
-                    <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-                        {user?.fullName?.charAt(0) || 'U'}
-                    </div>
+        <div className="max-w-2xl mx-auto">
+            <PageHeader title="My Profile" />
+            <PageSection>
+                <div className="flex items-center gap-4 mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <div className="account-avatar" style={{ width: 52, height: 52, fontSize: 20 }}>{user?.fullName?.charAt(0) || 'U'}</div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">{user?.fullName}</h2>
-                        <p className="text-gray-500">{user?.role}</p>
+                        <h2 className="font-bold text-lg">{user?.fullName}</h2>
+                        <p className="text-secondary text-sm">{user?.role}</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit}>
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                <User size={16} /> Full Name
-                            </label>
-                            <input
-                                type="text"
-                                name="fullName"
-                                required
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={formData.fullName}
-                                onChange={handleChange}
-                            />
-                        </div>
-
+                        <h3 className="section-heading">Personal Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <Mail size={16} /> Email
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <Phone size={16} /> Phone Number
-                                </label>
-                                <input
-                                    type="tel"
-                                    name="phoneNumber"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.phoneNumber}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                            <Field label="Full Name"><input type="text" name="fullName" required className="input-field" value={formData.fullName} onChange={handleChange} /></Field>
+                            <Field label="Email"><input type="email" name="email" required className="input-field" value={formData.email} onChange={handleChange} /></Field>
+                            <Field label="Phone"><input type="tel" name="phoneNumber" className="input-field" value={formData.phoneNumber} onChange={handleChange} /></Field>
                         </div>
                     </div>
 
-                    <hr className="border-gray-100" />
-
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-gray-900">Change Password</h3>
-                        <p className="text-sm text-gray-500">Leave blank if you don't want to change your password.</p>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                <Lock size={16} /> Current Password
-                            </label>
-                            <input
-                                type="password"
-                                name="currentPassword"
-                                autoComplete="current-password"
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={formData.currentPassword}
-                                onChange={handleChange}
-                                placeholder="Required only if changing password"
-                            />
-                        </div>
-
+                    <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+                        <h3 className="section-heading">Change Password</h3>
+                        <p className="text-sm text-secondary mb-4">Leave blank to keep current password.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">New Password</label>
-                                <input
-                                    type="password"
-                                    name="newPassword"
-                                    autoComplete="new-password"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.newPassword}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    autoComplete="new-password"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                            <Field label="Current Password"><input type="password" name="currentPassword" autoComplete="current-password" className="input-field" value={formData.currentPassword} onChange={handleChange} /></Field>
+                            <Field label="New Password"><input type="password" name="newPassword" autoComplete="new-password" className="input-field" value={formData.newPassword} onChange={handleChange} /></Field>
+                            <Field label="Confirm New Password"><input type="password" name="confirmPassword" autoComplete="new-password" className="input-field" value={formData.confirmPassword} onChange={handleChange} /></Field>
                         </div>
                     </div>
 
-                    <div className="pt-4">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg transition-colors disabled:opacity-50 font-medium"
-                        >
-                            <Save size={20} />
-                            <span>{loading ? 'Updating Profile...' : 'Save Changes'}</span>
-                        </button>
-                    </div>
+                    <div className="form-actions"><Button type="submit" loading={loading}>{loading ? 'Updating...' : 'Save Changes'}</Button></div>
                 </form>
-            </div>
+            </PageSection>
         </div>
     );
 };

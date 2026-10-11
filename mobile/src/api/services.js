@@ -30,16 +30,28 @@ export const authService = {
   },
 
   getStoredUser() {
-    return Promise.all([sessionStorage.getUser(), sessionStorage.getToken()]).then(([storedUser, accessToken]) => {
+    return Promise.all([sessionStorage.getUser(), sessionStorage.getToken()]).then(async ([storedUser, accessToken]) => {
       if (!storedUser || !accessToken) {
-        return sessionStorage.clear().then(() => null);
+        await sessionStorage.clear();
+        return null;
       }
-      const { token, ...user } = storedUser;
-      if (token) {
-        // Migrate sessions created by versions that stored the bearer token twice.
-        return sessionStorage.setUser(user).then(() => user);
+      try {
+        const response = await api.get('/auth/me');
+        const user = { ...response.data };
+        delete user.token;
+        await sessionStorage.setUser(user);
+        return user;
+      } catch (error) {
+        if (error.response?.status === 401) {
+          await sessionStorage.clear();
+          return null;
+        }
+        // Preserve a cached session across temporary network failures.
+        const user = { ...storedUser };
+        delete user.token;
+        await sessionStorage.setUser(user);
+        return user;
       }
-      return user;
     });
   }
 };

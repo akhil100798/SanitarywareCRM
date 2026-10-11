@@ -17,18 +17,27 @@ public class DistributorPaymentMapper {
 
         DistributorPaymentDTO dto = new DistributorPaymentDTO();
         dto.setId(payment.getId());
-        dto.setPurchaseOrderId(payment.getPurchaseOrder().getId());
-        dto.setPoNumber(payment.getPurchaseOrder().getPoNumber());
-        dto.setDistributorId(payment.getPurchaseOrder().getDistributor().getId());
-        dto.setDistributorName(payment.getPurchaseOrder().getDistributor().getName());
+        if (payment.getPurchaseOrder() != null) {
+            dto.setPurchaseOrderId(payment.getPurchaseOrder().getId());
+            dto.setPoNumber(payment.getPurchaseOrder().getPoNumber());
+            if (payment.getPurchaseOrder().getDistributor() != null) {
+                dto.setDistributorId(payment.getPurchaseOrder().getDistributor().getId());
+                dto.setDistributorName(payment.getPurchaseOrder().getDistributor().getName());
+            }
+        } else if (payment.getDistributor() != null) {
+            dto.setDistributorId(payment.getDistributor().getId());
+            dto.setDistributorName(payment.getDistributor().getName());
+        }
         dto.setPaymentNumber(payment.getPaymentNumber());
         dto.setPaymentDate(payment.getPaymentDate());
         dto.setAmount(payment.getAmount());
         dto.setPaymentMethod(payment.getPaymentMethod().name());
         dto.setReferenceNumber(payment.getReferenceNumber());
         dto.setNotes(payment.getNotes());
-        dto.setPaidById(payment.getPaidBy().getId());
-        dto.setPaidByName(payment.getPaidBy().getFullName());
+        if (payment.getPaidBy() != null) {
+            dto.setPaidById(payment.getPaidBy().getId());
+            dto.setPaidByName(payment.getPaidBy().getFullName());
+        }
         return dto;
     }
 

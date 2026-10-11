@@ -59,6 +59,8 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
         PurchaseOrder po = payment.getPurchaseOrder();
 
         if (po != null) {
+            po = purchaseOrderRepository.findByIdForUpdate(po.getId()).orElse(po);
+            payment.setPurchaseOrder(po);
             if (po.getStatus() == PurchaseOrder.POStatus.CANCELLED) {
                 throw new IllegalArgumentException("Cannot record payment for a cancelled Purchase Order");
             }
@@ -71,18 +73,25 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
             purchaseOrderRepository.save(po);
 
             // Update distributor outstanding balance from PO's distributor
-            Distributor distributor = po.getDistributor();
+            Distributor distributor = po.getDistributor() == null ? null
+                    : distributorRepository.findByIdForUpdate(po.getDistributor().getId()).orElse(po.getDistributor());
             if (distributor != null) {
-                distributor.setOutstandingBalance(distributor.getOutstandingBalance().subtract(payment.getAmount()));
+                java.math.BigDecimal balance = distributor.getOutstandingBalance() == null
+                        ? java.math.BigDecimal.ZERO : distributor.getOutstandingBalance();
+                distributor.setOutstandingBalance(balance.subtract(payment.getAmount()));
                 distributorRepository.save(distributor);
             }
         } else if (dto.getDistributorId() != null) {
             // Independent payment linked directly to distributor (no PO)
-            distributorRepository.findById(dto.getDistributorId()).ifPresent(distributor -> {
-                distributor.setOutstandingBalance(distributor.getOutstandingBalance().subtract(payment.getAmount()));
+            Distributor distributor = distributorRepository.findByIdForUpdate(dto.getDistributorId()).orElseThrow(
+                    () -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Distributor not found"));
+            {
+                java.math.BigDecimal balance = distributor.getOutstandingBalance() == null
+                        ? java.math.BigDecimal.ZERO : distributor.getOutstandingBalance();
+                distributor.setOutstandingBalance(balance.subtract(payment.getAmount()));
                 distributorRepository.save(distributor);
                 payment.setDistributor(distributor);
-            });
+            }
         } else {
             throw new IllegalArgumentException("Either a Purchase Order or a Distributor must be specified for the payment.");
         }
@@ -123,19 +132,25 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
 
         PurchaseOrder po = payment.getPurchaseOrder();
         if (po != null) {
+            po = purchaseOrderRepository.findByIdForUpdate(po.getId()).orElse(po);
+            payment.setPurchaseOrder(po);
             // Restore PO balance
             po.setPaidAmount(po.getPaidAmount().subtract(payment.getAmount()));
             po.calculateBalance();
             purchaseOrderRepository.save(po);
 
             // Restore Distributor balance
-            Distributor distributor = po.getDistributor();
+            Distributor distributor = po.getDistributor() == null ? null
+                    : distributorRepository.findByIdForUpdate(po.getDistributor().getId()).orElse(po.getDistributor());
             if (distributor != null) {
+                payment.setDistributor(distributor);
                 distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
                 distributorRepository.save(distributor);
             }
         } else if (payment.getDistributor() != null) {
-            Distributor distributor = payment.getDistributor();
+            Distributor distributor = distributorRepository.findByIdForUpdate(payment.getDistributor().getId())
+                    .orElse(payment.getDistributor());
+            payment.setDistributor(distributor);
             distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
             distributorRepository.save(distributor);
         }

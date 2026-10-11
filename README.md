@@ -153,15 +153,15 @@ npm start
 npm run android
 ```
 
-## Default User Credentials
+## Initial Administrator Setup
 
-After first run, create an admin user via the `/api/auth/register` endpoint:
+After first run, create an administrator via the `/api/auth/register` endpoint. Choose a strong password locally and never commit it:
 
 ```json
 {
   "username": "admin",
-  "email": "admin@sanitaryware.com",
-  "password": "Admin@123",
+  "email": "admin@example.com",
+  "password": "<choose-a-strong-password>",
   "fullName": "System Administrator",
   "phoneNumber": "1234567890",
   "role": "ADMIN"

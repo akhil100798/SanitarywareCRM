@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ArrowLeft, Tag } from 'lucide-react';
+import { Plus, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { brandService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import BrandFormModal from './BrandFormModal';
 import { useAuthStore } from '../../store/authStore';
+import { PageHeader } from '../../components/ui/Page';
+import { Table } from '../../components/ui/DataTable';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { SearchInput } from '../../components/ui/Field';
+import { Button, IconButton } from '../../components/ui/Button';
+import { useConfirm } from '../../components/ui/ConfirmProvider';
+import { LoadingSkeleton, EmptyState, ErrorState } from '../../components/ui/Feedback';
 
 const BrandListPage = () => {
     const navigate = useNavigate();
@@ -12,45 +19,24 @@ const BrandListPage = () => {
     const canManageBrands = ['ADMIN', 'MANAGER'].includes(user?.role);
     const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBrand, setSelectedBrand] = useState(null);
+    const confirm = useConfirm();
 
-    useEffect(() => {
-        fetchBrands();
-    }, []);
+    useEffect(() => { fetchBrands(); }, []);
 
     const fetchBrands = async () => {
         try {
             setLoading(true);
+            setError(null);
             const response = await brandService.getAll();
             setBrands(response.data);
         } catch (error) {
-            toast.error('Failed to fetch brands');
+            setError('Failed to load brands');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleCreate = () => {
-        setSelectedBrand(null);
-        setIsModalOpen(true);
-    };
-
-    const handleEdit = (brand) => {
-        setSelectedBrand(brand);
-        setIsModalOpen(true);
-    };
-
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this brand?')) {
-            try {
-                await brandService.delete(id);
-                toast.success('Brand deleted successfully');
-                fetchBrands();
-            } catch (error) {
-                toast.error('Failed to delete brand');
-            }
         }
     };
 
@@ -59,124 +45,91 @@ const BrandListPage = () => {
         (brand.description && brand.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
+    const handleDelete = async (id, name) => {
+        const ok = await confirm(`Delete brand "${name}"? This action cannot be undone.`, { confirmLabel: 'Delete', variant: 'danger' });
+        if (!ok) return;
+        try {
+            await brandService.delete(id);
+            toast.success('Brand deleted');
+            fetchBrands();
+        } catch (error) {
+            toast.error('Failed to delete brand');
+        }
+    };
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/products')}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                        <ArrowLeft size={24} className="text-gray-600" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Brands</h1>
-                        <p className="text-gray-500">Manage your product brands.</p>
-                    </div>
-                </div>
-                {canManageBrands && (
-                    <button
-                        onClick={handleCreate}
-                        className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                    >
-                        <Plus size={20} />
-                        <span>Add Brand</span>
-                    </button>
-                )}
+        <div>
+            <div className="flex items-center gap-3 mb-4">
+                <Button variant="ghost" onClick={() => navigate('/products')}>
+                    <ArrowLeft size={18} /> Back to Products
+                </Button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search brands..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
+            <PageHeader
+                title="Brands"
+                description="Manage your product brands."
+                actions={canManageBrands && <Button onClick={() => { setSelectedBrand(null); setIsModalOpen(true); }}><Plus size={16} /> Add Brand</Button>}
+            />
+
+            <div className="table-panel">
+                <div className="filter-bar">
+                    <SearchInput
+                        label="Search brands"
+                        placeholder="Search by name or description..."
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                    />
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-600 text-sm font-medium uppercase tracking-wider">
+                {error ? (
+                    <ErrorState message={error} onRetry={fetchBrands} />
+                ) : loading ? (
+                    <LoadingSkeleton rows={5} />
+                ) : !filteredBrands.length ? (
+                    <EmptyState
+                        title={searchQuery ? 'No matching brands' : 'No brands found'}
+                        description={searchQuery ? 'Try a different search term.' : 'Add your first brand to get started.'}
+                    />
+                ) : (
+                    <Table caption="Product brands">
+                        <thead>
                             <tr>
-                                <th className="px-6 py-4">Brand</th>
-                                <th className="px-6 py-4">Description</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th>Brand</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                {canManageBrands && <th className="numeric">Actions</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500">
-                                        Loading brands...
+                        <tbody>
+                            {filteredBrands.map(brand => (
+                                <tr key={brand.id}>
+                                    <td>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded bg-surface-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                {brand.logoUrl ? (
+                                                    <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>B</span>
+                                                )}
+                                            </div>
+                                            <span className="record-name">{brand.name}</span>
+                                        </div>
                                     </td>
-                                </tr>
-                            ) : filteredBrands.length === 0 ? (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500">
-                                        No brands found.
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredBrands.map((brand) => (
-                                    <tr key={brand.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 mr-3 overflow-hidden">
-                                                    {brand.logoUrl ? (
-                                                        <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <Tag size={20} />
-                                                    )}
-                                                </div>
-                                                <span className="font-medium text-gray-900">{brand.name}</span>
+                                    <td style={{ maxWidth: 240 }}><span className="truncate block">{brand.description || '—'}</span></td>
+                                    <td><StatusBadge status={brand.isActive ? 'ACTIVE' : 'INACTIVE'} /></td>
+                                    {canManageBrands && (
+                                        <td className="numeric">
+                                            <div className="flex justify-end gap-1">
+                                                <IconButton label="Edit brand" onClick={() => { setSelectedBrand(brand); setIsModalOpen(true); }}><Edit size={16} /></IconButton>
+                                                <IconButton label="Delete brand" onClick={() => handleDelete(brand.id, brand.name)}><Trash2 size={16} /></IconButton>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500 text-sm max-w-xs truncate">
-                                            {brand.description || '-'}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {brand.isActive ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    Active
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                    Inactive
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            {canManageBrands && (
-                                                <div className="flex items-center justify-end space-x-2">
-                                                    <button
-                                                        onClick={() => handleEdit(brand)}
-                                                        className="p-1 hover:text-blue-600 transition-colors rounded"
-                                                        title="Edit Brand"
-                                                    >
-                                                        <Edit size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(brand.id)}
-                                                        className="p-1 hover:text-red-600 transition-colors rounded"
-                                                        title="Delete Brand"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
+                                    )}
+                                </tr>
+                            ))}
                         </tbody>
-                    </table>
-                </div>
+                    </Table>
+                )}
             </div>
 
             {canManageBrands && (

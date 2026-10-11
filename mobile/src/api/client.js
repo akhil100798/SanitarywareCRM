@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from './config';
 import { sessionStorage } from './storage';
+import { sessionEvents } from './sessionEvents';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -17,6 +18,17 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      await sessionStorage.clear();
+      sessionEvents.emitInvalidated();
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const getErrorMessage = (error) => {
   if (error.response?.data?.message) {

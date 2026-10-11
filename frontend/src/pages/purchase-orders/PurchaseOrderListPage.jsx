@@ -1,90 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, Truck, CheckCircle2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Truck, CheckCircle2, X } from 'lucide-react';
 import purchaseOrderService from '../../services/purchaseOrderService';
 import toast from 'react-hot-toast';
+import { PageHeader } from '../../components/ui/Page';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { SearchInput } from '../../components/ui/Field';
+import { Button, IconButton } from '../../components/ui/Button';
+import { useConfirm } from '../../components/ui/ConfirmProvider';
+import Modal from '../../components/ui/Modal';
+import { LoadingSkeleton, EmptyState, ErrorState } from '../../components/ui/Feedback';
 
 const PurchaseOrderListPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [receivingOrder, setReceivingOrder] = useState(null);
     const [isReceiving, setIsReceiving] = useState(false);
+    const confirm = useConfirm();
 
-    useEffect(() => {
-        fetchOrders();
-    }, []);
+    useEffect(() => { fetchOrders(); }, []);
 
     const fetchOrders = async () => {
-        try {
-            setLoading(true);
-            const response = await purchaseOrderService.getAllPurchaseOrders(0, 100);
-            setOrders(response.content || response || []);
-        } catch (error) {
-            toast.error('Failed to fetch purchase orders');
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
+        try { setLoading(true); setError(null); const response = await purchaseOrderService.getAllPurchaseOrders(0, 100); setOrders(response.content || response || []); }
+        catch (error) { setError('Failed to fetch purchase orders'); }
+        finally { setLoading(false); }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this purchase order?')) {
-            try {
-                await purchaseOrderService.deletePurchaseOrder(id);
-                toast.success('Purchase order deleted successfully');
-                fetchOrders();
-            } catch (error) {
-                toast.error('Failed to delete purchase order');
-            }
-        }
-    };
-
-    const handleOpenReceiveModal = (order) => {
-        setReceivingOrder(order);
+        const ok = await confirm('Delete this purchase order?', { confirmLabel: 'Delete', variant: 'danger' });
+        if (!ok) return;
+        try { await purchaseOrderService.deletePurchaseOrder(id); toast.success('Purchase order deleted'); fetchOrders(); }
+        catch (error) { toast.error('Failed to delete'); }
     };
 
     const handleConfirmReceive = async () => {
         if (!receivingOrder) return;
-        try {
-            setIsReceiving(true);
-            await purchaseOrderService.receivePurchaseOrder(receivingOrder.id);
-            toast.success(`Purchase Order ${receivingOrder.poNumber} received and inventory updated successfully!`);
-            setReceivingOrder(null);
-            fetchOrders();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to receive purchase order');
-        } finally {
-            setIsReceiving(false);
-        }
+        try { setIsReceiving(true); await purchaseOrderService.receivePurchaseOrder(receivingOrder.id); toast.success(`PO ${receivingOrder.poNumber} received!`); setReceivingOrder(null); fetchOrders(); }
+        catch (error) { toast.error(error.response?.data?.message || 'Failed to receive'); }
+        finally { setIsReceiving(false); }
     };
 
-    const getStatusBadgeClass = (status) => {
-        switch (status) {
-            case 'DRAFT': return 'bg-gray-100 text-gray-800 border border-gray-200';
-            case 'ORDERED': return 'bg-blue-100 text-blue-800 border border-blue-200';
-            case 'PARTIALLY_RECEIVED': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
-            case 'RECEIVED': return 'bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold';
-            case 'CANCELLED': return 'bg-red-100 text-red-800 border border-red-200';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
-
-    const getPaymentBadgeClass = (balanceAmount, totalAmount) => {
-        if (totalAmount === 0 || (balanceAmount > 0 && balanceAmount < totalAmount)) {
-            return 'bg-yellow-100 text-yellow-800';
-        } else if (balanceAmount === 0) {
-            return 'bg-green-100 text-green-800';
-        } else {
-            return 'bg-red-100 text-red-800';
-        }
-    };
-
-    const getPaymentStatusText = (balanceAmount, totalAmount) => {
-        if (totalAmount === 0) return 'Unpaid';
-        if (balanceAmount === 0) return 'Paid';
-        if (balanceAmount > 0 && balanceAmount < totalAmount) return 'Partial';
-        return 'Unpaid';
+    const getPaymentStatus = (balance, total) => {
+        if (!total) return 'UNPAID';
+        if (balance === 0) return 'PAID';
+        if (balance > 0 && balance < total) return 'PARTIAL';
+        return 'UNPAID';
     };
 
     const filteredOrders = orders.filter(order =>
@@ -93,194 +55,85 @@ const PurchaseOrderListPage = () => {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
-                    <p className="text-gray-500">Manage your orders to distributors and inventory receiving.</p>
+        <div>
+            <PageHeader title="Purchase Orders" description="Manage orders to distributors and inventory receiving."
+                actions={<Link to="/purchase-orders/new"><Button><Plus size={16} /> Create PO</Button></Link>} />
+            <div className="table-panel">
+                <div className="filter-bar">
+                    <SearchInput label="Search purchase orders" placeholder="Search by PO # or distributor..." value={searchQuery} onChange={setSearchQuery} />
                 </div>
-                <Link
-                    to="/purchase-orders/new"
-                    className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors shadow-sm"
-                >
-                    <Plus size={20} />
-                    <span>Create Full PO</span>
-                </Link>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search by PO Number or Distributor..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-600 text-xs font-medium uppercase tracking-wider">
-                            <tr>
-                                <th className="px-6 py-4">PO Details</th>
-                                <th className="px-6 py-4">Distributor</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Payment</th>
-                                <th className="px-6 py-4">Amount</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {loading ? (
+                {error ? (<ErrorState message={error} onRetry={fetchOrders} />)
+                : loading ? (<LoadingSkeleton rows={5} />)
+                : !filteredOrders.length ? (
+                    <EmptyState title={searchQuery ? 'No matching orders' : 'No purchase orders found'} description={searchQuery ? 'Try a different search term.' : 'Create your first purchase order.'} />
+                ) : (
+                    <div className="table-scroll">
+                        <table className="data-table" style={{ minWidth: 800 }}>
+                            <thead>
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                                        Loading purchase orders...
-                                    </td>
+                                    <th>PO Details</th>
+                                    <th>Distributor</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                    <th className="numeric">Amount</th>
+                                    <th className="numeric">Actions</th>
                                 </tr>
-                            ) : filteredOrders.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                                        No purchase orders found.
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredOrders.map((order) => {
+                            </thead>
+                            <tbody>
+                                {filteredOrders.map(order => {
                                     const isReceived = order.status === 'RECEIVED';
                                     const isCancelled = order.status === 'CANCELLED';
-
                                     return (
-                                        <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="font-semibold text-gray-900">{order.poNumber}</div>
-                                                <div className="text-sm text-gray-500">{order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '—'}</div>
+                                        <tr key={order.id}>
+                                            <td>
+                                                <div className="record-name">{order.poNumber}</div>
+                                                <div className="record-meta">{order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '—'}</div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-medium text-gray-900">{order.distributorName}</div>
+                                            <td><span className="font-semibold">{order.distributorName}</span></td>
+                                            <td><StatusBadge status={order.status} /></td>
+                                            <td><StatusBadge status={getPaymentStatus(order.balanceAmount, order.total)} /></td>
+                                            <td className="numeric">
+                                                <div className="font-semibold">₹{(order.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                                                {order.balanceAmount > 0 && <div className="record-meta" style={{ color: 'var(--danger)' }}>Bal: ₹{(order.balanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status)}`}>
-                                                    {isReceived && <CheckCircle2 size={12} className="mr-1 text-emerald-600" />}
-                                                    {order.status ? order.status.replace('_', ' ') : 'DRAFT'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentBadgeClass(order.balanceAmount, order.total)}`}>
-                                                    {getPaymentStatusText(order.balanceAmount, order.total)}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-gray-900">₹{(order.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                                                {order.balanceAmount > 0 && (
-                                                    <div className="text-xs text-red-500">Bal: ₹{(order.balanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end space-x-2">
+                                            <td className="numeric">
+                                                <div className="flex justify-end gap-1">
                                                     {!isReceived && !isCancelled && (
-                                                        <button
-                                                            onClick={() => handleOpenReceiveModal(order)}
-                                                            className="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors flex items-center gap-1 shadow-sm"
-                                                            title="Receive Purchase Order and update inventory"
-                                                            aria-label="Receive Purchase Order"
-                                                        >
-                                                            <Truck size={14} />
-                                                            <span>Receive</span>
-                                                        </button>
+                                                        <Button variant="secondary" size="sm" onClick={() => setReceivingOrder(order)}>
+                                                            <Truck size={14} /> Receive
+                                                        </Button>
                                                     )}
-                                                    <Link
-                                                        to={`/purchase-orders/edit/${order.id}`}
-                                                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors rounded"
-                                                        title="Edit / View"
-                                                        aria-label="Edit Purchase Order"
-                                                    >
-                                                        <Edit size={18} />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDelete(order.id)}
-                                                        className="p-1 text-gray-400 hover:text-red-600 transition-colors rounded"
-                                                        title="Delete"
-                                                        aria-label="Delete Purchase Order"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
+                                                    <Link to={`/purchase-orders/edit/${order.id}`}><IconButton label="Edit PO"><Edit size={16} /></IconButton></Link>
+                                                    <IconButton label="Delete PO" onClick={() => handleDelete(order.id)}><Trash2 size={16} /></IconButton>
                                                 </div>
                                             </td>
                                         </tr>
                                     );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
-            {/* Receive Confirmation Modal */}
-            {receivingOrder && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex justify-between items-start">
-                            <div className="flex items-center space-x-3">
-                                <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-lg">
-                                    <Truck size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900">Receive Purchase Order</h3>
-                                    <p className="text-xs text-gray-500">{receivingOrder.poNumber}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setReceivingOrder(null)}
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
-                                aria-label="Close"
-                            >
-                                <X size={20} />
-                            </button>
+            <Modal open={!!receivingOrder} onClose={() => setReceivingOrder(null)} title="Receive Purchase Order">
+                {receivingOrder && (
+                    <div className="space-y-4">
+                        <div className="surface">
+                            <div className="flex justify-between text-sm"><span className="text-secondary">Distributor:</span><span className="font-semibold">{receivingOrder.distributorName}</span></div>
+                            <div className="flex justify-between text-sm mt-2"><span className="text-secondary">PO Amount:</span><span className="font-semibold">₹{(receivingOrder.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
+                            <div className="flex justify-between text-sm mt-2"><span className="text-secondary">Items:</span><span className="font-semibold">{receivingOrder.items?.length || 0} line items</span></div>
                         </div>
-
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-2.5 text-sm border border-gray-100">
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Distributor:</span>
-                                <span className="font-semibold text-gray-800">{receivingOrder.distributorName}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Total PO Amount:</span>
-                                <span className="font-semibold text-gray-800">₹{(receivingOrder.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Items Count:</span>
-                                <span className="font-semibold text-gray-800">{receivingOrder.items?.length || 0} line items</span>
-                            </div>
-                            <div className="p-3 bg-emerald-50 text-emerald-800 rounded border border-emerald-100 text-xs mt-2">
-                                <strong>Inventory Impact:</strong> All line item quantities will be atomically added to product stock in the catalogue, and distributor balance will be updated.
-                            </div>
+                        <div className="error-panel" style={{ background: 'var(--success-soft)', borderColor: 'var(--success)', color: 'var(--success)' }}>
+                            <strong>Inventory Impact:</strong> All line item quantities will be added to product stock.
                         </div>
-
-                        <div className="flex justify-end space-x-3 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setReceivingOrder(null)}
-                                disabled={isReceiving}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleConfirmReceive}
-                                disabled={isReceiving}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow transition-all flex items-center gap-2"
-                            >
-                                <Truck size={16} />
-                                {isReceiving ? 'Processing Stock Intake...' : 'Confirm & Receive'}
-                            </button>
+                        <div className="form-actions">
+                            <Button variant="secondary" onClick={() => setReceivingOrder(null)} disabled={isReceiving}>Cancel</Button>
+                            <Button onClick={handleConfirmReceive} loading={isReceiving}>{isReceiving ? 'Receiving...' : 'Confirm & Receive'}</Button>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </Modal>
         </div>
     );
 };

@@ -1,177 +1,137 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, Mail, Phone, User } from 'lucide-react';
+import { Plus, Edit, Trash2, Mail, Phone, User } from 'lucide-react';
 import customerService from '../../services/customerService';
 import toast from 'react-hot-toast';
+import { PageHeader } from '../../components/ui/Page';
+import { Table } from '../../components/ui/DataTable';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { SearchInput } from '../../components/ui/Field';
+import { Button, IconButton } from '../../components/ui/Button';
+import { useConfirm } from '../../components/ui/ConfirmProvider';
+import { LoadingSkeleton, EmptyState, ErrorState } from '../../components/ui/Feedback';
 
 const CustomerListPage = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const confirm = useConfirm();
 
-    useEffect(() => {
-        fetchCustomers();
-    }, []);
+    useEffect(() => { fetchCustomers(); }, []);
 
-    const fetchCustomers = async () => {
+    const fetchCustomers = async (query) => {
         try {
             setLoading(true);
-            const response = await customerService.getAll({ size: 100 });
+            setError(null);
+            const response = query
+                ? await customerService.search(query, { size: 100 })
+                : await customerService.getAll({ size: 100 });
             setCustomers(response.data.content);
         } catch (error) {
-            toast.error('Failed to fetch customers');
-            console.error(error);
+            setError('Failed to load customers');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) {
-            fetchCustomers();
-            return;
-        }
-        try {
-            setLoading(true);
-            const response = await customerService.search(searchQuery, { size: 100 });
-            setCustomers(response.data.content);
-        } catch (error) {
-            toast.error('Search failed');
-        } finally {
-            setLoading(false);
-        }
+    const handleSearch = () => {
+        fetchCustomers(searchQuery.trim() || undefined);
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to deactivate this customer?')) {
-            try {
-                await customerService.delete(id);
-                toast.success('Customer deactivated');
-                fetchCustomers();
-            } catch (error) {
-                toast.error('Failed to delete customer');
-            }
+    const handleDelete = async (id, name) => {
+        const ok = await confirm(`Deactivate customer "${name}"? This will hide them from active lists.`, { confirmLabel: 'Deactivate', variant: 'danger' });
+        if (!ok) return;
+        try {
+            await customerService.delete(id);
+            toast.success('Customer deactivated');
+            fetchCustomers(searchQuery.trim() || undefined);
+        } catch (error) {
+            toast.error('Failed to deactivate customer');
         }
     };
 
     return (
-        <div className="space-y-8">
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customer Directory</h1>
-                    <p className="text-slate-500 text-sm">Manage store clients, wholesalers, trade associations, and credit files.</p>
-                </div>
-                <Link to="/customers/new" className="btn-primary text-sm">
-                    <Plus size={16} />
-                    <span>Add Customer</span>
-                </Link>
-            </div>
+        <div>
+            <PageHeader
+                title="Customer Directory"
+                description="Manage store clients, wholesalers, trade associations and credit files."
+                actions={
+                    <Link to="/customers/new">
+                        <Button><Plus size={16} /> Add Customer</Button>
+                    </Link>
+                }
+            />
 
-            {/* List Table Container */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                {/* Search Bar */}
-                <div className="p-4 border-b border-slate-100">
-                    <form onSubmit={handleSearch} className="relative max-w-lg">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search by customer name, email, or telephone..."
-                            className="input-field pl-10 py-2.5 text-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </form>
+            <div className="table-panel">
+                <div className="filter-bar">
+                    <SearchInput
+                        label="Search customers"
+                        placeholder="Search by name, email or phone..."
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        onSearch={handleSearch}
+                        onClear={() => { setSearchQuery(''); fetchCustomers(); }}
+                    />
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                {error ? (
+                    <ErrorState message={error} onRetry={() => fetchCustomers(searchQuery.trim() || undefined)} />
+                ) : loading ? (
+                    <LoadingSkeleton rows={5} />
+                ) : !customers.length ? (
+                    <EmptyState
+                        title="No customers found"
+                        description={searchQuery ? 'Try a different search term.' : 'Add your first customer to get started.'}
+                        action={!searchQuery && <Link to="/customers/new"><Button variant="secondary"><Plus size={16} /> Add Customer</Button></Link>}
+                    />
+                ) : (
+                    <Table caption="Customer directory">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
-                                <th className="px-6 py-4">Customer Details</th>
-                                <th className="px-6 py-4">Contact Info</th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4">Business / Company</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                            <tr>
+                                <th>Customer Details</th>
+                                <th>Contact Info</th>
+                                <th>Type</th>
+                                <th>Company</th>
+                                <th>Status</th>
+                                <th className="numeric">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-sm">
-                                        <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
-                                        <span>Fetching customer list...</span>
+                        <tbody>
+                            {customers.map(customer => (
+                                <tr key={customer.id}>
+                                    <td>
+                                        <div className="record-name">{customer.name}</div>
+                                        <div className="record-meta">{customer.city ? `${customer.city}${customer.state ? `, ${customer.state}` : ''}` : '—'}</div>
+                                    </td>
+                                    <td>
+                                        <div className="flex items-center gap-1.5 text-xs">
+                                            <Mail size={12} className="text-muted" aria-hidden="true" />
+                                            {customer.email || '—'}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-xs mt-1">
+                                            <Phone size={12} className="text-muted" aria-hidden="true" />
+                                            {customer.phoneNumber || '—'}
+                                        </div>
+                                    </td>
+                                    <td><StatusBadge status={customer.customerType || 'RETAIL'} /></td>
+                                    <td className="text-sm">{customer.company || '—'}</td>
+                                    <td><StatusBadge status={customer.isActive ? 'ACTIVE' : 'INACTIVE'} /></td>
+                                    <td className="numeric">
+                                        <div className="flex justify-end gap-1">
+                                            <Link to={`/customers/edit/${customer.id}`}>
+                                                <IconButton label="Edit customer"><Edit size={16} /></IconButton>
+                                            </Link>
+                                            <IconButton label="Deactivate customer" onClick={() => handleDelete(customer.id, customer.name)}>
+                                                <Trash2 size={16} />
+                                            </IconButton>
+                                        </div>
                                     </td>
                                 </tr>
-                            ) : customers.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-sm">
-                                        No customer records found.
-                                    </td>
-                                </tr>
-                            ) : (
-                                customers.map((customer) => (
-                                    <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors text-sm">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-3.5">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 font-bold">
-                                                    <User size={18} />
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-900">{customer.name}</div>
-                                                    <div className="text-xxs text-slate-400 mt-0.5">{customer.city ? `${customer.city}, ${customer.state || ''}` : 'Location unconfigured'}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 space-y-1">
-                                            <div className="flex items-center text-xs text-slate-600 font-medium">
-                                                <Mail size={12} className="mr-2 text-slate-400" />
-                                                {customer.email || 'No email registered'}
-                                            </div>
-                                            <div className="flex items-center text-xs text-slate-600 font-medium">
-                                                <Phone size={12} className="mr-2 text-slate-400" />
-                                                {customer.phoneNumber}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 uppercase tracking-wider">
-                                                {customer.customerType || 'RETAIL'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-xs font-semibold text-slate-600">
-                                            {customer.company || '-'}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={customer.isActive ? 'badge-paid' : 'badge-unpaid'}>
-                                                {customer.isActive ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end space-x-1.5">
-                                                <Link
-                                                    to={`/customers/edit/${customer.id}`}
-                                                    className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
-                                                    title="Edit Customer"
-                                                >
-                                                    <Edit size={16} />
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(customer.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
-                                                    title="Deactivate Customer"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
+                            ))}
                         </tbody>
-                    </table>
-                </div>
+                    </Table>
+                )}
             </div>
         </div>
     );
