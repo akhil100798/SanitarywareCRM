@@ -11,7 +11,7 @@ const groups = [
     { label: 'Overview', items: [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'] },
     ]},
-    { label: 'Sales', roles: ['ADMIN', 'MANAGER', 'SALES'], items: [
+    { label: 'Sales', roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'], items: [
         { icon: Users, label: 'Customers', path: '/customers', roles: ['ADMIN', 'MANAGER', 'SALES'] },
         { icon: FileText, label: 'Quotations', path: '/quotations', roles: ['ADMIN', 'MANAGER', 'SALES'] },
         { icon: ShoppingCart, label: 'Orders', path: '/orders', roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'] },
@@ -24,7 +24,7 @@ const groups = [
     { label: 'Purchasing', roles: ['ADMIN', 'MANAGER'], items: [
         { icon: Truck, label: 'Distributors', path: '/distributors', roles: ['ADMIN', 'MANAGER'] },
         { icon: Package, label: 'Purchase Orders', path: '/purchase-orders', roles: ['ADMIN', 'MANAGER'] },
-        { icon: CreditCard, label: 'Supplier Payments', path: '/distributor-payments', roles: ['ADMIN', 'MANAGER'] },
+        { icon: CreditCard, label: 'Distributor Payments', path: '/distributor-payments', roles: ['ADMIN', 'MANAGER'] },
     ]},
     { label: 'Insights', roles: ['ADMIN', 'MANAGER'], items: [
         { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
@@ -57,7 +57,7 @@ function AppSidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
                 </div>
             </div>
 
-            <Link to="/profile" className="sidebar-user" tabIndex={0}>
+            <Link to="/profile" className="sidebar-user" tabIndex={0} data-testid="profile-navigation-link">
                 <div className="account-avatar">{user?.fullName?.charAt(0) || 'U'}</div>
                 <div className="nav-label">
                     <div className="text-sm font-semibold text-white truncate">{user?.fullName}</div>
@@ -83,6 +83,7 @@ function AppSidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
                                     key={item.path}
                                     to={item.path}
                                     className="nav-link"
+                                    data-testid={`nav-${item.path.slice(1).replace(/\//g, '-')}`}
                                     aria-current={isActive(item.path) ? 'page' : undefined}
                                     onClick={() => onMobileClose?.()}
                                 >

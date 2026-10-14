@@ -6,6 +6,7 @@ const AppTextInput = ({ label, style, inputStyle, ...props }) => (
   <View style={[styles.wrap, style]}>
     {label ? <Text style={styles.label}>{label}</Text> : null}
     <TextInput
+      accessibilityLabel={label}
       placeholderTextColor={colors.muted}
       style={[styles.input, inputStyle, props.multiline && styles.multiline]}
       {...props}

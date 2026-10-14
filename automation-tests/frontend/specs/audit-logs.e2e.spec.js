@@ -1,9 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
 const credentials = {
-  ADMIN: { username: 'qaadmin', password: 'Password@123' },
-  MANAGER: { username: 'qamanager', password: 'Password@123' },
-  SALES: { username: 'qasales', password: 'Password@123' }
+  ADMIN: { username: 'qaadmin', password: process.env.QA_ADMIN_PASSWORD },
+  MANAGER: { username: 'qamanager', password: process.env.QA_MANAGER_PASSWORD },
+  SALES: { username: 'qasales', password: process.env.QA_SALES_PASSWORD }
 };
 
 async function loginAs(page, role) {

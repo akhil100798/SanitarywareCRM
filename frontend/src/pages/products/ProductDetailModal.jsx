@@ -3,6 +3,7 @@ import { Package, AlertCircle, Sparkles, Image as ImageIcon } from 'lucide-react
 import { useAuthStore } from '../../store/authStore';
 import Modal from '../../components/ui/Modal';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import AuthenticatedImage from '../../components/ui/AuthenticatedImage';
 
 const ProductDetailModal = ({ product, isOpen, onClose }) => {
     const user = useAuthStore((state) => state.user);
@@ -32,7 +33,7 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                     <div className="space-y-3">
                         <div className="w-full h-56 rounded-lg bg-surface-muted flex items-center justify-center overflow-hidden relative">
                             {currentImage && !isCurrentImageBroken ? (
-                                <img src={currentImage.imageUrl} alt={product.name} className="w-full h-full object-contain p-2"
+                                <AuthenticatedImage src={currentImage.imageUrl} alt={product.name} className="w-full h-full object-contain p-2"
                                     onError={() => setImageErrorMap(prev => ({ ...prev, [currentImage.id || selectedImageIndex]: true }))} />
                             ) : (
                                 <div className="flex flex-col items-center text-muted"><ImageIcon size={48} strokeWidth={1.5} /><span className="text-xs mt-2">{currentImage ? 'Unavailable' : 'No image'}</span></div>
@@ -44,9 +45,9 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                                 {images.map((img, idx) => {
                                     const broken = !!imageErrorMap[img.id || idx];
                                     return (
-                                        <button key={img.id || idx} type="button" onClick={() => setSelectedImageIndex(idx)}
+                                        <button key={img.id || idx} type="button" aria-label={`Show product image ${idx + 1}`} onClick={() => setSelectedImageIndex(idx)}
                                             className={`w-12 h-12 rounded border p-0.5 flex items-center justify-center overflow-hidden flex-shrink-0 ${selectedImageIndex === idx ? 'border-primary' : 'border-border'}`}>
-                                            {!broken ? <img src={img.imageUrl} alt="" className="w-full h-full object-contain"
+                                            {!broken ? <AuthenticatedImage src={img.imageUrl} alt="" className="w-full h-full object-contain"
                                                 onError={() => setImageErrorMap(prev => ({ ...prev, [img.id || idx]: true }))} />
                                             : <ImageIcon size={14} />}
                                         </button>

@@ -4,7 +4,7 @@ const { LoginPage } = require('../pages/LoginPage');
 test('draft order attachment uploads with authentication and previews locally before association', async ({ page }) => {
   const login = new LoginPage(page);
   await login.navigate();
-  await login.login('qaadmin', 'Password@123');
+  await login.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
   await page.goto('/orders/new');
   const uploaded = page.waitForResponse(response =>
     response.url().includes('/api/files/upload') && response.request().method() === 'POST');

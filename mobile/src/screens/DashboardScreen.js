@@ -30,6 +30,7 @@ const StatTile = ({ icon: Icon, label, value, tone = colors.primary }) => (
 
 const DashboardScreen = () => {
   const { user, logout } = useAuth();
+  const canViewFinancials = ['ADMIN', 'MANAGER'].includes(user?.role);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,26 +80,26 @@ const DashboardScreen = () => {
             <Text style={styles.greeting}>Welcome</Text>
             <Text style={styles.name}>{user?.fullName || user?.username}</Text>
           </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Sign out" onPress={logout} style={styles.logoutButton}>
             <LogOut color={colors.danger} size={20} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.revenueCard}>
+        {canViewFinancials && <View style={styles.revenueCard}>
           <Text style={styles.revenueLabel}>Total Revenue</Text>
           <Text style={styles.revenueValue}>{formatMoney(stats?.totalRevenue)}</Text>
           <Text style={styles.revenueSub}>
             Receivables {formatMoney(stats?.totalReceivables)} | Payables {formatMoney(stats?.totalPayables)}
           </Text>
-        </View>
+        </View>}
 
         <View style={styles.grid}>
           <StatTile icon={ShoppingCart} label="Orders" value={stats?.totalOrders ?? 0} />
           <StatTile icon={AlertCircle} label="Pending" value={stats?.pendingOrders ?? 0} tone={colors.warning} />
           <StatTile icon={Users} label="Customers" value={stats?.totalCustomers ?? 0} tone={colors.accent} />
           <StatTile icon={Package} label="Low Stock" value={stats?.lowStockProducts ?? 0} tone={colors.danger} />
-          <StatTile icon={CreditCard} label="Distributor Paid" value={formatMoney(stats?.distributorPaymentsTotal)} />
-          <StatTile icon={IndianRupee} label="Receivables" value={formatMoney(stats?.totalReceivables)} tone={colors.success} />
+          {canViewFinancials && <StatTile icon={CreditCard} label="Distributor Paid" value={formatMoney(stats?.distributorPaymentsTotal)} />}
+          {canViewFinancials && <StatTile icon={IndianRupee} label="Receivables" value={formatMoney(stats?.totalReceivables)} tone={colors.success} />}
         </View>
       </ScrollView>
     </Screen>

@@ -57,7 +57,7 @@ const PurchaseOrderListPage = () => {
     return (
         <div>
             <PageHeader title="Purchase Orders" description="Manage orders to distributors and inventory receiving."
-                actions={<Link to="/purchase-orders/new"><Button><Plus size={16} /> Create PO</Button></Link>} />
+                actions={<Button as={Link} to="/purchase-orders/new"><Plus size={16} /> Create PO</Button>} />
             <div className="table-panel">
                 <div className="filter-bar">
                     <SearchInput label="Search purchase orders" placeholder="Search by PO # or distributor..." value={searchQuery} onChange={setSearchQuery} />
@@ -103,7 +103,7 @@ const PurchaseOrderListPage = () => {
                                                             <Truck size={14} /> Receive
                                                         </Button>
                                                     )}
-                                                    <Link to={`/purchase-orders/edit/${order.id}`}><IconButton label="Edit PO"><Edit size={16} /></IconButton></Link>
+                                                    <IconButton as={Link} to={`/purchase-orders/edit/${order.id}`} label="Edit PO"><Edit size={16} /></IconButton>
                                                     <IconButton label="Delete PO" onClick={() => handleDelete(order.id)}><Trash2 size={16} /></IconButton>
                                                 </div>
                                             </td>

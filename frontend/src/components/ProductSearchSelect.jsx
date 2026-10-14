@@ -107,6 +107,7 @@ const ProductSearchSelect = ({
                 type="button"
                 disabled={disabled}
                 onClick={() => setIsOpen(prev => !prev)}
+                data-testid="product-search-trigger"
                 className={`w-full text-left p-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-white font-medium flex items-center justify-between shadow-sm transition-all ${
                     disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200' : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
@@ -155,6 +156,7 @@ const ProductSearchSelect = ({
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            data-testid="product-search-input"
                             placeholder="Type to search name, SKU, barcode..."
                             className="w-full text-xs outline-none bg-transparent placeholder:text-slate-400 py-0.5 text-slate-800 font-medium"
                         />
@@ -184,6 +186,7 @@ const ProductSearchSelect = ({
                                     <div
                                         key={p.id}
                                         onClick={() => handleSelect(p)}
+                                        data-testid={`product-search-result-${p.id}`}
                                         className={`px-3.5 py-2.5 text-xs cursor-pointer hover:bg-teal-50/50 flex items-center justify-between gap-3 transition-colors ${
                                             isSelected ? 'bg-teal-50 border-l-4 border-teal text-teal-950 font-medium' : 'text-slate-700'
                                         }`}

@@ -73,7 +73,7 @@ const OrderListPage = () => {
             <PageHeader
                 title="Customer Orders"
                 description="Fulfill confirmed sales, record payments, and track shipments."
-                actions={canManageOrders && <Link to="/orders/new"><Button><Plus size={16} /> New Order</Button></Link>}
+                actions={canManageOrders && <Button as={Link} to="/orders/new"><Plus size={16} /> New Order</Button>}
             />
             <div className="table-panel">
                 <div className="filter-bar">
@@ -98,7 +98,7 @@ const OrderListPage = () => {
                             </thead>
                             <tbody>
                                 {filtered.map(o => (
-                                    <tr key={o.id}>
+                                    <tr key={o.id} data-testid={`order-row-${o.id}`}>
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <ShoppingBag size={16} className="text-muted" />
@@ -136,8 +136,8 @@ const OrderListPage = () => {
                                             <div className="flex justify-end gap-1">
                                                 {canManageOrders && (
                                                     <>
-                                                        <IconButton label="Download invoice" onClick={() => handleDownloadInvoice(o.id, o.orderNumber)}><Download size={16} /></IconButton>
-                                                        <Link to={`/orders/edit/${o.id}`}><Button variant="secondary" size="sm">Manage</Button></Link>
+                                                        <IconButton label="Download Invoice PDF" onClick={() => handleDownloadInvoice(o.id, o.orderNumber)}><Download size={16} /></IconButton>
+                                                        <Button as={Link} to={`/orders/edit/${o.id}`} variant="secondary" size="sm" data-testid={`manage-order-${o.id}`}>Manage</Button>
                                                     </>
                                                 )}
                                             </div>

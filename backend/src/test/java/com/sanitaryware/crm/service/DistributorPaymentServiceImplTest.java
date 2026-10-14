@@ -78,6 +78,7 @@ class DistributorPaymentServiceImplTest {
         payment.setPurchaseOrder(po);
 
         when(paymentMapper.toEntity(dto)).thenReturn(payment);
+        when(purchaseOrderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(po));
         when(paymentRepository.save(any(DistributorPayment.class))).thenAnswer(inv -> inv.getArgument(0));
         when(paymentMapper.toDTO(any())).thenReturn(new DistributorPaymentDTO());
 
@@ -107,6 +108,7 @@ class DistributorPaymentServiceImplTest {
         payment.setPurchaseOrder(po);
 
         when(paymentMapper.toEntity(dto)).thenReturn(payment);
+        when(purchaseOrderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(po));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> paymentService.createPayment(dto));

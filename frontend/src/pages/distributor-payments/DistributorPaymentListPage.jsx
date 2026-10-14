@@ -41,7 +41,7 @@ const DistributorPaymentListPage = () => {
     return (
         <div>
             <PageHeader title="Distributor Payments" description="Manage payments made to your suppliers."
-                actions={<Link to="/distributor-payments/new"><Button><Plus size={16} /> Record Payment</Button></Link>} />
+                actions={<Button as={Link} to="/distributor-payments/new"><Plus size={16} /> Record Payment</Button>} />
             <div className="table-panel">
                 <div className="filter-bar">
                     <SearchInput label="Search payments" placeholder="Search by receipt, distributor or reference..." value={searchQuery} onChange={setSearchQuery} />
@@ -80,7 +80,7 @@ const DistributorPaymentListPage = () => {
                                         <td className="numeric"><span className="font-semibold" style={{ color: 'var(--danger)' }}>₹{payment.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
                                         <td className="numeric">
                                             <div className="flex justify-end gap-1">
-                                                <Link to={`/distributor-payments/edit/${payment.id}`}><IconButton label="View payment"><Edit size={16} /></IconButton></Link>
+                                                <IconButton as={Link} to={`/distributor-payments/edit/${payment.id}`} label="View payment"><Edit size={16} /></IconButton>
                                                 <IconButton label="Delete payment" onClick={() => handleDelete(payment.id)}><Trash2 size={16} /></IconButton>
                                             </div>
                                         </td>

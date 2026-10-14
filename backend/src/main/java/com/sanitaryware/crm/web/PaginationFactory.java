@@ -7,11 +7,22 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import com.sanitaryware.crm.entity.*;
 
 @Component
 public class PaginationFactory {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final Map<String, Class<?>> SORT_RESOURCES = Map.of(
+            "customers", Customer.class, "products", Product.class, "distributors", Distributor.class,
+            "orders", Order.class, "quotations", Quotation.class, "purchase-orders", PurchaseOrder.class,
+            "distributor-payments", DistributorPayment.class, "audit-logs", AuditLog.class);
 
     public Pageable create(int page, int size, String[] sort) {
         if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
@@ -19,8 +30,30 @@ public class PaginationFactory {
         }
 
         List<Sort.Order> orders = parseSort(sort);
+        Set<String> allowed = allowedSortProperties();
+        for (Sort.Order order : orders) {
+            if (!allowed.contains(order.getProperty())) throw new IllegalArgumentException("Invalid sort property");
+        }
         Sort pageableSort = orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
         return PageRequest.of(page, size, pageableSort);
+    }
+
+    private Set<String> allowedSortProperties() {
+        var attributes = RequestContextHolder.getRequestAttributes();
+        if (attributes instanceof ServletRequestAttributes servletAttributes) {
+            var request = servletAttributes.getRequest();
+            String path = request.getRequestURI().substring(request.getContextPath().length());
+            String[] segments = path.split("/");
+            Class<?> entity = segments.length > 2 && "api".equals(segments[1]) ? SORT_RESOURCES.get(segments[2]) : null;
+            if (entity != null) {
+                // Only scalar persisted columns of this endpoint's actual entity. No association paths or expressions.
+                return Arrays.stream(entity.getDeclaredFields())
+                        .filter(field -> field.isAnnotationPresent(jakarta.persistence.Column.class)
+                                || field.isAnnotationPresent(jakarta.persistence.Id.class))
+                        .map(java.lang.reflect.Field::getName).collect(Collectors.toUnmodifiableSet());
+            }
+        }
+        return Set.of("id", "name", "createdAt", "updatedAt");
     }
 
     private List<Sort.Order> parseSort(String[] sort) {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getErrorMessage } from '../api/client';
 import { orderService, quotationService } from '../api/services';
 import DetailSection from '../components/DetailSection';
@@ -38,22 +38,28 @@ const QuotationDetailScreen = ({ route, navigation }) => {
   }, [loadQuotation]);
 
   const convertToOrder = () => {
+    const convert = async () => {
+      try {
+        setConverting(true);
+        setActionError('');
+        const order = await orderService.createFromQuotation(quotationId);
+        navigation.replace('OrderDetail', { id: order.id, refreshKey: Date.now() });
+      } catch (err) {
+        setActionError(getErrorMessage(err));
+      } finally {
+        setConverting(false);
+      }
+    };
+    // React Native Web's Alert.alert is an empty implementation. Preserve confirmation on both platforms.
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm('Create a pending order from this quotation?')) void convert();
+      return;
+    }
     Alert.alert('Convert quotation?', 'This will create a pending order from this quotation.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Convert',
-        onPress: async () => {
-          try {
-            setConverting(true);
-            setActionError('');
-            const order = await orderService.createFromQuotation(quotationId);
-            navigation.replace('OrderDetail', { id: order.id, refreshKey: Date.now() });
-          } catch (err) {
-            setActionError(getErrorMessage(err));
-          } finally {
-            setConverting(false);
-          }
-        }
+        onPress: convert
       }
     ]);
   };

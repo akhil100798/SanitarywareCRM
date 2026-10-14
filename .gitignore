@@ -26,6 +26,7 @@ mobile/android/
 automation-tests/test-results/
 automation-tests/playwright-report/
 automation-tests/reports/
+reports/
 test-results/
 playwright-report/
 coverage/

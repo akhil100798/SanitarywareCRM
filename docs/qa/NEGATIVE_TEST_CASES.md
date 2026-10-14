@@ -7,7 +7,7 @@
 
 | Test ID | Module | Scenario | Preconditions | Test Steps | Test Data | Expected Error/Result | Automation Tool | Suggested Test File Path | Priority |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **NEG-001** | Auth | Login with invalid username | User does not exist | POST `/api/auth/login` | Username: `fakeuser`, Password: `Password@123` | 401 Unauthorized: "Bad credentials". | MockMvc | `backend/src/test/java/com/sanitaryware/crm/controller/AuthControllerTest.java` | Critical |
+| **NEG-001** | Auth | Login with invalid username | User does not exist | POST `/api/auth/login` | Username: `fakeuser`, password from the QA environment | 401 Unauthorized: "Bad credentials". | MockMvc | `backend/src/test/java/com/sanitaryware/crm/controller/AuthControllerTest.java` | Critical |
 | **NEG-002** | Auth | Login with incorrect password | User exists | POST `/api/auth/login` | Username: `qaadmin`, Password: `WrongPassword` | 401 Unauthorized: "Bad credentials". | MockMvc | `backend/src/test/java/com/sanitaryware/crm/controller/AuthControllerTest.java` | Critical |
 | **NEG-003** | Auth | Login with missing fields | Valid user | POST `/api/auth/login` with empty body | `{}` | 400 Bad Request / Validation failed. | MockMvc | `backend/src/test/java/com/sanitaryware/crm/controller/AuthControllerTest.java` | High |
 | **NEG-004** | Auth | Register duplicate username | User exists | POST `/api/auth/register` | DTO with existing username | 400 Bad Request: "Username is already taken!". | MockMvc | `backend/src/test/java/com/sanitaryware/crm/controller/AuthControllerTest.java` | High |

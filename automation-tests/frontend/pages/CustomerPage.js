@@ -1,11 +1,11 @@
 class CustomerPage {
   constructor(page) {
     this.page = page;
-    this.addCustomerButton = page.locator('a:has-text("Add Customer"), button:has-text("Add Customer")');
+    this.addCustomerButton = page.getByTestId('add-customer-primary');
     this.nameInput = page.locator('input[name="name"]');
     this.phoneInput = page.locator('input[name="phoneNumber"]');
     this.emailInput = page.locator('input[name="email"]');
-    this.saveButton = page.locator('a:has-text("Save"), button:has-text("Save")');
+    this.saveButton = page.getByRole('button', { name: 'Save Customer', exact: true });
     this.tableRows = page.locator('table tbody tr');
   }
 

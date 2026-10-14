@@ -13,7 +13,7 @@ test.describe('Sanitaryware CRM Unified E2E Flow', () => {
     // 1. Login
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
 
     // 2. Create Category
     await page.goto('/categories');
@@ -37,13 +37,12 @@ test.describe('Sanitaryware CRM Unified E2E Flow', () => {
     await quotationPage.createQuotation(`John Doe E2E ${suffix}`, `PVC Pipe ${suffix}`, 5);
 
     // 6. Accept and Convert
-    await page.fill('input[placeholder*="Search"]', `John Doe E2E ${suffix}`);
-    await page.keyboard.press('Enter');
     const quoteRow = page.locator('table tr').filter({ hasText: `John Doe E2E ${suffix}` }).first();
+    await expect(quoteRow).toBeVisible({ timeout: 15000 });
     await quoteRow.locator('button[title="Mark Accepted"]').click();
     
     // Go to edit page to convert
-    await quoteRow.locator('a.text-teal').click();
+    await quoteRow.locator('[data-testid^="quotation-edit-"]').click();
     await page.waitForURL(url => url.pathname.includes('/quotations/edit/'));
     
     page.once('dialog', dialog => dialog.accept());
@@ -58,7 +57,7 @@ test.describe('Sanitaryware CRM Unified E2E Flow', () => {
       .filter({ hasText: `John Doe E2E ${suffix}` })
       .first();
     await expect(convertedOrderRow).toBeVisible();
-    await convertedOrderRow.locator('a.btn-secondary').click();
+    await convertedOrderRow.getByRole('link', { name: 'Manage', exact: true }).click();
     await page.waitForURL(url => url.pathname.includes('/orders/edit/'));
     await page.locator('select option:checked')
       .filter({ hasText: `John Doe E2E ${suffix}` })

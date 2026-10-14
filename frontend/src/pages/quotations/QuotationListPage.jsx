@@ -21,7 +21,7 @@ const QuotationListPage = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await quotationService.getAll({ size: 100 });
+            const response = await quotationService.getAll({ size: 100, sort: 'createdAt,desc' });
             setQuotations(response.data.content);
         } catch (error) {
             setError('Failed to fetch quotations');
@@ -67,7 +67,7 @@ const QuotationListPage = () => {
             <PageHeader
                 title="Sales Quotations"
                 description="Issue estimates, track approvals, and print PDF quotations."
-                actions={<Link to="/quotations/new"><Button><Plus size={16} /> New Quotation</Button></Link>}
+                actions={<Button as={Link} to="/quotations/new"><Plus size={16} /> New Quotation</Button>}
             />
             <div className="table-panel">
                 <div className="filter-bar">
@@ -101,7 +101,7 @@ const QuotationListPage = () => {
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <FileText size={16} className="text-muted" />
-                                                <Link to={`/quotations/edit/${q.id}`} className="record-name hover:underline">{q.quotationNumber}</Link>
+                                                <Link to={`/quotations/edit/${q.id}`} className="record-name hover:underline" data-testid={`quotation-edit-${q.id}`}>{q.quotationNumber}</Link>
                                             </div>
                                         </td>
                                         <td><span className="font-semibold">{q.customerName}</span></td>
@@ -118,10 +118,10 @@ const QuotationListPage = () => {
                                             <div className="flex justify-end gap-1">
                                                 <IconButton label="Download PDF" onClick={() => handleDownloadPdf(q.id, q.quotationNumber)}><Download size={16} /></IconButton>
                                                 {(q.status === 'DRAFT' || q.status === 'SENT') && (
-                                                    <IconButton label="Mark accepted" onClick={() => handleStatusUpdate(q.id, 'ACCEPTED')}><CheckCircle size={16} /></IconButton>
+                                                    <IconButton label="Mark Accepted" onClick={() => handleStatusUpdate(q.id, 'ACCEPTED')}><CheckCircle size={16} /></IconButton>
                                                 )}
                                                 {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
-                                                    <IconButton label="Mark rejected" onClick={() => handleStatusUpdate(q.id, 'REJECTED')}><XCircle size={16} /></IconButton>
+                                                    <IconButton label="Mark Rejected" onClick={() => handleStatusUpdate(q.id, 'REJECTED')}><XCircle size={16} /></IconButton>
                                                 )}
                                             </div>
                                         </td>

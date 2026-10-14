@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { getClient } = require('../helpers/apiClient');
 const { assertOk, assertShape } = require('../helpers/assertionHelper');
+const { credentials } = require('../../config/testCredentials');
 
 test.describe('Authentication API Suite', () => {
 
@@ -8,13 +9,13 @@ test.describe('Authentication API Suite', () => {
     const client = await getClient();
     // 1. Register admin user if not exists
     const adminCheck = await client.post('/api/auth/login', {
-      data: { username: 'qaadmin', password: 'Password@123' }
+      data: credentials.admin
     });
     if (adminCheck.status() === 401) {
       await client.post('/api/auth/register', {
         data: {
           username: 'qaadmin',
-          password: 'Password@123',
+          password: credentials.admin.password,
           email: 'qaadmin@test.com',
           fullName: 'QA Admin User',
           phoneNumber: '9000000001'
@@ -24,18 +25,18 @@ test.describe('Authentication API Suite', () => {
 
     // 2. Register sales user if not exists
     const salesCheck = await client.post('/api/auth/login', {
-      data: { username: 'qasales', password: 'Password@123' }
+      data: credentials.sales
     });
     if (salesCheck.status() === 401) {
       const loginRes = await client.post('/api/auth/login', {
-        data: { username: 'qaadmin', password: 'Password@123' }
+        data: credentials.admin
       });
       const { token } = await loginRes.json();
       const adminClient = await getClient(token);
       await adminClient.post('/api/auth/register', {
         data: {
           username: 'qasales',
-          password: 'Password@123',
+          password: credentials.sales.password,
           email: 'qasales@test.com',
           fullName: 'QA Sales User',
           phoneNumber: '9000000002'
@@ -48,8 +49,7 @@ test.describe('Authentication API Suite', () => {
     const client = await getClient();
     const response = await client.post('/api/auth/login', {
       data: {
-        username: 'qaadmin',
-        password: 'Password@123'
+        ...credentials.admin
       }
     });
     assertOk(response, 200);
@@ -61,8 +61,7 @@ test.describe('Authentication API Suite', () => {
     const client = await getClient();
     const response = await client.post('/api/auth/login', {
       data: {
-        username: 'qasales',
-        password: 'Password@123'
+        ...credentials.sales
       }
     });
     assertOk(response, 200);
@@ -73,7 +72,7 @@ test.describe('Authentication API Suite', () => {
     const response = await client.post('/api/auth/login', {
       data: {
         username: 'fakeuser',
-        password: 'Password@123'
+        password: credentials.admin.password
       }
     });
     expect(response.status()).toBe(401);

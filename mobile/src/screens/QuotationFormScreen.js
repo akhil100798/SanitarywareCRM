@@ -9,12 +9,13 @@ import FormErrorBanner from '../components/FormErrorBanner';
 import PrimaryActionBar from '../components/PrimaryActionBar';
 import Screen from '../components/Screen';
 import { colors } from '../theme/colors';
-import { buildQuotationPayload, calculateLineTotal, calculateQuotationTotals } from '../utils/quotationTotals';
+import { buildQuotationPayload, calculateLineTotal, calculateQuotationTotals } from '../utils/quotationTotals.mjs';
 import { addDaysIso, formatMoney, todayIso } from '../utils/formatters';
 
 const defaultTerms = '1. Quotation valid for 7 days.\n2. 50% advance for orders.\n3. Delivery within 3-5 days of order confirmation.';
 
 const validateForm = (form) => {
+  if (!form.customerId) return 'Select a customer before saving the quotation.';
   if (!form.items.length) return 'Add at least one product line.';
   const invalidItem = form.items.find((item) => {
     const quantity = Number(item.quantity);
@@ -116,7 +117,7 @@ const QuotationFormScreen = ({ route, navigation }) => {
     <Screen padded={false}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>New Quotation</Text>
-        <Text style={styles.subtitle}>{customerName}</Text>
+        <Text testID="quotation-customer" style={styles.subtitle}>{form.customerName}</Text>
         <FormErrorBanner message={error} />
 
         <DetailSection title="Quote Info">
@@ -143,7 +144,7 @@ const QuotationFormScreen = ({ route, navigation }) => {
         >
           {form.items.length ? (
             form.items.map((item, index) => (
-              <View key={`${item.productId}-${index}`} style={styles.itemCard}>
+              <View testID={`quotation-line-${index}`} key={`${item.productId}-${index}`} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
                   <View style={styles.itemTitleWrap}>
                     <Text style={styles.itemTitle}>{item.productName}</Text>

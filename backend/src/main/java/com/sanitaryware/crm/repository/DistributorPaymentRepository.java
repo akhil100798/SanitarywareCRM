@@ -5,6 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -14,6 +17,9 @@ import java.util.Optional;
 
 @Repository
 public interface DistributorPaymentRepository extends JpaRepository<DistributorPayment, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT payment FROM DistributorPayment payment WHERE payment.id = :id")
+    Optional<DistributorPayment> findByIdForUpdate(@Param("id") Long id);
     Optional<DistributorPayment> findByPaymentNumber(String paymentNumber);
     List<DistributorPayment> findByPurchaseOrderId(Long purchaseOrderId);
     Page<DistributorPayment> findAll(Pageable pageable);

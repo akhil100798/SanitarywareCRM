@@ -22,6 +22,19 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FileDownloadAuthorizationServiceTest {
+    @Test
+    void catalogueImagesRejectAnonymousAccess() {
+        doThrow(new AccessDeniedException("Authentication is required"))
+                .when(accessControlService).currentUser();
+        assertThrows(AccessDeniedException.class,
+                () -> authorizationService.authorizeDownload("products/catalogue", "page.png"));
+    }
+
+    @Test
+    void catalogueImageAccessChecksTheCurrentUser() {
+        assertDoesNotThrow(() -> authorizationService.authorizeDownload("products", "product.png"));
+        verify(accessControlService).currentUser();
+    }
 
     @Mock
     private AccessControlService accessControlService;

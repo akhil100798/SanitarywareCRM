@@ -44,7 +44,7 @@ const DistributorListPage = () => {
     return (
         <div>
             <PageHeader title="Distributors" description="Manage your suppliers and distributors."
-                actions={<Link to="/distributors/new"><Button><Plus size={16} /> Add Distributor</Button></Link>} />
+                actions={<Button as={Link} to="/distributors/new"><Plus size={16} /> Add Distributor</Button>} />
             <div className="table-panel">
                 <div className="filter-bar">
                     <SearchInput label="Search distributors" placeholder="Search by name or phone..." value={searchQuery} onChange={setSearchQuery} onSearch={handleSearch} onClear={() => { setSearchQuery(''); fetchDistributors(); }} />
@@ -83,7 +83,7 @@ const DistributorListPage = () => {
                                         <td><StatusBadge status={d.isActive ? 'ACTIVE' : 'INACTIVE'} /></td>
                                         <td className="numeric">
                                             <div className="flex justify-end gap-1">
-                                                <Link to={`/distributors/edit/${d.id}`}><IconButton label="Edit distributor"><Edit size={16} /></IconButton></Link>
+                                                <IconButton as={Link} to={`/distributors/edit/${d.id}`} label="Edit distributor"><Edit size={16} /></IconButton>
                                                 <IconButton label="Toggle status" onClick={() => handleToggleStatus(d.id, d.name)}>S</IconButton>
                                                 <IconButton label="Delete distributor" onClick={() => handleDelete(d.id, d.name)}><Trash2 size={16} /></IconButton>
                                             </div>

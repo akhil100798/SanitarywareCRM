@@ -13,6 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
 public class DashboardDTO {
     private BigDecimal totalRevenue;
     private long totalOrders;
@@ -23,7 +24,7 @@ public class DashboardDTO {
     private BigDecimal totalPayables;
     private BigDecimal totalReceivables;
     
-    private List<OrderDTO> recentOrders;
+    private List<DashboardOrderDTO> recentOrders;
     private List<ProductSalesDTO> topProducts;
     private Map<String, Long> orderStatusBreakdown;
     private Map<String, BigDecimal> monthlyRevenue;

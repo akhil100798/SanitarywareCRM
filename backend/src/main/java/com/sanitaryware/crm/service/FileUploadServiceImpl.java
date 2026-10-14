@@ -182,16 +182,16 @@ public class FileUploadServiceImpl implements FileUploadService {
         try {
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
             if (!filePath.startsWith(this.fileStorageLocation)) {
-                throw new RuntimeException("Invalid file path");
+                throw new IllegalArgumentException("Invalid file path");
             }
             Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists()) {
+            if (resource.exists() && resource.isReadable() && Files.isRegularFile(filePath)) {
                 return resource;
             } else {
-                throw new RuntimeException("File not found " + fileName);
+                throw new com.sanitaryware.crm.exception.ResourceNotFoundException("File not found");
             }
         } catch (MalformedURLException ex) {
-            throw new RuntimeException("File not found " + fileName, ex);
+            throw new com.sanitaryware.crm.exception.ResourceNotFoundException("File not found");
         }
     }
     

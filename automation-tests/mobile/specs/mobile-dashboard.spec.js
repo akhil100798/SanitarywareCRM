@@ -5,7 +5,7 @@ test.describe('Mobile Dashboard Viewport Suite', () => {
   test('POS-063 Renders sales indicators widgets dynamically', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="username"]', 'qaadmin');
-    await page.fill('input[name="password"]', 'Password@123');
+    await page.fill('input[name="password"]', process.env.QA_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL(url => url.pathname.includes('/dashboard'));
     await page.locator('p:has-text("Assembling business analytics...")').waitFor({ state: 'detached', timeout: 15000 });

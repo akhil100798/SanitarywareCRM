@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Edit, Trash2, Mail, Phone, User } from 'lucide-react';
 import customerService from '../../services/customerService';
@@ -17,21 +17,26 @@ const CustomerListPage = () => {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const confirm = useConfirm();
+    const requestGeneration = useRef(0);
 
-    useEffect(() => { fetchCustomers(); }, []);
+    useEffect(() => {
+        fetchCustomers();
+        return () => { requestGeneration.current += 1; };
+    }, []);
 
     const fetchCustomers = async (query) => {
+        const generation = ++requestGeneration.current;
         try {
             setLoading(true);
             setError(null);
             const response = query
                 ? await customerService.search(query, { size: 100 })
                 : await customerService.getAll({ size: 100 });
-            setCustomers(response.data.content);
+            if (generation === requestGeneration.current) setCustomers(response.data.content);
         } catch (error) {
-            setError('Failed to load customers');
+            if (generation === requestGeneration.current) setError('Failed to load customers');
         } finally {
-            setLoading(false);
+            if (generation === requestGeneration.current) setLoading(false);
         }
     };
 
@@ -57,9 +62,9 @@ const CustomerListPage = () => {
                 title="Customer Directory"
                 description="Manage store clients, wholesalers, trade associations and credit files."
                 actions={
-                    <Link to="/customers/new">
-                        <Button><Plus size={16} /> Add Customer</Button>
-                    </Link>
+                        <Button as={Link} to="/customers/new" data-testid="add-customer-primary" aria-label="Add customer from page header">
+                            <Plus size={16} /> Add Customer
+                        </Button>
                 }
             />
 
@@ -83,7 +88,15 @@ const CustomerListPage = () => {
                     <EmptyState
                         title="No customers found"
                         description={searchQuery ? 'Try a different search term.' : 'Add your first customer to get started.'}
-                        action={!searchQuery && <Link to="/customers/new"><Button variant="secondary"><Plus size={16} /> Add Customer</Button></Link>}
+                        action={!searchQuery && (
+                                <Button as={Link} to="/customers/new"
+                                    variant="secondary"
+                                    data-testid="add-customer-empty-state"
+                                    aria-label="Add your first customer"
+                                >
+                                    <Plus size={16} /> Add Customer
+                                </Button>
+                        )}
                     />
                 ) : (
                     <Table caption="Customer directory">
@@ -119,9 +132,7 @@ const CustomerListPage = () => {
                                     <td><StatusBadge status={customer.isActive ? 'ACTIVE' : 'INACTIVE'} /></td>
                                     <td className="numeric">
                                         <div className="flex justify-end gap-1">
-                                            <Link to={`/customers/edit/${customer.id}`}>
-                                                <IconButton label="Edit customer"><Edit size={16} /></IconButton>
-                                            </Link>
+                                            <IconButton as={Link} to={`/customers/edit/${customer.id}`} label="Edit customer"><Edit size={16} /></IconButton>
                                             <IconButton label="Deactivate customer" onClick={() => handleDelete(customer.id, customer.name)}>
                                                 <Trash2 size={16} />
                                             </IconButton>

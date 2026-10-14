@@ -20,6 +20,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     Optional<Product> findBySku(String sku);
     Optional<Product> findByBarcode(String barcode);
+    List<Product> findByCatalogueImportBatchId(String catalogueImportBatchId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p WHERE p.id = :id")

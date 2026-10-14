@@ -1,0 +1,7 @@
+{
+  "name": "sanitaryware-crm",
+  "private": true,
+  "scripts": {
+    "verify": "powershell -NoProfile -File scripts/verify.ps1"
+  }
+}

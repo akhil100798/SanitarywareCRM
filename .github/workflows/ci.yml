@@ -7,6 +7,20 @@ on:
     branches: [ main ]
 
 jobs:
+  mysql-migration-verification:
+    name: Disposable MySQL migrations and Hibernate validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Verify fresh and V9 upgrade schemas on real MySQL
+        working-directory: backend
+        run: mvn verify -Pmysql-integration
+
   backend-build-and-test:
     name: Backend Build, Unit Tests & Package
     runs-on: ubuntu-latest
@@ -81,6 +95,12 @@ jobs:
     name: Automated API & E2E Verification
     needs: [backend-build-and-test, frontend-build]
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ${{ secrets.QA_JWT_SECRET }}
+      QA_ADMIN_PASSWORD: ${{ secrets.QA_ADMIN_PASSWORD }}
+      QA_MANAGER_PASSWORD: ${{ secrets.QA_MANAGER_PASSWORD }}
+      QA_SALES_PASSWORD: ${{ secrets.QA_SALES_PASSWORD }}
+      QA_WAREHOUSE_PASSWORD: ${{ secrets.QA_WAREHOUSE_PASSWORD }}
 
     steps:
       - name: Checkout Repository
@@ -104,21 +124,41 @@ jobs:
         run: |
           cd automation-tests
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
+
+      - name: Validate QA environment
+        run: |
+          node -e "for (const name of ['JWT_SECRET','QA_ADMIN_PASSWORD','QA_MANAGER_PASSWORD','QA_SALES_PASSWORD','QA_WAREHOUSE_PASSWORD']) { if (!process.env[name]) throw new Error(name + ' is required'); } if (process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET requires at least 32 characters');"
 
       - name: Start QA Backend Server
         run: |
           cd backend
-          mvn package -DskipTests
+          mvn package
           java -jar target/crm-backend-1.0.0.jar --spring.profiles.active=qa &
-          sleep 15
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8081/api/health > /dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
 
       - name: Start Frontend Server
         run: |
           cd frontend
           npm ci
           npm run dev -- --host 0.0.0.0 --port 5173 &
-          sleep 5
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:5173 > /dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
+
+      - name: Health and seed disposable QA data
+        working-directory: automation-tests
+        run: |
+          npm run health
+          npm run seed
 
       - name: Run Database Tests
         run: |
@@ -144,6 +184,43 @@ jobs:
         run: |
           cd automation-tests
           npm run test:frontend
+
+      - name: Run all seven legacy frontend workflows
+        working-directory: frontend
+        run: npm run test:legacy
+
+      - name: Start the real Expo web application
+        working-directory: mobile
+        env:
+          EXPO_PUBLIC_API_BASE_URL: http://localhost:8081/api
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run web -- --host localhost --max-workers 2 > ../expo-web.log 2>&1 &
+          ready=false
+          for attempt in $(seq 1 120); do
+            if curl --fail --silent http://localhost:8082 > /dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
+
+      - name: Verify Expo navigation, pagination, quotation, conversion and payment
+        working-directory: mobile
+        env:
+          UI_URL: http://localhost:8082
+          API_URL: http://localhost:8081/api
+          RUN_LEGACY_SMOKE: '1'
+        run: npm run ui:smoke
+
+      - name: Run Pixel 5 and iPhone 13 WebKit Viewport Tests
+        run: |
+          cd automation-tests
+          npx playwright test --project="Mobile Chrome (Pixel 5)" --project="Mobile Safari (iPhone 13)"
+
+      - name: Cleanup disposable QA data
+        if: always()
+        working-directory: automation-tests
+        run: npm run cleanup
 
       - name: Archive Playwright Reports
         if: always()

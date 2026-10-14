@@ -1,8 +1,8 @@
 class ProductPage {
   constructor(page) {
     this.page = page;
-    this.addProductButton = page.locator('a:has-text("Add Product"), button:has-text("Add Product")');
-    this.categoriesButton = page.locator('main a:has-text("Categories"), main button:has-text("Categories")');
+    this.addProductButton = page.getByRole('link', { name: 'Add Product', exact: true }).first();
+    this.categoriesButton = page.getByRole('link', { name: 'Manage product categories', exact: true });
     this.skuInput = page.locator('input[name="sku"]');
     this.nameInput = page.locator('input[name="name"]');
     this.mrpInput = page.locator('input[name="mrp"]');
@@ -10,7 +10,7 @@ class ProductPage {
     this.stockInput = page.locator('input[name="stockQuantity"]');
     this.categorySelect = page.locator('select[name="categoryId"]');
     this.brandSelect = page.locator('select[name="brandId"]');
-    this.saveButton = page.locator('button:has-text("Save Product"), button[type="submit"]');
+    this.saveButton = page.getByRole('button', { name: 'Save Product', exact: true });
   }
 
   async createProduct(sku, name, price, stock) {

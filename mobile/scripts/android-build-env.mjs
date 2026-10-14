@@ -4,7 +4,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(scriptDir, '..');
+const projectRoot = path.resolve(process.env.CRM_ANDROID_BUILD_ROOT || path.resolve(scriptDir, '..'));
+if (!fs.existsSync(path.join(projectRoot, 'package.json'))
+  || JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')).name !== 'sanitaryware-crm-mobile') {
+  throw new Error('CRM_ANDROID_BUILD_ROOT must point to the mobile project or its disposable native copy');
+}
 const androidRoot = path.join(projectRoot, 'android');
 const gradleUserHome = process.env.GRADLE_USER_HOME || path.join(projectRoot, '.gradle');
 const [target, ...targetArgs] = process.argv.slice(2);
@@ -87,7 +91,7 @@ const launcher = target === 'gradle'
       args: ['-jar', path.join(androidRoot, 'gradle', 'wrapper', 'gradle-wrapper.jar'), ...targetArgs],
       cwd: androidRoot
     }
-  : targets[target];
+  : { command: process.execPath, args: [path.join(projectRoot, 'node_modules', 'expo', 'bin', 'cli'), ...targetArgs], cwd: projectRoot };
 
 const child = spawn(launcher.command, launcher.args, {
   cwd: launcher.cwd,
@@ -100,6 +104,10 @@ const child = spawn(launcher.command, launcher.args, {
     CMAKE_BUILD_PARALLEL_LEVEL: process.env.CMAKE_BUILD_PARALLEL_LEVEL || '1'
   },
   stdio: 'inherit'
+});
+child.on('error', error => {
+  console.error(`${target} could not launch: ${error.message}`);
+  process.exitCode = 1;
 });
 
 child.on('exit', (code, signal) => {

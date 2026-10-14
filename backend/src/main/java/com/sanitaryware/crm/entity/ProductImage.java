@@ -32,6 +32,9 @@ public class ProductImage {
     @Column(nullable = false)
     private Integer displayOrder = 0;
 
+    @Column(length = 64)
+    private String catalogueImportBatchId;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime uploadedAt;

@@ -6,7 +6,7 @@ test.describe('Frontend Login E2E Suite', () => {
   test('POS-036 Sign In successfully with valid credentials', async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
     await expect(page).toHaveURL(/\/dashboard/);
   });
 

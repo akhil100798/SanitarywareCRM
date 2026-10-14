@@ -3,7 +3,7 @@ import {
   buildQuotationPayload,
   calculateLineTotal,
   calculateQuotationTotals
-} from './quotationTotals.js';
+} from './quotationTotals.mjs';
 
 assert.equal(
   calculateLineTotal({ quantity: '2', unitPrice: '1000', discountPercentage: '10' }),

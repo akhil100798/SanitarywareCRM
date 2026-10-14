@@ -21,11 +21,28 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class DistributorControllerTest {
+    @Test
+    void malformedCreateIsRejectedBeforePersistence() throws Exception {
+        mockMvc.perform(post("/api/distributors").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\" \",\"phoneNumber\":\"letters\",\"email\":\"invalid\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(distributorService);
+    }
+    @Test
+    void malformedUpdateIsRejectedBeforePersistence() throws Exception {
+        mockMvc.perform(put("/api/distributors/1").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Supplier\",\"phoneNumber\":\"9000000000\",\"email\":\"invalid\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(distributorService);
+    }
 
     @Mock
     private DistributorService distributorService;

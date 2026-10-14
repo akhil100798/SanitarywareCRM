@@ -82,6 +82,9 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String specifications;
 
+    @Column(length = 64)
+    private String catalogueImportBatchId;
+
     @Column(nullable = false)
     private Boolean isActive = true;
 

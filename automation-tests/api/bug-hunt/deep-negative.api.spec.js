@@ -93,9 +93,18 @@ test.describe('Temporary deep negative API bug hunt', () => {
   });
 
   test('BUG-HUNT modified JWT is rejected', async () => {
-    const tampered = `${adminToken.slice(0, -1)}${adminToken.endsWith('a') ? 'b' : 'a'}`;
+    const parts = adminToken.split('.');
+    expect(parts).toHaveLength(3);
+    const signature = parts[2];
+    // The final character may change only unused base64url padding bits.
+    // Change actual signature bytes and prove the negative fixture is corrupt.
+    parts[2] = `${signature.startsWith('a') ? 'b' : 'a'}${signature.slice(1)}`;
+    expect(Buffer.from(parts[2], 'base64url').equals(Buffer.from(signature, 'base64url'))).toBe(false);
+    const validClient = await getClient(adminToken);
+    expect((await validClient.get('/api/dashboard/stats')).status()).toBe(200);
+    const tampered = parts.join('.');
     const client = await getClient(tampered);
-    const response = await client.get('/api/dashboard');
+    const response = await client.get('/api/dashboard/stats');
     console.log(`MODIFIED_JWT status=${response.status()} body=${await response.text()}`);
     expect(response.status()).toBe(401);
   });

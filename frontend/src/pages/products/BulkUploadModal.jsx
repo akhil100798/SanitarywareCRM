@@ -12,11 +12,12 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState(null);
+    const [uploadError, setUploadError] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             fetchBrands();
-            setResult(null); setFile(null); setSelectedBrand('');
+            setResult(null); setUploadError(''); setFile(null); setSelectedBrand('');
         }
     }, [isOpen]);
 
@@ -40,12 +41,15 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
         if (!selectedBrand || !file) { toast.error('Select a brand and a file'); return; }
         try {
             setUploading(true);
+            setUploadError('');
             const response = await productService.bulkCatalogUpload(selectedBrand, file);
             setResult(response.data);
             toast.success('Upload complete!');
             if (onUploadSuccess) onUploadSuccess();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Upload failed');
+            const message = error.response?.data?.message || 'Catalogue import failed. Please try again.';
+            setUploadError(message);
+            toast.error(message);
         } finally { setUploading(false); }
     };
 
@@ -53,6 +57,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
         <Modal open={isOpen} onClose={onClose} title="Bulk Import Catalog (PDF)">
             {!result ? (
                 <form onSubmit={handleUpload} className="space-y-5">
+                    {uploadError && <div role="alert" data-testid="catalogue-import-error" className="error-panel" style={{ background: 'var(--danger-soft)', borderColor: 'var(--danger)', color: 'var(--danger)' }}>{uploadError}</div>}
                     <Field label="Select Brand" required>
                         <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="input-field" required>
                             <option value="">Select a brand</option>
@@ -82,6 +87,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                         <CheckCircle size={40} className="mx-auto text-success" />
                         <h3 className="text-lg font-bold mt-2">Import Summary</h3>
                         <p className="text-sm text-secondary">Processed {file?.name}</p>
+                        {result.batchId && <p className="text-xs text-muted mt-1">Import batch: <code data-testid="catalogue-import-batch-id">{result.batchId}</code></p>}
                     </div>
                     <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                         <div className="stat-card"><p className="stat-label">Total</p><p className="stat-value" style={{ fontSize: 22 }}>{result.totalProcessed}</p></div>
@@ -92,6 +98,11 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                     {result.skippedCount > 0 && (
                         <div className="error-panel" style={{ background: 'var(--warning-soft)', borderColor: 'var(--warning)', color: 'var(--warning)' }}>
                             {result.skippedCount} rows skipped.
+                        </div>
+                    )}
+                    {result.imageLinkFailures > 0 && (
+                        <div className="error-panel" role="alert" style={{ background: 'var(--warning-soft)', borderColor: 'var(--warning)', color: 'var(--warning)' }}>
+                            {result.imageLinkFailures} catalogue image links could not be saved. Product import counts reflect persisted products; review the warnings before cleanup.
                         </div>
                     )}
                     {result.errors?.length > 0 && (

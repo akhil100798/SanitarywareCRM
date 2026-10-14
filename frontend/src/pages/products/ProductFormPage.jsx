@@ -5,8 +5,9 @@ import { productService, brandService, categoryService } from '../../services/pr
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { Field } from '../../components/ui/Field';
-import { Button } from '../../components/ui/Button';
+import { Button, IconButton } from '../../components/ui/Button';
 import { PageSection } from '../../components/ui/Page';
+import AuthenticatedImage from '../../components/ui/AuthenticatedImage';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -120,7 +121,7 @@ const ProductFormPage = () => {
         } catch (error) {
             if (!error.response) { toast.error('Unable to connect to the server.'); return; }
             const status = error.response.status;
-            if (status === 409) toast.error(error.response.data?.message || 'Duplicate SKU or barcode');
+            if (status === 409) toast.error(formData.barcode ? 'Barcode already exists' : (error.response.data?.message || 'Duplicate SKU or barcode'));
             else if (status === 403) toast.error('Permission denied');
             else if (status === 400) toast.error(error.response.data?.message || 'Invalid data');
             else toast.error('Something went wrong');
@@ -128,7 +129,7 @@ const ProductFormPage = () => {
     };
 
     const handleFileSelect = (e) => {
-        const file = e.target.files[0];
+        const file = e.currentTarget?.files?.[0] || e.target?.files?.[0];
         if (!file) return;
         if (!ALLOWED_IMAGE_TYPES.includes(file.type)) { toast.error('Unsupported image format'); if (fileInputRef.current) fileInputRef.current.value = ''; return; }
         if (file.size > MAX_IMAGE_SIZE_BYTES) { toast.error('Image exceeds 10MB limit'); if (fileInputRef.current) fileInputRef.current.value = ''; return; }
@@ -140,12 +141,18 @@ const ProductFormPage = () => {
         if (!selectedImageFile || !id) return;
         try {
             setUploadingImage(true);
-            await productService.uploadImage(id, selectedImageFile, isImagePrimary, Number(imageDisplayOrder || 0));
+            const uploadResponse = await productService.uploadImage(id, selectedImageFile, isImagePrimary, Number(imageDisplayOrder || 0));
             toast.success('Image uploaded');
             setSelectedImageFile(null); setImagePreviewUrl(''); setIsImagePrimary(false); setImageDisplayOrder(0);
             if (fileInputRef.current) fileInputRef.current.value = '';
-            const res = await productService.getImages(id);
-            setImages(res.data || []);
+            const uploadedImage = uploadResponse.data;
+            if (uploadedImage) setImages(current => [...current, uploadedImage]);
+            try {
+                const res = await productService.getImages(id);
+                if (Array.isArray(res.data) && res.data.length) setImages(res.data);
+            } catch (refreshError) {
+                // The successful upload response remains the source of truth if the refresh is transiently unavailable.
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Upload failed');
         } finally { setUploadingImage(false); }
@@ -277,14 +284,13 @@ const ProductFormPage = () => {
                 <PageSection className="mt-6">
                     <h2 className="section-heading">Product Images ({images.length})</h2>
                     {images.length === 0 ? (
-                        <div className="state-panel"><ImageIcon size={32} aria-hidden="true" /><p>No images attached yet.</p></div>
+                        <div className="state-panel" data-testid="product-images-empty"><ImageIcon size={32} aria-hidden="true" /><p>No images attached yet.</p></div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {images.map(img => (
                                 <div key={img.id} className="surface" style={{ padding: 8, position: 'relative' }}>
                                     <div style={{ height: 120, display: 'grid', placeItems: 'center' }}>
-                                        <img src={img.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                                            onError={(e) => { e.target.style.display = 'none'; }} />
+                                        <AuthenticatedImage src={img.imageUrl} alt="Product image" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                     <div className="flex justify-between items-center mt-2 text-xs">
                                         {img.isPrimary ? <span className="status-badge status-info"><Star size={10} /> Primary</span> : <span className="text-muted">Order {img.displayOrder}</span>}
@@ -297,14 +303,14 @@ const ProductFormPage = () => {
                     <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t">
                         <label className="btn-secondary cursor-pointer" style={{ margin: 0 }}>
                             <Upload size={14} /> {selectedImageFile ? 'Change File' : 'Choose Image'}
-                            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" className="sr-only" onChange={handleFileSelect} />
+                            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" className="sr-only" data-testid="product-image-file" onChange={handleFileSelect} onInput={handleFileSelect} aria-label="Product image file" />
                         </label>
                         {selectedImageFile && (
                             <>
                                 <span className="text-sm font-semibold truncate" style={{ maxWidth: 150 }}>{selectedImageFile.name}</span>
                                 <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={isImagePrimary} onChange={(e) => setIsImagePrimary(e.target.checked)} style={{ width: 16, height: 16 }} /> Primary</label>
                                 <label className="flex items-center gap-1 text-sm">Order <input type="number" min="0" value={imageDisplayOrder} onChange={(e) => setImageDisplayOrder(e.target.value)} style={{ width: 56, height: 32, padding: '0 8px', border: '1px solid var(--border-strong)', borderRadius: 4 }} /></label>
-                                <Button onClick={handleUploadImage} loading={uploadingImage}>Upload</Button>
+                                <Button onClick={handleUploadImage} loading={uploadingImage} data-testid="product-image-upload">Upload</Button>
                             </>
                         )}
                         {imagePreviewUrl && <div style={{ width: 80, height: 80, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}><img src={imagePreviewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>}

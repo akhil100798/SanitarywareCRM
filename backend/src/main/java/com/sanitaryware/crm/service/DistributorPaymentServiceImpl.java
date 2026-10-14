@@ -39,7 +39,12 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     @Override
     @Transactional
     public DistributorPaymentDTO createPayment(DistributorPaymentDTO dto) {
+        // Load under the lock before the mapper can put a stale PO in the persistence context.
+        PurchaseOrder requestedPo = dto.getPurchaseOrderId() == null ? null
+                : purchaseOrderRepository.findByIdForUpdate(dto.getPurchaseOrderId())
+                        .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Purchase Order not found"));
         DistributorPayment payment = paymentMapper.toEntity(dto);
+        if (requestedPo != null) payment.setPurchaseOrder(requestedPo);
 
         if (payment.getPaymentNumber() == null || payment.getPaymentNumber().isEmpty()) {
             payment.setPaymentNumber(generatePaymentNumber());
@@ -106,6 +111,7 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     }
 
     @Override
+    @Transactional(readOnly = true)
     public DistributorPaymentDTO getPaymentById(Long id) {
         DistributorPayment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Payment not found with id: " + id));
@@ -113,11 +119,13 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<DistributorPaymentDTO> getAllPayments(Pageable pageable) {
         return paymentRepository.findAll(pageable).map(paymentMapper::toDTO);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<DistributorPaymentDTO> getPaymentsByPurchaseOrder(Long purchaseOrderId) {
         return paymentRepository.findByPurchaseOrderId(purchaseOrderId).stream()
                 .map(paymentMapper::toDTO)
@@ -127,7 +135,7 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     @Override
     @Transactional
     public void deletePayment(Long id) {
-        DistributorPayment payment = paymentRepository.findById(id)
+        DistributorPayment payment = paymentRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Payment not found with id: " + id));
 
         PurchaseOrder po = payment.getPurchaseOrder();

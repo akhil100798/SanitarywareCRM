@@ -56,15 +56,15 @@ const AuditLogsPage = () => {
 
     return (
         <div>
-            <PageHeader title="Audit Trail" description="Immutable operational activity log tracking financial, inventory and lifecycle transitions."
-                actions={<Button variant="secondary" onClick={() => fetchLogs()} disabled={loading}><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Refresh</Button>} />
+            <PageHeader title="Audit Trail & System Logs" description="Immutable operational activity log tracking financial, inventory and lifecycle transitions."
+                actions={<Button data-testid="audit-refresh" variant="secondary" onClick={() => fetchLogs()} disabled={loading}><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Refresh</Button>} />
 
             <div className="surface" style={{ marginBottom: 24 }}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <Filter size={16} className="text-muted" /> Filter Audit Events{hasActiveFilters && <span className="status-badge status-info">Active</span>}
                     </div>
-                    {hasActiveFilters && <button onClick={handleResetFilters} className="btn-ghost" style={{ fontSize: 13 }}><XCircle size={14} /> Reset</button>}
+                    {hasActiveFilters && <button data-testid="audit-reset-filters" onClick={handleResetFilters} className="btn-ghost" style={{ fontSize: 13 }}><XCircle size={14} /> Reset</button>}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                     <Field label="Actor"><input type="text" placeholder="e.g. qaadmin..." className="input-field" value={actorFilter} onChange={(e) => { setActorFilter(e.target.value); setPage(0); }} /></Field>

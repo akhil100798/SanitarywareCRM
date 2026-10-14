@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.DashboardDTO;
+import com.sanitaryware.crm.dto.OrderDTO;
 import com.sanitaryware.crm.entity.Order;
 import com.sanitaryware.crm.mapper.OrderMapper;
 import com.sanitaryware.crm.repository.*;
@@ -23,6 +24,69 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceImplTest {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(com.sanitaryware.crm.entity.User.UserRole.class)
+    void recentOrderFinancialFieldsAreSerializedOnlyForManagementRoles(
+            com.sanitaryware.crm.entity.User.UserRole role) throws Exception {
+        var user = new com.sanitaryware.crm.entity.User();
+        user.setUsername("dashboard-" + role.name().toLowerCase());
+        user.setRole(role);
+        when(accessControlService.currentUser()).thenReturn(user);
+
+        Order order = new Order();
+        OrderDTO fullOrder = new OrderDTO();
+        fullOrder.setId(8L);
+        fullOrder.setOrderNumber("ORD-8");
+        fullOrder.setCustomerName("QA Customer");
+        fullOrder.setStatus("PENDING");
+        fullOrder.setSubtotal(new BigDecimal("100.00"));
+        fullOrder.setTaxAmount(new BigDecimal("18.00"));
+        fullOrder.setTotal(new BigDecimal("118.00"));
+        fullOrder.setPaidAmount(new BigDecimal("18.00"));
+        fullOrder.setBalanceAmount(new BigDecimal("100.00"));
+        when(orderMapper.toDTO(order)).thenReturn(fullOrder);
+        if (role == com.sanitaryware.crm.entity.User.UserRole.SALES) {
+            when(accessControlService.isSales(user)).thenReturn(true);
+            when(orderRepository.findByCreatedByUsername(eq(user.getUsername()), any()))
+                    .thenReturn(new PageImpl<>(List.of(order)));
+        } else {
+            when(orderRepository.findAll(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of(order)));
+        }
+
+        DashboardDTO dashboard = dashboardService.getDashboardStats();
+        String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dashboard);
+        com.fasterxml.jackson.databind.JsonNode nestedOrder = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(json).path("recentOrders").get(0);
+
+        assertNotNull(nestedOrder);
+        assertEquals("ORD-8", nestedOrder.path("orderNumber").asText());
+        boolean management = role == com.sanitaryware.crm.entity.User.UserRole.ADMIN
+                || role == com.sanitaryware.crm.entity.User.UserRole.MANAGER;
+        if (management) {
+            assertEquals(0, new BigDecimal("118.00").compareTo(nestedOrder.path("total").decimalValue()));
+        } else {
+            for (String field : List.of("subtotal", "taxAmount", "total", "paidAmount", "balanceAmount")) {
+                assertFalse(nestedOrder.has(field), "restricted dashboard order must omit " + field);
+            }
+        }
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = com.sanitaryware.crm.entity.User.UserRole.class,
+            names = {"SALES", "WAREHOUSE"})
+    void nonManagementDashboardOmitsCompanyFinancials(com.sanitaryware.crm.entity.User.UserRole role) {
+        var user = new com.sanitaryware.crm.entity.User(); user.setUsername("qa-test"); user.setRole(role);
+        when(accessControlService.currentUser()).thenReturn(user);
+        when(orderRepository.findAll(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of()));
+        DashboardDTO data = dashboardService.getDashboardStats();
+        assertNull(data.getTotalRevenue());
+        assertNull(data.getTotalReceivables());
+        assertNull(data.getTotalPayables());
+        assertNull(data.getDistributorPaymentsTotal());
+        assertNull(data.getMonthlyRevenue());
+        assertNull(data.getTopProducts());
+        org.mockito.Mockito.verifyNoInteractions(paymentRepository, distributorPaymentRepository, purchaseOrderRepository);
+    }
 
     @Mock
     private OrderRepository orderRepository;
@@ -66,6 +130,9 @@ class DashboardServiceImplTest {
 
     @Test
     void getDashboardStats_UsesAggregatesAndPreservesEmptyStatusBuckets() {
+        var admin = new com.sanitaryware.crm.entity.User();
+        admin.setRole(com.sanitaryware.crm.entity.User.UserRole.ADMIN);
+        when(accessControlService.currentUser()).thenReturn(admin);
         when(paymentRepository.getTotalPaymentsBetweenDates(any(), any())).thenReturn(BigDecimal.valueOf(50000));
         when(orderRepository.count()).thenReturn(10L);
         when(orderRepository.countByStatus()).thenReturn(Collections.emptyList());

@@ -6,6 +6,7 @@ import com.sanitaryware.crm.entity.Category;
 import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.entity.ProductImage;
 import com.sanitaryware.crm.repository.CategoryRepository;
+import com.sanitaryware.crm.repository.CatalogueImageCleanupTaskRepository;
 import com.sanitaryware.crm.repository.ProductImageRepository;
 import com.sanitaryware.crm.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,6 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
 import org.apache.pdfbox.util.Matrix;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -38,8 +38,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,14 +56,25 @@ public class CatalogPdfImportService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final CatalogueImageCleanupTaskRepository catalogueImageCleanupTaskRepository;
     private final ProductImageRepository productImageRepository;
     private final FileUploadService fileUploadService;
 
-    @Transactional
     public BulkUploadResponse importCatalog(Brand brand, MultipartFile file) {
+        return importCatalog(brand, file, null);
+    }
+
+    public BulkUploadResponse importCatalog(Brand brand, MultipartFile file, String requestedBatchId) {
         validatePdf(file);
+        String batchId = requestedBatchId == null || requestedBatchId.isBlank()
+                ? UUID.randomUUID().toString()
+                : requestedBatchId.trim();
+        if (!batchId.matches("[A-Za-z0-9_-]{1,64}")) {
+            throw new IllegalArgumentException("Catalogue import batchId must contain only letters, numbers, '_' or '-'");
+        }
         ImportCounters counters = new ImportCounters();
         List<String> warnings = new ArrayList<>();
+        Set<String> generatedImageUrls = new HashSet<>();
 
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
             for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) {
@@ -71,27 +85,34 @@ public class CatalogPdfImportService {
 
                 importColumn(brand, systemName, pageIndex + 1,
                         extractColumn(page, "left", 0, middle),
-                        images.stream().filter(image -> image.x() < middle).toList(), counters, warnings);
+                        images.stream().filter(image -> image.x() < middle).toList(), counters, warnings, batchId,
+                        generatedImageUrls);
                 importColumn(brand, systemName, pageIndex + 1,
                         extractColumn(page, "right", middle, page.getMediaBox().getWidth() - middle),
-                        images.stream().filter(image -> image.x() >= middle).toList(), counters, warnings);
+                        images.stream().filter(image -> image.x() >= middle).toList(), counters, warnings, batchId,
+                        generatedImageUrls);
             }
         } catch (IOException exception) {
             throw new IllegalArgumentException("The catalogue PDF could not be read", exception);
         }
 
+        cleanupUnlinkedCatalogueImages(batchId, generatedImageUrls, warnings);
+
         return BulkUploadResponse.builder()
+                .batchId(batchId)
                 .createdCount(counters.created)
                 .updatedCount(counters.updated)
                 .totalProcessed(counters.created + counters.updated)
                 .imagesLinkedCount(counters.imagesLinked)
+                .imageLinkFailures(counters.imageLinkFailures)
                 .skippedCount(counters.skipped)
                 .errors(warnings)
                 .build();
     }
 
     private void importColumn(Brand brand, String systemName, int pageNumber, String text,
-                              List<ImagePlacement> images, ImportCounters counters, List<String> warnings) {
+                              List<ImagePlacement> images, ImportCounters counters, List<String> warnings, String batchId,
+                              Set<String> generatedImageUrls) {
         List<ProductFamily> families = parseFamilies(text, pageNumber);
         Category category = findOrCreateCategory(systemName);
         List<ImagePlacement> orderedImages = images.stream()
@@ -102,19 +123,27 @@ public class CatalogPdfImportService {
             ProductFamily family = families.get(familyIndex);
             ImagePlacement familyImage = familyIndex < orderedImages.size() ? orderedImages.get(familyIndex) : null;
             String sharedImageUrl = null;
+            boolean imageStorageAttempted = false;
 
             for (CatalogVariant variant : family.variants()) {
+                Product saved;
+                boolean created;
                 try {
+                    if (!isPersistablePrice(variant.mrp())) {
+                        counters.skipped++;
+                        addWarning(warnings, "Page " + pageNumber + ", SKU " + variant.sku()
+                                + ": price is outside the supported product range");
+                        continue;
+                    }
                     Product product = productRepository.findBySku(variant.sku()).orElse(null);
-                    if (product == null) {
+                    created = product == null;
+                    if (created) {
                         product = new Product();
                         product.setSku(variant.sku());
                         product.setStockQuantity(0);
                         product.setReorderLevel(10);
                         product.setUnit("Piece");
-                        counters.created++;
-                    } else {
-                        counters.updated++;
+                        product.setCatalogueImportBatchId(batchId);
                     }
 
                     product.setName(limit(family.name(), 200));
@@ -134,27 +163,71 @@ public class CatalogPdfImportService {
                     product.setIsActive(true);
                     if (product.getIsFeatured() == null) product.setIsFeatured(false);
 
-                    Product saved = productRepository.save(product);
-                    if (familyImage != null && productImageRepository
-                            .findByProductIdOrderByDisplayOrderAsc(saved.getId()).isEmpty()) {
-                        if (sharedImageUrl == null) {
-                            sharedImageUrl = storeCatalogueImage(familyImage, warnings, pageNumber, family.name());
-                        }
-                        if (sharedImageUrl == null) continue;
-                        ProductImage image = new ProductImage();
-                        image.setProduct(saved);
-                        image.setImageUrl(sharedImageUrl);
-                        image.setIsPrimary(true);
-                        image.setDisplayOrder(0);
-                        productImageRepository.save(image);
-                        counters.imagesLinked++;
-                    }
+                    saved = productRepository.save(product);
                 } catch (RuntimeException exception) {
                     counters.skipped++;
                     addWarning(warnings, "Page " + pageNumber + ", SKU " + variant.sku() + ": " + exception.getMessage());
+                    continue;
+                }
+
+                if (created) counters.created++; else counters.updated++;
+
+                try {
+                    if (familyImage == null || !productImageRepository
+                            .findByProductIdOrderByDisplayOrderAsc(saved.getId()).isEmpty()) continue;
+                    if (!imageStorageAttempted) {
+                        sharedImageUrl = storeCatalogueImage(familyImage, warnings, pageNumber, family.name());
+                        imageStorageAttempted = true;
+                        if (sharedImageUrl != null) generatedImageUrls.add(sharedImageUrl);
+                    }
+                    if (sharedImageUrl == null) {
+                        counters.imageLinkFailures++;
+                        continue;
+                    }
+                    ProductImage image = new ProductImage();
+                    image.setProduct(saved);
+                    image.setImageUrl(sharedImageUrl);
+                    image.setIsPrimary(true);
+                    image.setDisplayOrder(0);
+                    image.setCatalogueImportBatchId(batchId);
+                    productImageRepository.save(image);
+                    counters.imagesLinked++;
+                } catch (RuntimeException exception) {
+                    counters.imageLinkFailures++;
+                    addWarning(warnings, "Page " + pageNumber + ", SKU " + variant.sku()
+                            + ": catalogue image could not be linked");
                 }
             }
         }
+    }
+
+    private void cleanupUnlinkedCatalogueImages(String batchId, Set<String> generatedImageUrls, List<String> warnings) {
+        String prefix = "/api/files/download/";
+        for (String imageUrl : generatedImageUrls) {
+            try {
+                if (imageUrl.startsWith(prefix) && !productImageRepository.existsByImageUrl(imageUrl)) {
+                    fileUploadService.deleteFile(imageUrl.substring(prefix.length()));
+                }
+            } catch (RuntimeException exception) {
+                try {
+                    if (!catalogueImageCleanupTaskRepository.existsByBatchIdAndImageUrl(batchId, imageUrl)) {
+                        var cleanupTask = new com.sanitaryware.crm.entity.CatalogueImageCleanupTask();
+                        cleanupTask.setBatchId(batchId);
+                        cleanupTask.setImageUrl(imageUrl);
+                        catalogueImageCleanupTaskRepository.save(cleanupTask);
+                    }
+                    addWarning(warnings, "An unlinked catalogue image could not be removed automatically; batch cleanup will retry it");
+                } catch (RuntimeException taskException) {
+                    addWarning(warnings, "An unlinked catalogue image needs manual storage cleanup");
+                }
+            }
+        }
+    }
+
+    private boolean isPersistablePrice(BigDecimal price) {
+        return price != null && price.signum() >= 0
+                && price.scale() <= 2
+                && price.compareTo(new BigDecimal("99999999.99")) <= 0;
     }
 
     private List<ProductFamily> parseFamilies(String text, int pageNumber) {
@@ -409,6 +482,7 @@ public class CatalogPdfImportService {
         private int created;
         private int updated;
         private int imagesLinked;
+        private int imageLinkFailures;
         private int skipped;
     }
 

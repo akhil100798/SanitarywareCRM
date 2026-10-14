@@ -1,5 +1,6 @@
 import { api } from './client';
 import { sessionStorage } from './storage';
+import { normalizePage } from '../utils/pagination.mjs';
 
 const unwrapPage = (data) => {
   if (Array.isArray(data)) return data;
@@ -205,13 +206,14 @@ export const listServices = {
   }
 };
 
-export const fetchList = async (resource, query) => {
+export const fetchList = async (resource, query, page = 0) => {
   const config = listServices[resource];
   const isSearch = query?.trim() && config.searchEndpoint;
   const response = await api.get(isSearch ? config.searchEndpoint : config.endpoint, {
-    params: isSearch ? { ...config.params, query: query.trim() } : config.params
+    params: { ...config.params, page, sort: 'id,asc', ...(isSearch ? { query: query.trim() } : {}) }
   });
-  return unwrapPage(response.data).map(config.mapItem);
+  const result = normalizePage(response.data);
+  return { ...result, items: result.items.map(config.mapItem) };
 };
 export const customerService = {
   async getById(customerId) {
@@ -231,6 +233,13 @@ export const customerService = {
 };
 
 export const productService = {
+  async searchProductPage(query, page = 0) {
+    const trimmed = query?.trim();
+    const response = await api.get(trimmed ? '/products/search' : '/products', {
+      params: { size: 50, page, sort: 'id,asc', ...(trimmed ? { query: trimmed } : {}) }
+    });
+    return normalizePage(response.data);
+  },
   async getProducts(params = { size: 50 }) {
     const response = await api.get('/products', { params });
     return unwrapPage(response.data);

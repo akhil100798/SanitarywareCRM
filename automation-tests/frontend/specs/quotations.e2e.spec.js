@@ -7,7 +7,7 @@ test.describe('Frontend Quotations E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
   });
 
   test('POS-047 Create quotation draft', async ({ page }) => {
@@ -45,6 +45,6 @@ test.describe('Frontend Quotations E2E Suite', () => {
     const cleanQuoteNum = rawQuoteNum.split('\n')[0].trim();
     await targetRow.locator('button[title="Mark Accepted"]').click();
     const updatedRow = page.locator('table tr').filter({ hasText: cleanQuoteNum });
-    await expect(updatedRow).toContainText('ACCEPTED');
+    await expect(updatedRow).toContainText('Accepted');
   });
 });

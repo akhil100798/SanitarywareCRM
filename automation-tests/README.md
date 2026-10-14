@@ -18,9 +18,9 @@ BACKEND_BASE_URL=http://localhost:8081
 FRONTEND_BASE_URL=http://localhost:5173
 MOBILE_WEB_URL=http://localhost:8081
 TEST_ADMIN_EMAIL=qaadmin@test.com
-TEST_ADMIN_PASSWORD=Password@123
+TEST_ADMIN_PASSWORD=set-through-your-local-environment
 TEST_SALES_EMAIL=qasales@test.com
-TEST_SALES_PASSWORD=Password@123
+TEST_SALES_PASSWORD=set-through-your-local-environment
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=sanitaryware_crm_test
@@ -66,6 +66,20 @@ npm run seed
 # Delete test entities
 npm run cleanup
 ```
+
+`npm run cleanup` performs only explicitly requested customer/category deletes
+and catalogue batch cleanups. Set `QA_CLEANUP_CUSTOMER_IDS`,
+`QA_CLEANUP_CATEGORY_IDS`, and/or `QA_CATALOGUE_IMPORT_BATCH_IDS` to comma-separated
+IDs returned/created by the QA run. Catalogue cleanup calls
+`DELETE /api/qa/catalogue-imports/{batchId}` and is available only in `dev`/`qa`
+for ADMIN. It deactivates only products created by that batch and removes only
+that batch's image links. Existing products updated by the import stay active;
+shared image files are retained while referenced elsewhere. Failed image deletes
+are queued for retry and cause cleanup to fail visibly while pending.
+
+Catalogue import counts describe persisted products. Image-link failures are
+reported separately as `imageLinkFailures`; they do not convert a successfully
+saved product into a skipped product.
 
 ### Execute Test Suites
 ```bash

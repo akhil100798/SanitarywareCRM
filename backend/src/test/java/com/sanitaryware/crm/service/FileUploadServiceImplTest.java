@@ -8,6 +8,26 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FileUploadServiceImplTest {
+    @Test
+    void missingDownloadIsNotFoundAndDoesNotLeakPath() {
+        FileUploadServiceImpl service = new FileUploadServiceImpl(directory.toString());
+        var error = assertThrows(com.sanitaryware.crm.exception.ResourceNotFoundException.class,
+                () -> service.loadFileAsResource("products/missing.png"));
+        assertFalse(error.getMessage().contains(directory.toString()));
+    }
+    @Test
+    void downloadTraversalIsBadRequest() {
+        FileUploadServiceImpl service = new FileUploadServiceImpl(directory.toString());
+        assertThrows(IllegalArgumentException.class, () -> service.loadFileAsResource("../outside.png"));
+    }
+    @Test
+    void validDownloadReturnsExistingBytes() throws Exception {
+        FileUploadServiceImpl service = new FileUploadServiceImpl(directory.toString());
+        Files.writeString(directory.resolve("existing.txt"), "retained");
+        try (var input = service.loadFileAsResource("existing.txt").getInputStream()) {
+            assertEquals("retained", new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
     @TempDir
     Path directory;
 

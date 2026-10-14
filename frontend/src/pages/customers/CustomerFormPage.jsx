@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import customerService from '../../services/customerService';
@@ -22,19 +22,26 @@ const CustomerFormPage = () => {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [emailError, setEmailError] = useState('');
+    const requestGeneration = useRef(0);
 
-    useEffect(() => { if (isEditMode) fetchCustomer(); }, [id]);
+    useEffect(() => {
+        if (isEditMode) fetchCustomer();
+        return () => { requestGeneration.current += 1; };
+    }, [id]);
 
     const fetchCustomer = async () => {
+        const generation = ++requestGeneration.current;
         try {
             setLoading(true);
             const response = await customerService.getById(id);
-            setFormData(response.data);
+            if (generation === requestGeneration.current) setFormData(response.data);
         } catch (error) {
-            toast.error('Failed to fetch customer details');
-            navigate('/customers');
+            if (generation === requestGeneration.current) {
+                toast.error('Failed to fetch customer details');
+                navigate('/customers');
+            }
         } finally {
-            setLoading(false);
+            if (generation === requestGeneration.current) setLoading(false);
         }
     };
 

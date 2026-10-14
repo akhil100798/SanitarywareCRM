@@ -12,10 +12,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BulkUploadResponse {
+    private String batchId;
     private int createdCount;
     private int updatedCount;
     private int totalProcessed;
     private int imagesLinkedCount;
+    private int imageLinkFailures;
     private int skippedCount;
     private List<String> errors;
 }

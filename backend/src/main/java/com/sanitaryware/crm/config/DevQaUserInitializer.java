@@ -21,25 +21,25 @@ public class DevQaUserInitializer implements ApplicationRunner {
     @Value("${qa.admin.username:qaadmin}")
     private String adminUsername;
 
-    @Value("${qa.admin.password:Password@123}")
+    @Value("${qa.admin.password}")
     private String adminPassword;
 
     @Value("${qa.manager.username:qamanager}")
     private String managerUsername;
 
-    @Value("${qa.manager.password:Password@123}")
+    @Value("${qa.manager.password}")
     private String managerPassword;
 
     @Value("${qa.sales.username:qasales}")
     private String salesUsername;
 
-    @Value("${qa.sales.password:Password@123}")
+    @Value("${qa.sales.password}")
     private String salesPassword;
 
     @Value("${qa.warehouse.username:qawarehouse}")
     private String warehouseUsername;
 
-    @Value("${qa.warehouse.password:Password@123}")
+    @Value("${qa.warehouse.password}")
     private String warehousePassword;
 
     @Override

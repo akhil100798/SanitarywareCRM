@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { PageHeader } from '../../components/ui/Page';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Button, IconButton } from '../../components/ui/Button';
+import AuthenticatedImage from '../../components/ui/AuthenticatedImage';
 import { useConfirm } from '../../components/ui/ConfirmProvider';
 import { LoadingSkeleton, EmptyState, ErrorState } from '../../components/ui/Feedback';
 
@@ -189,15 +190,15 @@ const ProductListPage = () => {
                 description="Manage inventory stock, categories, brands and catalog items."
                 actions={
                     <div className="flex flex-wrap gap-2">
-                        <Link to="/brands"><Button variant="secondary"><Tag size={16} /> Brands</Button></Link>
-                        <Link to="/categories"><Button variant="secondary"><Layers size={16} /> Categories</Button></Link>
+                        <Button as={Link} to="/brands" variant="secondary"><Tag size={16} /> Brands</Button>
+                        <Button as={Link} to="/categories" variant="secondary" aria-label="Manage product categories" data-testid="product-categories-shortcut"><Layers size={16} /> Categories</Button>
                         {canManageProducts && (
                             <>
                                 <Button variant="secondary" onClick={() => setIsUploadModalOpen(true)}><FileUp size={16} /> Bulk Import</Button>
                                 {user?.role === 'ADMIN' && products.length > 0 && (
                                     <Button variant="secondary" onClick={handleClearAllProducts}><TrashIcon size={16} /> Clear All</Button>
                                 )}
-                                <Link to="/products/new"><Button><Plus size={16} /> Add Product</Button></Link>
+                                <Button as={Link} to="/products/new"><Plus size={16} /> Add Product</Button>
                             </>
                         )}
                     </div>
@@ -208,7 +209,7 @@ const ProductListPage = () => {
                 <form onSubmit={handleSearchSubmit} className="filter-bar">
                     <div className="search-field" style={{ maxWidth: 'none', flex: 2 }}>
                         <div className="search-control">
-                            <input type="text" placeholder="Search by name, SKU, size, brand, barcode..." className="input-field" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} aria-label="Search products" />
+                            <input type="text" placeholder="Search by name, SKU, or brand..." className="input-field" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} aria-label="Search products" />
                             <Button type="submit"><Search size={16} /> Search</Button>
                             {hasActiveFilters && <Button variant="ghost" onClick={handleResetFilters}><RotateCcw size={16} /></Button>}
                         </div>
@@ -305,7 +306,7 @@ const ProductListPage = () => {
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded bg-surface-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                                                             {primaryImg && !isBroken ? (
-                                                                <img src={primaryImg} alt="" className="w-full h-full object-contain p-1"
+                                                                <AuthenticatedImage src={primaryImg} alt="" className="w-full h-full object-contain p-1"
                                                                     onError={() => setBrokenImageIds(prev => ({ ...prev, [product.id]: true }))} />
                                                             ) : <Package size={16} />}
                                                         </div>
@@ -334,17 +335,17 @@ const ProductListPage = () => {
                                                 <td style={{ fontSize: 12 }}>
                                                     {product.barcode && <div>BAR: {product.barcode}</div>}
                                                     {product.hsnCode && <div className="record-meta">HSN: {product.hsnCode}</div>}
-                                                    {product.gstRate != null && <StatusBadge status={`GST ${product.gstRate}%`} label={`GST ${product.gstRate}%`} />}
+                                                    {product.gstRate != null && <StatusBadge status={`GST: ${product.gstRate}%`} label={`GST: ${product.gstRate}%`} />}
                                                     {!product.barcode && !product.hsnCode && product.gstRate == null && <span className="text-muted">—</span>}
                                                 </td>
                                                 <td><StatusBadge status={product.isActive ? 'ACTIVE' : 'INACTIVE'} /></td>
                                                 <td className="numeric">
                                                     <div className="flex justify-end gap-1">
-                                                        <IconButton label="View details" onClick={() => openProductDetail(product)}><Eye size={16} /></IconButton>
+                                                        <IconButton label="View Details" onClick={() => openProductDetail(product)}><Eye size={16} /></IconButton>
                                                         {canManageProducts && (
                                                             <>
-                                                                <Link to={`/products/edit/${product.id}`}><IconButton label="Edit product"><Edit size={16} /></IconButton></Link>
-                                                                <IconButton label="Deactivate product" onClick={() => handleDelete(product.id, product.name)}><TrashIcon size={16} /></IconButton>
+                                                                <IconButton as={Link} to={`/products/edit/${product.id}`} label="Edit Product"><Edit size={16} /></IconButton>
+                                                                <IconButton label="Deactivate Product" onClick={() => handleDelete(product.id, product.name)}><TrashIcon size={16} /></IconButton>
                                                             </>
                                                         )}
                                                     </div>

@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Search } from 'lucide-react-native';
-import { getErrorMessage } from '../api/client';
 import { productService } from '../api/services';
 import ListCard from '../components/ListCard';
 import Screen from '../components/Screen';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
 import { formatMoney } from '../utils/formatters';
+import { usePagedItems } from '../utils/usePagedItems';
 
 const mapProduct = (product) => ({
   id: product.id,
@@ -18,39 +18,26 @@ const mapProduct = (product) => ({
   badge: product.stockQuantity <= product.reorderLevel ? 'Low stock' : 'In stock',
   raw: product
 });
+const fetchProductPage = async (query, page) => {
+  const result = await productService.searchProductPage(query, page);
+  return { ...result, items: result.items.map(mapProduct) };
+};
 
 const ProductPickerScreen = ({ navigation }) => {
-  const [products, setProducts] = useState([]);
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-
-  const loadProducts = useCallback(async (nextQuery = '') => {
-    try {
-      setError('');
-      const data = await productService.searchProducts(nextQuery, { size: 50 });
-      setProducts(data.map(mapProduct));
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => loadProducts(query), query.trim() ? 350 : 0);
-    return () => clearTimeout(timer);
-  }, [loadProducts, query]);
+  const { items: products, total, hasNext, loading, loadingMore, error, reload, loadMore } = usePagedItems(fetchProductPage, query);
 
   if (loading) return <LoadingView label="Loading products..." />;
-  if (error) return <ErrorView message={error} onRetry={() => loadProducts(query)} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
 
   return (
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Select Product</Text>
+        <Text>{products.length} of {total} records</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Cancel product selection" onPress={() => navigation.goBack()}>
+          <Text style={styles.cancel}>Cancel</Text>
+        </Pressable>
         <View style={styles.searchBox}>
           <Search color={colors.muted} size={18} />
           <TextInput
@@ -67,25 +54,24 @@ const ProductPickerScreen = ({ navigation }) => {
         contentContainerStyle={styles.list}
         data={products}
         keyExtractor={(item) => String(item.id)}
+        ListFooterComponent={hasNext ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Load more products" accessibilityState={{ disabled: loadingMore }}
+            disabled={loadingMore} onPress={loadMore} style={styles.more}>
+            <Text>{loadingMore ? 'Loading more...' : 'Load more products'}</Text>
+          </Pressable>
+        ) : null}
         ListEmptyComponent={<EmptyView title="No products found" message="Try another product name or SKU." />}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              loadProducts(query);
-            }}
+            refreshing={loading}
+            onRefresh={reload}
           />
         }
         renderItem={({ item }) => (
           <ListCard
             item={item}
             onPress={() =>
-              navigation.navigate({
-                name: 'QuotationForm',
-                params: { selectedProduct: item.raw },
-                merge: true
-              })
+              navigation.popTo('QuotationForm', { selectedProduct: item.raw })
             }
           />
         )}
@@ -95,6 +81,8 @@ const ProductPickerScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  more: { alignItems: 'center', padding: 16 },
+  cancel: { color: colors.primary, paddingVertical: 10, fontWeight: '700' },
   header: {
     backgroundColor: colors.surface,
     borderBottomColor: colors.border,

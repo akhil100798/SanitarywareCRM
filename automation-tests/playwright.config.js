@@ -1,5 +1,6 @@
 const { defineConfig, devices } = require('@playwright/test');
 require('dotenv').config();
+require('./config/testCredentials');
 
 const bugHuntRequested = process.argv.some((argument) => argument.includes('bug-hunt'));
 const releaseSpecMatch = /(?:api|frontend|security|database)[\\/]specs[\\/].*\.spec\.js/;

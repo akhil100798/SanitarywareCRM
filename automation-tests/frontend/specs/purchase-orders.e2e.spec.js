@@ -54,7 +54,7 @@ test.describe('Frontend Purchase Order E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
   });
 
   test('POS-PO-E2E-001 Create Purchase Order with purchasePrice auto-fill and metadata badges', async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe('Frontend Purchase Order E2E Suite', () => {
     await qtyInput.fill('10');
 
     // Submit PO
-    await page.click('button:has-text("Save Purchase Order")');
+    await page.getByRole('button', { name: 'Create PO', exact: true }).click();
     await page.waitForURL('**/purchase-orders', { timeout: 20000 });
     await page.waitForLoadState('networkidle');
 

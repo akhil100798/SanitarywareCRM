@@ -6,7 +6,7 @@ test.describe('Mobile Viewport E2E Smoke Suite', () => {
     // 1. Login
     await page.goto('/login');
     await page.fill('input[name="username"]', 'qaadmin');
-    await page.fill('input[name="password"]', 'Password@123');
+    await page.fill('input[name="password"]', process.env.QA_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL(url => url.pathname.includes('/dashboard'));
 

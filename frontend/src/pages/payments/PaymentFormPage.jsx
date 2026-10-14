@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import paymentService from '../../services/paymentService';
@@ -14,6 +14,7 @@ const PaymentFormPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [order, setOrder] = useState(null);
+    const amountEditedRef = useRef(false);
     const [formData, setFormData] = useState({
         orderId: orderId || '',
         paymentDate: new Date().toISOString().split('T')[0],
@@ -23,13 +24,18 @@ const PaymentFormPage = () => {
         notes: ''
     });
 
-    useEffect(() => { if (orderId) fetchOrder(); }, [orderId]);
+    useEffect(() => {
+        amountEditedRef.current = false;
+        if (orderId) fetchOrder();
+    }, [orderId]);
 
     const fetchOrder = async () => {
         try {
             const res = await orderService.getById(orderId);
             setOrder(res.data);
-            setFormData(prev => ({ ...prev, amount: res.data.balanceAmount }));
+            if (!amountEditedRef.current) {
+                setFormData(prev => ({ ...prev, amount: res.data.balanceAmount }));
+            }
         } catch (error) {
             toast.error('Failed to load order details');
         }
@@ -60,7 +66,7 @@ const PaymentFormPage = () => {
             {!orderId && !order && (
                 <div className="surface" style={{ padding: 24 }}>
                     <p className="text-secondary mb-4">Select an order to record a payment against.</p>
-                    <Link to="/orders"><Button variant="secondary">Choose an Order</Button></Link>
+                    <Button as={Link} to="/orders" variant="secondary">Choose an Order</Button>
                 </div>
             )}
 
@@ -89,15 +95,18 @@ const PaymentFormPage = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <Field label="Payment Amount" required>
                                     <input type="number" step="0.01" min="0" required name="amount" className="input-field" value={formData.amount}
-                                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} />
+                                        onChange={(e) => {
+                                            amountEditedRef.current = true;
+                                            setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }));
+                                        }} />
                                 </Field>
                                 <Field label="Payment Date" required>
                                     <input type="date" required className="input-field" value={formData.paymentDate}
-                                        onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })} />
+                                        onChange={(e) => setFormData(prev => ({ ...prev, paymentDate: e.target.value }))} />
                                 </Field>
                                 <Field label="Method" required>
                                     <select className="input-field" value={formData.paymentMethod}
-                                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}>
+                                        onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}>
                                         <option value="CASH">Cash</option>
                                         <option value="BANK_TRANSFER">Bank Transfer</option>
                                         <option value="UPI">UPI</option>
@@ -108,11 +117,11 @@ const PaymentFormPage = () => {
                                 </Field>
                                 <Field label="Reference #">
                                     <input type="text" className="input-field" value={formData.referenceNumber}
-                                        onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })} />
+                                        onChange={(e) => setFormData(prev => ({ ...prev, referenceNumber: e.target.value }))} />
                                 </Field>
                                 <Field label="Notes">
                                     <textarea className="input-field" rows="3" value={formData.notes}
-                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}></textarea>
+                                        onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}></textarea>
                                 </Field>
                             </div>
                             <div className="form-actions">

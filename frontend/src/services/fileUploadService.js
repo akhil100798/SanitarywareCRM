@@ -24,9 +24,13 @@ export const downloadFile = async (fileName, type = 'general', signal) => {
     return response.data;
 };
 
+export const getFileUrl = (fileName, type = 'general') =>
+    `${API_URL}/download/${encodeURIComponent(type)}/${encodeURIComponent(fileName.split('/').pop())}`;
+
 const fileUploadService = {
     uploadFile,
-    downloadFile
+    downloadFile,
+    getFileUrl
 };
 
 export default fileUploadService;

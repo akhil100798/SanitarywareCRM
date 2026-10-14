@@ -234,7 +234,7 @@ class ProductServiceImplTest {
         when(fileUploadService.storeFile(file, "products")).thenReturn("products/uuid1.jpg");
         when(productImageRepository.findByProductIdOrderByDisplayOrderAsc(1L)).thenReturn(Collections.emptyList());
 
-        ProductImage savedImage = new ProductImage(10L, testProduct, "/api/files/download/products/uuid1.jpg", true, 0, null);
+        ProductImage savedImage = new ProductImage(10L, testProduct, "/api/files/download/products/uuid1.jpg", true, 0, null, null);
         when(productImageRepository.save(any(ProductImage.class))).thenReturn(savedImage);
 
         ProductImageDTO result = productService.addProductImage(1L, file, false, null);
@@ -247,13 +247,13 @@ class ProductServiceImplTest {
     @Test
     void addProductImage_SetAsPrimary_UpdatesExistingPrimaryImages() {
         MockMultipartFile file = new MockMultipartFile("file", "image2.jpg", "image/jpeg", "data".getBytes());
-        ProductImage existingImg = new ProductImage(10L, testProduct, "/api/files/download/products/uuid1.jpg", true, 0, null);
+        ProductImage existingImg = new ProductImage(10L, testProduct, "/api/files/download/products/uuid1.jpg", true, 0, null, null);
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
         when(fileUploadService.storeFile(file, "products")).thenReturn("products/uuid2.jpg");
         when(productImageRepository.findByProductIdOrderByDisplayOrderAsc(1L)).thenReturn(new ArrayList<>(List.of(existingImg)));
 
-        ProductImage savedImage = new ProductImage(11L, testProduct, "/api/files/download/products/uuid2.jpg", true, 1, null);
+        ProductImage savedImage = new ProductImage(11L, testProduct, "/api/files/download/products/uuid2.jpg", true, 1, null, null);
         when(productImageRepository.save(any(ProductImage.class))).thenReturn(savedImage);
 
         ProductImageDTO result = productService.addProductImage(1L, file, true, 1);
@@ -266,8 +266,8 @@ class ProductServiceImplTest {
 
     @Test
     void deleteProductImage_PrimaryDeleted_ReassignsPrimaryToRemaining() {
-        ProductImage primaryImg = new ProductImage(10L, testProduct, "/api/files/download/products/uuid1.jpg", true, 0, null);
-        ProductImage secondaryImg = new ProductImage(11L, testProduct, "/api/files/download/products/uuid2.jpg", false, 1, null);
+        ProductImage primaryImg = new ProductImage(10L, testProduct, "/api/files/download/products/uuid1.jpg", true, 0, null, null);
+        ProductImage secondaryImg = new ProductImage(11L, testProduct, "/api/files/download/products/uuid2.jpg", false, 1, null, null);
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
         when(productImageRepository.findByIdAndProductId(10L, 1L)).thenReturn(Optional.of(primaryImg));

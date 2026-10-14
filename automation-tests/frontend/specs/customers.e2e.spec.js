@@ -7,12 +7,13 @@ test.describe('Frontend Customer E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
   });
 
   test('POS-044 Save customer profile successfully', async ({ page }) => {
     await page.goto('/customers');
     await page.locator('span:has-text("Fetching customer list...")').waitFor({ state: 'detached', timeout: 35000 });
+    await expect(page.getByTestId('add-customer-primary')).toHaveCount(1);
     const customerPage = new CustomerPage(page);
     const suffix = Date.now();
     await customerPage.createCustomer(`Rahul Dev ${suffix}`, `999${suffix.toString().slice(-7)}`);
@@ -28,8 +29,8 @@ test.describe('Frontend Customer E2E Suite', () => {
     await customerPage.addCustomerButton.click();
     await page.waitForURL(url => url.pathname.includes('/customers/new'));
     await page.fill('input[name="email"]', 'bad-email');
-    await page.click('button:has-text("Save")');
+    await page.getByRole('button', { name: 'Save Customer', exact: true }).click();
     // Expect error feedback
-    await expect(page.locator('.text-danger')).toBeVisible();
+    await expect(page.getByRole('alert')).toBeVisible();
   });
 });

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { credentials } = require('../../config/testCredentials');
 
 const readJson = (filename) => {
   const filepath = path.join(__dirname, '../../data', filename);
@@ -8,7 +9,7 @@ const readJson = (filename) => {
 
 const getTestUser = (role) => {
   const users = readJson('test-users.json');
-  return users[role];
+  return { ...users[role], password: credentials[role].password };
 };
 
 const getTestProduct = () => {

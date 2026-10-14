@@ -11,6 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PaginationFactoryTest {
+    @Test
+    void unknownSortPropertyRejectedForEveryPagedResource() {
+        for (String resource : new String[]{"customers", "products", "distributors", "orders", "quotations",
+                "purchase-orders", "distributor-payments", "audit-logs"}) {
+            org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+            request.setRequestURI("/api/" + resource);
+            org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                    new org.springframework.web.context.request.ServletRequestAttributes(request));
+            try {
+                assertThrows(IllegalArgumentException.class,
+                        () -> paginationFactory.create(0, 20, new String[]{"nonexistent,asc"}), resource);
+            } finally { org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes(); }
+        }
+    }
 
     private PaginationFactory paginationFactory;
 

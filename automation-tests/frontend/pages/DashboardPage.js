@@ -1,7 +1,7 @@
 class DashboardPage {
   constructor(page) {
     this.page = page;
-    this.header = page.locator('h2');
+    this.header = page.getByTestId('dashboard-heading');
     this.sidebarProductsLink = page.locator('a[href="/products"]');
     this.sidebarCategoriesLink = page.locator('a[href="/categories"]');
     this.sidebarOrdersLink = page.locator('a[href="/orders"]');

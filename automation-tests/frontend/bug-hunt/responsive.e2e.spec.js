@@ -12,7 +12,7 @@ test('temporary responsive smoke across required viewports', async ({ page }) =>
   await page.setViewportSize(viewports[0]);
   await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.locator('input[name="username"]').fill('qaadmin');
-  await page.locator('input[name="password"]').fill('Password@123');
+  await page.locator('input[name="password"]').fill(process.env.QA_ADMIN_PASSWORD);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/\/dashboard/, { timeout: 25000 });
 

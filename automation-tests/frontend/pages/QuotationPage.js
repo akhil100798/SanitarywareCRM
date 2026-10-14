@@ -1,12 +1,12 @@
 class QuotationPage {
   constructor(page) {
     this.page = page;
-    this.createQuotationButton = page.locator('a:has-text("New Quotation"), a:has-text("Create Quotation"), button:has-text("New Quotation"), button:has-text("Create Quotation")');
+    this.createQuotationButton = page.getByRole('link', { name: 'New Quotation', exact: true }).first();
     this.customerSelect = page.locator('select[name="customerId"]');
-    this.addItemButton = page.locator('button:has-text("Add Line Item"), button:has-text("Add Item")');
-    this.productSelect = page.locator('select[name="productId"]');
-    this.quantityInput = page.locator('input[name="quantity"]');
-    this.saveQuotationButton = page.locator('a:has-text("Save"), button:has-text("Save")');
+    this.addItemButton = page.getByRole('button', { name: 'Add Line Item', exact: true });
+    this.productSelect = page.getByRole('button', { name: 'Select Product', exact: true });
+    this.quantityInput = page.locator('table input[type="number"]').first();
+    this.saveQuotationButton = page.getByRole('button', { name: 'Save Quotation', exact: true });
     this.tableRows = page.locator('table tbody tr');
   }
 
@@ -26,17 +26,15 @@ class QuotationPage {
     }
     
     await this.addItemButton.click();
-    await this.page.locator('select[name="productId"] option:not([value=""])').first().waitFor({ state: 'attached', timeout: 15000 });
     if (productName) {
-      const option = this.productSelect.locator('option').filter({ hasText: productName }).first();
-      if (await option.count() > 0) {
-        const value = await option.getAttribute('value');
-        await this.productSelect.selectOption(value);
-      } else {
-        await this.productSelect.selectOption({ index: 1 });
-      }
+      await this.productSelect.click();
+      await this.page.getByTestId('product-search-input').fill(productName);
+      const result = this.page.locator('[data-testid^="product-search-result-"]').filter({ hasText: productName }).first();
+      await result.waitFor({ state: 'visible', timeout: 15000 });
+      await result.click();
     } else {
-      await this.productSelect.selectOption({ index: 1 });
+      await this.productSelect.click();
+      await this.page.locator('.cursor-pointer').first().click();
     }
     
     await this.quantityInput.fill(quantity.toString());

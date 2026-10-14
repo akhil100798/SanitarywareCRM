@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.BulkUploadResponse;
+import com.sanitaryware.crm.dto.CatalogueCleanupResult;
 import com.sanitaryware.crm.dto.ProductDTO;
 import com.sanitaryware.crm.dto.ProductFilterDTO;
 import com.sanitaryware.crm.dto.ProductImageDTO;
@@ -25,9 +26,10 @@ public interface ProductService {
     List<ProductDTO> getFeaturedProducts();
     void deleteProduct(Long id);
     void updateStock(Long id, Integer quantity);
-    BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file);
+    BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String batchId);
     ProductImageDTO addProductImage(Long productId, MultipartFile file, Boolean isPrimary, Integer displayOrder);
     void deleteProductImage(Long productId, Long imageId);
     List<ProductImageDTO> getProductImages(Long productId);
     void deleteAllProducts();
+    CatalogueCleanupResult cleanupCatalogueImports(String batchId);
 }

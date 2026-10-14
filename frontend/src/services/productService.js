@@ -25,16 +25,15 @@ export const productService = {
             formData.append('displayOrder', displayOrder);
         }
         return api.post(`/products/${productId}/images`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
+            headers: { 'Content-Type': undefined },
         });
     },
     deleteImage: (productId, imageId) => api.delete(`/products/${productId}/images/${imageId}`),
-    bulkCatalogUpload: (brandId, file) => {
+    bulkCatalogUpload: (brandId, file, batchId) => {
         const formData = new FormData();
         formData.append('brandId', brandId);
         formData.append('file', file);
+        if (batchId) formData.append('batchId', batchId);
         return api.post('/products/bulk-catalog-upload', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',

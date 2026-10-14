@@ -40,6 +40,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public PurchaseOrderDTO createPurchaseOrder(PurchaseOrderDTO dto) {
+        validateGenericStatus(dto.getStatus());
         Distributor distributor = resolveDistributor(dto.getDistributorId());
         PurchaseOrder po = purchaseOrderMapper.toEntity(dto);
         po.setDistributor(distributor);
@@ -85,8 +86,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public PurchaseOrderDTO updatePurchaseOrder(Long id, PurchaseOrderDTO dto) {
-        PurchaseOrder existingPo = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        validateGenericStatus(dto.getStatus());
+        PurchaseOrder existingPo = purchaseOrderRepository.findByIdForUpdate(id)
+                .orElseGet(() -> purchaseOrderRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id)));
 
         if (existingPo.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot update an already received Purchase Order");
@@ -98,6 +101,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         Distributor distributor = dto.getDistributorId() == null
                 ? existingPo.getDistributor()
                 : resolveDistributor(dto.getDistributorId());
+        if (!existingPo.getPayments().isEmpty()
+                && !distributor.getId().equals(existingPo.getDistributor().getId())) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Reverse payments before changing the distributor");
+        }
 
         List<PurchaseOrderItem> updatedItems = null;
         if (dto.getItems() != null) {
@@ -129,6 +136,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         existingPo.calculateTotal();
+        if (existingPo.getBalanceAmount().signum() < 0) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Purchase Order total cannot be less than recorded payments");
+        }
         PurchaseOrder updatedPo = purchaseOrderRepository.save(existingPo);
 
         auditService.logEvent("UPDATE", "PURCHASE_ORDER", updatedPo.getId(),
@@ -138,10 +148,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PurchaseOrderDTO getPurchaseOrderById(Long id) {
-        PurchaseOrder po = purchaseOrderRepository.findByIdForUpdate(id)
-                .orElseGet(() -> purchaseOrderRepository.findById(id)
-                        .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id)));
+        PurchaseOrder po = purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
         return purchaseOrderMapper.toDTO(po);
     }
 
@@ -153,11 +163,15 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public void deletePurchaseOrder(Long id) {
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder po = purchaseOrderRepository.findByIdForUpdate(id)
+                .orElseGet(() -> purchaseOrderRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id)));
         
         if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete an already received Purchase Order");
+        }
+        if (!po.getPayments().isEmpty() || po.getPaidAmount().signum() != 0) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Reverse payments before deleting a Purchase Order");
         }
 
         purchaseOrderRepository.delete(po);
@@ -184,8 +198,12 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             return receivePurchaseOrder(id);
         }
 
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        if (newStatus == PurchaseOrder.POStatus.PARTIALLY_RECEIVED) {
+            throw new IllegalArgumentException("Receiving status must be changed through the receiving workflow");
+        }
+        PurchaseOrder po = purchaseOrderRepository.findByIdForUpdate(id)
+                .orElseGet(() -> purchaseOrderRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id)));
 
         if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED && newStatus != PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot change status of an already received Purchase Order");
@@ -253,8 +271,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 : distributorRepository.findByIdForUpdate(po.getDistributor().getId()).orElse(po.getDistributor());
         if (distributor != null) {
             BigDecimal currentBalance = distributor.getOutstandingBalance() != null ? distributor.getOutstandingBalance() : BigDecimal.ZERO;
-            BigDecimal poBalance = po.getBalanceAmount() != null ? po.getBalanceAmount() : BigDecimal.ZERO;
-            distributor.setOutstandingBalance(currentBalance.add(poBalance));
+            // Payments already reduce the supplier ledger, including advances.
+            // Recognize the full payable once; adding the remaining balance deducts advances twice.
+            BigDecimal poTotal = po.getTotal() != null ? po.getTotal() : BigDecimal.ZERO;
+            distributor.setOutstandingBalance(currentBalance.add(poTotal));
             distributorRepository.save(distributor);
         }
 
@@ -302,6 +322,19 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return distributorRepository.findById(distributorId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Distributor not found with id: " + distributorId));
+    }
+
+    private void validateGenericStatus(String status) {
+        if (status == null || status.isBlank()) return;
+        PurchaseOrder.POStatus parsed;
+        try {
+            parsed = PurchaseOrder.POStatus.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid Purchase Order status");
+        }
+        if (parsed == PurchaseOrder.POStatus.RECEIVED || parsed == PurchaseOrder.POStatus.PARTIALLY_RECEIVED) {
+            throw new IllegalArgumentException("Use the receiving workflow to update stock and supplier balances");
+        }
     }
 
     private Product resolveProduct(Long productId) {

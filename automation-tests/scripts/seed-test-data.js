@@ -1,5 +1,6 @@
 const http = require('http');
 require('dotenv').config();
+const { credentials } = require('../config/testCredentials');
 
 const BASE_URL = process.env.BACKEND_BASE_URL || 'http://localhost:8081';
 
@@ -46,21 +47,21 @@ const runSeeding = async () => {
     try {
       const loginResponse = await postJson('/api/auth/login', {
         username: 'qaadmin',
-        password: 'Password@123'
+        password: credentials.admin.password
       });
       token = loginResponse.token;
     } catch (err) {
       console.log('Admin login failed, registering admin user first...');
       await postJson('/api/auth/register', {
         username: 'qaadmin',
-        password: 'Password@123',
+        password: credentials.admin.password,
         email: 'qaadmin@test.com',
         fullName: 'QA Admin User',
         phoneNumber: '9000000001'
       });
       const loginResponse = await postJson('/api/auth/login', {
         username: 'qaadmin',
-        password: 'Password@123'
+        password: credentials.admin.password
       });
       token = loginResponse.token;
     }

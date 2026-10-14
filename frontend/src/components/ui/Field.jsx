@@ -3,12 +3,16 @@ import { Button } from './Button';
 
 export function Field({ label, help, error, required, children, id: suppliedId, className = '' }) {
     const generatedId = useId();
-    const childProps = children?.props || {};
+    const childArray = React.Children.toArray(children);
+    const singleChild = childArray.length === 1 && React.isValidElement(childArray[0]) ? childArray[0] : null;
+    const childProps = singleChild?.props || {};
     const id = suppliedId || childProps.id || generatedId;
     const description = [help && `${id}-help`, error && `${id}-error`, childProps['aria-describedby']].filter(Boolean).join(' ') || undefined;
     return <div className={`field ${className}`}>
         <label className="field-label" htmlFor={id}>{label}{required && <span aria-hidden="true"> *</span>}</label>
-        {children && React.cloneElement(children, { id, required: required || childProps.required, 'aria-invalid': error ? true : childProps['aria-invalid'], 'aria-describedby': description })}
+        {singleChild
+            ? React.cloneElement(singleChild, { id, required: required || childProps.required, 'aria-invalid': error ? true : childProps['aria-invalid'], 'aria-describedby': description })
+            : children && <div id={id}>{children}</div>}
         {!children && <div style={{ minHeight: 40 }} aria-hidden="true" />}
         {help && <p className="field-help" id={`${id}-help`}>{help}</p>}
         {error && <p className="field-error" id={`${id}-error`} role="alert">{error}</p>}

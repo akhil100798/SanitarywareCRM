@@ -157,8 +157,9 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<BulkUploadResponse> bulkCatalogUpload(
             @RequestParam("brandId") Long brandId,
-            @RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(productService.bulkCatalogUpload(brandId, file));
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "batchId", required = false) String batchId) {
+        return ResponseEntity.ok(productService.bulkCatalogUpload(brandId, file, batchId));
     }
 
     @PostMapping("/{id}/images")

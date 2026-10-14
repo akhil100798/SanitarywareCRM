@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.DashboardDTO;
+import com.sanitaryware.crm.dto.DashboardOrderDTO;
 import com.sanitaryware.crm.dto.OrderDTO;
 import com.sanitaryware.crm.entity.Order;
 import com.sanitaryware.crm.mapper.OrderMapper;
@@ -34,29 +35,38 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional(readOnly = true)
     public DashboardDTO getDashboardStats() {
+        var currentUser = accessControlService.currentUser();
+        boolean canViewFinancials = currentUser != null && (currentUser.getRole() == com.sanitaryware.crm.entity.User.UserRole.ADMIN
+                || currentUser.getRole() == com.sanitaryware.crm.entity.User.UserRole.MANAGER);
         LocalDate now = LocalDate.now();
         LocalDate startOfMonth = now.withDayOfMonth(1);
         LocalDate endOfMonth = now.withDayOfMonth(now.lengthOfMonth());
 
-        BigDecimal totalRevenue = paymentRepository.getTotalPaymentsBetweenDates(startOfMonth, endOfMonth);
-        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalRevenue = canViewFinancials ? paymentRepository.getTotalPaymentsBetweenDates(startOfMonth, endOfMonth) : null;
+        if (canViewFinancials && totalRevenue == null) totalRevenue = BigDecimal.ZERO;
 
         long totalOrders = orderRepository.count();
         long totalCustomers = customerRepository.count();
         // Preserve the dashboard's existing <10 threshold (catalogue alerts use reorderLevel).
         long lowStockProducts = productRepository.countByStockQuantityLessThan(10);
-        BigDecimal distributorPaymentsTotal = distributorPaymentRepository
-                .getTotalDistributorPaymentsBetweenDates(startOfMonth, endOfMonth);
-        BigDecimal totalReceivables = orderRepository.getTotalBalance();
-        BigDecimal totalPayables = purchaseOrderRepository.getTotalBalance();
+        BigDecimal distributorPaymentsTotal = canViewFinancials ? distributorPaymentRepository
+                .getTotalDistributorPaymentsBetweenDates(startOfMonth, endOfMonth) : null;
+        BigDecimal totalReceivables = canViewFinancials ? orderRepository.getTotalBalance() : null;
+        BigDecimal totalPayables = canViewFinancials ? purchaseOrderRepository.getTotalBalance() : null;
 
-        var currentUser = accessControlService.currentUser();
         var recentPage = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<OrderDTO> recentOrders = (accessControlService.isSales(currentUser)
+        List<DashboardOrderDTO> recentOrders = (accessControlService.isSales(currentUser)
                 ? orderRepository.findByCreatedByUsername(currentUser.getUsername(), recentPage)
                 : orderRepository.findAll(recentPage))
                 .stream()
                 .map(orderMapper::toDTO)
+                .map(order -> DashboardOrderDTO.builder()
+                        .id(order.getId())
+                        .orderNumber(order.getOrderNumber())
+                        .customerName(order.getCustomerName())
+                        .status(order.getStatus())
+                        .total(canViewFinancials ? order.getTotal() : null)
+                        .build())
                 .collect(Collectors.toList());
 
         // Order status breakdown across all order statuses
@@ -71,7 +81,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Monthly revenue for the last 6 months
         Map<String, BigDecimal> monthlyRevenue = new java.util.LinkedHashMap<>();
-        for (int i = 5; i >= 0; i--) {
+        for (int i = 5; canViewFinancials && i >= 0; i--) {
             LocalDate monthDate = now.minusMonths(i);
             LocalDate monthStart = monthDate.withDayOfMonth(1);
             LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
@@ -80,11 +90,11 @@ public class DashboardServiceImpl implements DashboardService {
             monthlyRevenue.put(monthLabel, rev != null ? rev : BigDecimal.ZERO);
         }
 
-        List<DashboardDTO.ProductSalesDTO> topProducts = orderRepository
+        List<DashboardDTO.ProductSalesDTO> topProducts = canViewFinancials ? orderRepository
                 .findTopProductSales(Order.OrderStatus.CANCELLED, PageRequest.of(0, 5)).stream()
                 .map(row -> new DashboardDTO.ProductSalesDTO(
                         row.getProductName(), row.getQuantitySold(), row.getTotalRevenue()))
-                .toList();
+                .toList() : null;
 
         return DashboardDTO.builder()
                 .totalRevenue(totalRevenue)
@@ -97,7 +107,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .totalReceivables(totalReceivables)
                 .recentOrders(recentOrders)
                 .orderStatusBreakdown(orderStatusBreakdown)
-                .monthlyRevenue(monthlyRevenue)
+                .monthlyRevenue(canViewFinancials ? monthlyRevenue : null)
                 .topProducts(topProducts)
                 .build();
     }

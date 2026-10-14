@@ -10,7 +10,7 @@ test.describe('Mobile Viewport Login Suite', () => {
   test('POS-062 Login saves authentication credentials', async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="username"]', 'qaadmin');
-    await page.fill('input[name="password"]', 'Password@123');
+    await page.fill('input[name="password"]', process.env.QA_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
   });
@@ -20,6 +20,6 @@ test.describe('Mobile Viewport Login Suite', () => {
     await page.fill('input[name="username"]', 'qaadmin');
     await page.fill('input[name="password"]', 'WrongPassword');
     await page.click('button[type="submit"]');
-    await expect(page.locator('.error-message, .alert-danger')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 10000 });
   });
 });

@@ -1,11 +1,11 @@
 class CategoryPage {
   constructor(page) {
     this.page = page;
-    this.addCategoryButton = page.locator('a:has-text("Add Category"), button:has-text("Add Category")');
+    this.addCategoryButton = page.getByRole('button', { name: 'Add Category', exact: true }).first();
     this.nameInput = page.locator('input[name="name"]');
     this.descriptionInput = page.locator('textarea[name="description"]');
     this.parentDropdown = page.locator('select[name="parentId"]');
-    this.saveButton = page.locator('a:has-text("Save"), button:has-text("Save")');
+    this.saveButton = page.getByRole('button', { name: 'Save', exact: true }).first();
     this.tableRows = page.locator('table tr');
   }
 

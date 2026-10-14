@@ -4,7 +4,7 @@ class LoginPage {
     this.usernameInput = page.locator('input[name="username"]');
     this.passwordInput = page.locator('input[name="password"]');
     this.submitButton = page.locator('button[type="submit"]');
-    this.errorAlert = page.locator('.error-message, .alert-danger');
+    this.errorAlert = page.getByRole('alert').first();
   }
 
   async navigate() {
@@ -15,11 +15,10 @@ class LoginPage {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
-    if (password === 'Password@123') {
-      await this.page.waitForURL(url => url.pathname.includes('/dashboard'), { timeout: 25000 });
-    } else {
-      await this.errorAlert.waitFor({ state: 'visible', timeout: 15000 });
-    }
+    await Promise.race([
+      this.page.waitForURL(url => url.pathname.includes('/dashboard'), { timeout: 25000 }),
+      this.errorAlert.waitFor({ state: 'visible', timeout: 15000 }),
+    ]);
   }
 }
 

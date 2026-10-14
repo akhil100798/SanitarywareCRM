@@ -12,9 +12,9 @@ test.describe('Frontend Dashboard E2E Suite', () => {
   test('POS-038 Dashboard renders metrics cards for logged in user', async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
 
     const dashboardPage = new DashboardPage(page);
-    await expect(dashboardPage.header).toContainText('Dashboard');
+    await expect(dashboardPage.header).toHaveText(/Hello,/);
   });
 });

@@ -1,11 +1,11 @@
 class DistributorPage {
   constructor(page) {
     this.page = page;
-    this.addDistributorButton = page.locator('a:has-text("Add Distributor"), button:has-text("Add Distributor")');
+    this.addDistributorButton = page.getByRole('link', { name: 'Add Distributor', exact: true }).first();
     this.nameInput = page.locator('input[name="name"]');
     this.phoneInput = page.locator('input[name="phoneNumber"]');
     this.emailInput = page.locator('input[name="email"]');
-    this.saveButton = page.locator('a:has-text("Save"), button:has-text("Save")');
+    this.saveButton = page.getByRole('button', { name: 'Save Distributor', exact: true });
   }
 
   async createDistributor(name, phone) {

@@ -20,8 +20,10 @@ public class FileDownloadAuthorizationService {
     private final ProductImageRepository productImageRepository;
 
     public void authorizeDownload(String type, String fileName) {
-        // Product images are public (no per-user authorization required)
-        if (type != null && type.startsWith("products")) {
+        // Defence in depth: service callers also need a real current user.
+        accessControlService.currentUser();
+        // All CRM roles may read catalogue images, but never anonymously.
+        if ("products".equals(type) || "products/catalogue".equals(type)) {
             return;
         }
 

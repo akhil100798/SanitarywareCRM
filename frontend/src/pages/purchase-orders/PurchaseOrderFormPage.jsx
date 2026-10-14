@@ -248,8 +248,8 @@ const PurchaseOrderFormPage = () => {
                                                     <div className="record-meta flex flex-wrap gap-2 mt-1">
                                                         <span>Stock: {selectedProd.stockQuantity ?? 0}</span>
                                                         {selectedProd.purchasePrice != null
-                                                            ? <span>Purchase: ₹{selectedProd.purchasePrice}</span>
-                                                            : <span>Fallback: ₹{selectedProd.sellingPrice || 0}</span>}
+                                                            ? <span>Catalogue Purchase Price: ₹{selectedProd.purchasePrice}</span>
+                                                            : <span>Fallback Selling Price: ₹{selectedProd.sellingPrice || 0}</span>}
                                                     </div>
                                                 )}
                                             </td>

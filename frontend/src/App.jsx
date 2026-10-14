@@ -40,7 +40,7 @@ const orderAccessRoles = ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'];
 function App() {
     return (
         <>
-            <Router>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <Suspense fallback={<div role="status" className="p-8 text-center text-slate-500">Loading page...</div>}>
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
@@ -88,7 +88,7 @@ function App() {
                     <Route
                         path="/brands"
                         element={
-                            <ProtectedRoute allowedRoles={managementRoles}>
+                            <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'SALES']}>
                                 <BrandListPage />
                             </ProtectedRoute>
                         }

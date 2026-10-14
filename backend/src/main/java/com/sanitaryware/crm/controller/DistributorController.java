@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/distributors")
@@ -22,13 +23,13 @@ public class DistributorController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<DistributorDTO> createDistributor(@RequestBody DistributorDTO dto) {
+    public ResponseEntity<DistributorDTO> createDistributor(@Valid @RequestBody DistributorDTO dto) {
         return ResponseEntity.ok(distributorService.createDistributor(dto));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<DistributorDTO> updateDistributor(@PathVariable Long id, @RequestBody DistributorDTO dto) {
+    public ResponseEntity<DistributorDTO> updateDistributor(@PathVariable Long id, @Valid @RequestBody DistributorDTO dto) {
         return ResponseEntity.ok(distributorService.updateDistributor(id, dto));
     }
 

@@ -4,7 +4,7 @@
   "description": "Playwright Automation Suite for Sanitaryware Store CRM",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:all",
+    "test": "npm run test:all && npm run test:bughunt",
     "test:all": "playwright test --project=chromium --project=Mobile*",
     "test:api": "playwright test api/specs",
     "test:frontend": "playwright test frontend/specs",

@@ -11,14 +11,14 @@ This plan outlines the required test-only records to run positive and negative i
 
 ### Admin Test User
 * **Username**: `qaadmin`
-* **Password**: `Password@123`
+* **Password**: value of `QA_ADMIN_PASSWORD` (local environment only; never commit the value)
 * **Email**: `qaadmin@maruthisanitary.com`
 * **Phone**: `9440075230`
 * **Role**: `ADMIN`
 
 ### Sales Test User
 * **Username**: `qasales`
-* **Password**: `Password@123`
+* **Password**: value of `QA_SALES_PASSWORD` (local environment only; never commit the value)
 * **Email**: `qasales@maruthisanitary.com`
 * **Phone**: `9440075231`
 * **Role**: `SALES`

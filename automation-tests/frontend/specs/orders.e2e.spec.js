@@ -7,7 +7,7 @@ test.describe('Frontend Orders E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
   });
 
   test('POS-052 List client orders and search', async ({ page }) => {

@@ -1,14 +1,44 @@
 import { chromium } from 'playwright';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { captureOwnedResponse, ownedResource } from './owned-responses.mjs';
 
 const appUrl = process.env.UI_URL || 'http://localhost:19006';
 const apiUrl = process.env.API_URL || 'http://localhost:8081/api';
 const username = process.env.QA_USERNAME || 'qaadmin';
-const password = process.env.QA_PASSWORD || 'Admin123!';
+const password = process.env.QA_PASSWORD || process.env.QA_ADMIN_PASSWORD;
+if (!password) throw new Error('QA_PASSWORD or QA_ADMIN_PASSWORD is required before running native smoke');
+const dashboardRoles = [
+  ['ADMIN', username, password],
+  ['MANAGER', process.env.QA_MANAGER_USERNAME || 'qamanager', process.env.QA_MANAGER_PASSWORD || process.env.QA_PASSWORD],
+  ['SALES', process.env.QA_SALES_USERNAME || 'qasales', process.env.QA_SALES_PASSWORD || process.env.QA_PASSWORD],
+  ['WAREHOUSE', process.env.QA_WAREHOUSE_USERNAME || 'qawarehouse', process.env.QA_WAREHOUSE_PASSWORD || process.env.QA_PASSWORD]
+];
+for (const [role, , credential] of dashboardRoles) {
+  if (!credential) throw new Error(`QA_${role}_PASSWORD or QA_PASSWORD is required for role coverage`);
+}
 const runLegacySmoke = process.env.RUN_LEGACY_SMOKE === '1';
 
 const phase1Results = [];
 const legacyResults = [];
+const roleResults = [];
 const apiHits = [];
+const ownedRecords = [];
+const pendingOwnedResponses = [];
+const cleanupResults = [];
+const browserErrors = [];
+const artifactDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../reports');
+const journalDir = path.join(artifactDir, 'expo-fixtures');
+fs.mkdirSync(journalDir, { recursive: true });
+const journalPath = path.join(journalDir, `owned-${Date.now()}.jsonl`);
+const ownRecord = (path, body) => {
+  const resource = ownedResource(path);
+  if (resource && body?.id && !ownedRecords.some(record => record.resource === resource && record.id === body.id)) {
+    ownedRecords.push({ resource, id: body.id });
+    fs.appendFileSync(journalPath, JSON.stringify({ event: 'created', resource, id: body.id }) + '\n');
+  }
+};
 
 const record = (collection, area, status, detail = '') => {
   collection.push({ area, status, detail });
@@ -28,6 +58,7 @@ const apiRequest = async (path, options = {}, token) => {
   if (!response.ok) {
     throw new Error(`${options.method || 'GET'} ${path} returned ${response.status}: ${text}`);
   }
+  if (options.method === 'POST') ownRecord(path, body);
   return body;
 };
 
@@ -75,12 +106,17 @@ const seedPhase1Data = async (token) => {
     method: 'POST',
     body: JSON.stringify({ name: `Phase 1 Category ${suffix}`, isActive: true })
   }, token);
+  for (let index = 0; index < 51; index++) {
+    await apiRequest('/customers', { method: 'POST', body: JSON.stringify({
+      name: `Pagination ${suffix}-${index}`, phoneNumber: `7${String(suffix + index).slice(-9)}`, customerType: 'RETAIL'
+    }) }, token);
+  }
   const customer = await apiRequest('/customers', {
     method: 'POST',
     body: JSON.stringify({
       name: `Phase 1 Customer ${suffix}`,
       email: `phase1-${suffix}@example.com`,
-      phoneNumber: '9876543210',
+      phoneNumber: `9${String(suffix).slice(-9)}`,
       company: 'QA Sanitary Store',
       customerType: 'RETAIL',
       billingAddress: '12 QA Street',
@@ -91,6 +127,12 @@ const seedPhase1Data = async (token) => {
       isActive: true
     })
   }, token);
+  for (let index = 0; index < 51; index++) {
+    await apiRequest('/products', { method: 'POST', body: JSON.stringify({
+      sku: `PAGING-${suffix}-${index}`, name: `Picker pagination ${suffix}-${index}`,
+      categoryId: category.id, brandId: brand.id, mrp: 100, sellingPrice: 100, stockQuantity: 10
+    }) }, token);
+  }
   const product = await apiRequest('/products', {
     method: 'POST',
     body: JSON.stringify({
@@ -155,17 +197,17 @@ const verifyPhase1Api = async (token, customer, product) => {
 };
 
 const waitForText = async (page, text, timeout = 15000) => {
-  await page.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout });
+  await page.getByText(text, { exact: false }).filter({ visible: true }).first().waitFor({ state: 'visible', timeout });
 };
 
 const clickText = async (page, text) => {
-  const locator = page.getByText(text, { exact: true }).first();
+  const locator = page.getByText(text, { exact: true }).filter({ visible: true }).first();
   await locator.waitFor({ state: 'visible', timeout: 15000 });
   await locator.click();
 };
 
 const clickLastText = async (page, text) => {
-  const locator = page.getByText(text, { exact: true }).last();
+  const locator = page.getByText(text, { exact: true }).filter({ visible: true }).last();
   await locator.waitFor({ state: 'visible', timeout: 15000 });
   await locator.click();
 };
@@ -183,13 +225,38 @@ const checkListScreen = async (page, title) => {
 };
 
 const fillLabeledInput = async (page, label, value) => {
-  const input = page.getByText(label, { exact: true }).locator('..').locator('input, textarea').first();
+  const input = page.getByLabel(label, { exact: true }).filter({ visible: true }).first();
   await input.fill(String(value));
+};
+
+const reachPagedRecord = async (page, name, buttonLabel, endpoint) => {
+  let pagesLoaded = 0;
+  let scrollAttempts = 0;
+  while (!await page.getByText(name, { exact: true }).filter({ visible: true }).count()) {
+    const loadMore = page.getByRole('button', { name: buttonLabel, exact: true });
+    if (await loadMore.count()) {
+      if (++pagesLoaded > 20) throw new Error('Owned customer not reached within pagination verification budget');
+      const nextPage = page.waitForResponse(response => response.url().includes(endpoint + '?') && response.request().method() === 'GET');
+      await loadMore.click();
+      if (!(await nextPage).ok()) throw new Error(`${endpoint} next page failed`);
+      await page.getByText('Loading more...', { exact: true }).waitFor({ state: 'hidden' });
+    } else {
+      // FlatList virtualizes offscreen rows, including the last-page target. Exercise real scrolling.
+      if (++scrollAttempts > 20) throw new Error('Owned customer unavailable after scrolling the loaded list');
+      await page.mouse.wheel(0, 1200);
+      await page.getByText(name, { exact: true }).filter({ visible: true }).waitFor({ timeout: 500 }).catch(() => {});
+    }
+  }
+  if (!pagesLoaded) throw new Error('Pagination fixture did not exercise a later page');
+  return pagesLoaded;
 };
 
 const runPhase1Ui = async (page, customer, product) => {
   await clickTab(page, 'Customers');
   await checkListScreen(page, 'Customers');
+  const pagesLoaded = await reachPagedRecord(page, customer.name, 'Load more', '/customers');
+  record(phase1Results, 'Pagination', 'PASS', `owned customer reached after ${pagesLoaded} additional page(s)`);
+  await page.getByPlaceholder('Search customers').fill(customer.name);
   await clickText(page, customer.name);
   await waitForText(page, 'Customer Details');
   record(phase1Results, 'Customer detail', 'PASS', 'customer, quotations, and orders sections visible');
@@ -198,14 +265,40 @@ const runPhase1Ui = async (page, customer, product) => {
   await waitForText(page, 'New Quotation');
   await clickText(page, 'Product');
   await waitForText(page, 'Select Product');
+  const productPages = await reachPagedRecord(page, product.name, 'Load more products', '/products');
+  record(phase1Results, 'Picker pagination', 'PASS', `owned product reached after ${productPages} additional page(s)`);
   await clickText(page, product.name);
   await waitForText(page, product.name);
   await fillLabeledInput(page, 'Qty', 2);
   await fillLabeledInput(page, 'Unit Price', 1000);
   await fillLabeledInput(page, 'Disc %', 5);
+  await fillLabeledInput(page, 'Total Discount', 25);
+  await fillLabeledInput(page, 'Notes', 'Draft retention regression');
+  if (await page.getByTestId('quotation-customer').filter({ visible: true }).innerText() !== customer.name) throw new Error('Customer lost after picker return');
+  await clickText(page, 'Product');
+  await waitForText(page, 'Select Product');
+  await clickText(page, 'Cancel');
+  await waitForText(page, 'New Quotation');
+  for (const [label, expected] of [['Qty', '2'], ['Disc %', '5'], ['Total Discount', '25'], ['Notes', 'Draft retention regression']]) {
+    const input = page.getByLabel(label, { exact: true }).filter({ visible: true }).first();
+    if (await input.inputValue() !== expected) throw new Error(`${label} lost after picker cancellation`);
+  }
+  await clickText(page, 'Product');
+  await waitForText(page, 'Select Product');
+  await page.getByPlaceholder('Search products').fill(product.sku);
+  await clickText(page, product.name);
+  if (await page.getByTestId('quotation-customer').filter({ visible: true }).innerText() !== customer.name) throw new Error('Customer lost on repeated picker return');
+  if (await page.getByText(product.name, { exact: true }).filter({ visible: true }).count() !== 2) throw new Error('Existing line lost on repeated picker return');
   record(phase1Results, 'Quotation form', 'PASS', 'real product selected and line values updated');
 
+  const savedResponse = page.waitForResponse(response => response.url() === `${apiUrl}/quotations` && response.request().method() === 'POST');
   await clickText(page, 'Save Quotation');
+  const response = await savedResponse;
+  if (!response.ok()) throw new Error(`Quotation save returned ${response.status()}`);
+  const saved = await response.json();
+  if (saved.customerId !== customer.id || saved.items.length !== 2 || Number(saved.total) !== 3397) {
+    throw new Error('Saved quotation customer, retained lines, or financial total differs from draft');
+  }
   await waitForText(page, 'Quotation Details', 20000);
   record(phase1Results, 'Save quotation', 'PASS', 'quotation detail opened');
 
@@ -224,6 +317,8 @@ const runPhase1Ui = async (page, customer, product) => {
 };
 
 const runLegacyUi = async (page) => {
+  await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await waitForText(page, 'Total Revenue', 20000);
   for (const title of ['Products', 'Orders']) {
     await clickTab(page, title);
     await checkListScreen(page, title);
@@ -232,7 +327,7 @@ const runLegacyUi = async (page) => {
 
   const modules = ['Quotations', 'Payments', 'Distributors', 'Purchase Orders', 'Distributor Payments', 'Brands', 'Categories', 'Settings'];
   for (const title of modules) {
-    await page.goto(appUrl, { waitUntil: 'networkidle', timeout: 60000 });
+    await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await waitForText(page, 'Total Revenue', 20000);
     await clickTab(page, 'More');
     await waitForText(page, 'More Modules');
@@ -253,9 +348,12 @@ try {
   record(phase1Results, 'Phase 1 API', 'FAIL', error.message);
 }
 
-const browser = await chromium.launch({ headless: true });
+let browser;
+try {
+browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
 const page = await context.newPage();
+page.on('pageerror', error => browserErrors.push(error.message));
 
 page.on('response', (response) => {
   if (response.url().startsWith(apiUrl)) {
@@ -264,17 +362,19 @@ page.on('response', (response) => {
       url: response.url().replace(apiUrl, ''),
       status: response.status()
     });
+    const pending = captureOwnedResponse(response, apiUrl, ownRecord, error => browserErrors.push(error));
+    if (pending) pendingOwnedResponses.push(pending);
   }
 });
 
 try {
   if (!seed) throw new Error('Phase 1 seed data unavailable');
-  await page.goto(appUrl, { waitUntil: 'networkidle', timeout: 60000 });
+  await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.evaluate(() => {
     localStorage.clear();
     sessionStorage.clear();
   });
-  await page.reload({ waitUntil: 'networkidle', timeout: 60000 });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
   await waitForText(page, 'Sanitaryware CRM');
   await page.getByPlaceholder('admin').fill(username);
   await page.getByPlaceholder('Password').fill(password);
@@ -282,10 +382,10 @@ try {
   await waitForText(page, 'Total Revenue', 20000);
   record(phase1Results, 'Login', 'PASS', 'dashboard reached after form login');
   await runPhase1Ui(page, seed.customer, seed.product);
-  await page.screenshot({ path: 'ui-smoke-phase1.png', fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, 'expo-phase1.png'), fullPage: true });
 } catch (error) {
   record(phase1Results, 'Phase 1 UI', 'BLOCKED', error.message);
-  await page.screenshot({ path: 'ui-smoke-phase1-blocked.png', fullPage: true }).catch(() => {});
+  await page.screenshot({ path: path.join(artifactDir, 'expo-phase1-blocked.png'), fullPage: true }).catch(() => {});
 }
 
 if (runLegacySmoke) {
@@ -298,7 +398,50 @@ if (runLegacySmoke) {
   record(legacyResults, 'Legacy smoke', 'SKIPPED', 'Set RUN_LEGACY_SMOKE=1 to run unrelated generic module navigation');
 }
 
-await browser.close();
+for (const [role, roleUsername, rolePassword] of dashboardRoles) {
+  try {
+    await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await page.getByPlaceholder('admin').fill(roleUsername);
+    await page.getByPlaceholder('Password').fill(rolePassword);
+    const statsResponse = page.waitForResponse(response => response.url() === `${apiUrl}/dashboard/stats`);
+    await clickText(page, 'Sign In');
+    const response = await statsResponse;
+    if (!response.ok()) throw new Error(`${role} dashboard returned ${response.status()}`);
+    const stats = await response.json();
+    await page.getByText('Low Stock', { exact: true }).waitFor({ state: 'visible', timeout: 15000 });
+    const management = ['ADMIN', 'MANAGER'].includes(role);
+    const revenueVisible = await page.getByText('Total Revenue', { exact: true }).isVisible();
+    if (revenueVisible !== management) throw new Error(`${role} financial widget policy mismatch`);
+    for (const key of ['totalRevenue', 'totalReceivables', 'totalPayables', 'distributorPaymentsTotal', 'monthlyRevenue', 'topProducts']) {
+      if (Object.hasOwn(stats, key) !== management) throw new Error(`${role} response field policy mismatch: ${key}`);
+    }
+    record(roleResults, role, 'PASS', 'real logout/login, operational widgets and financial field boundaries verified');
+    await page.screenshot({ path: path.join(artifactDir, `expo-role-${role.toLowerCase()}.png`), fullPage: true });
+  } catch (error) { record(roleResults, role, 'FAIL', error.message); }
+}
+} catch (error) {
+  record(phase1Results, 'Browser runtime', 'FAIL', error.message);
+} finally {
+await Promise.all(pendingOwnedResponses);
+if (browser) await browser.close().catch(error => browserErrors.push(error.message));
+if (auth) {
+  for (const record of [...ownedRecords].reverse()) {
+    try {
+      let path = `/${record.resource}/${record.id}`;
+      if (record.resource === 'quotations') {
+        const quotation = await apiRequest(path, {}, auth.token);
+        path = `/qa/quotations/${record.id}?customerName=${encodeURIComponent(quotation.customerName)}`;
+      }
+      await apiRequest(path, { method: 'DELETE' }, auth.token);
+      cleanupResults.push({ ...record, status: 'PASS' });
+      fs.appendFileSync(journalPath, JSON.stringify({ event: 'cleaned', ...record }) + '\n');
+    } catch (error) {
+      cleanupResults.push({ ...record, status: 'FAIL', detail: error.message });
+    }
+  }
+}
+}
 
 const phase1ApiPassed = phase1Results.some((result) => result.area === 'Phase 1 API' && result.status === 'PASS');
 const phase1UiBlocked = phase1Results.some((result) => result.status === 'BLOCKED');
@@ -310,11 +453,17 @@ console.log(JSON.stringify({
   },
   phase1Results,
   legacyResults,
-  apiHits
+  roleResults,
+  apiHits,
+  browserErrors,
+  journalPath,
+  cleanupResults
 }, null, 2));
 
 if (!phase1ApiPassed || phase1UiBlocked
   || phase1Results.some((result) => result.status === 'FAIL')
-  || legacyResults.some((result) => result.status === 'FAIL' || result.status === 'BLOCKED')) {
+  || legacyResults.some((result) => result.status === 'FAIL' || result.status === 'BLOCKED')
+  || roleResults.some(result => result.status !== 'PASS')
+  || browserErrors.length || cleanupResults.some(result => result.status === 'FAIL')) {
   process.exit(1);
 }

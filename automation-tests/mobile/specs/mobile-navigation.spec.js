@@ -5,7 +5,7 @@ test.describe('Mobile Tab Navigation Suite', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="username"]', 'qaadmin');
-    await page.fill('input[name="password"]', 'Password@123');
+    await page.fill('input[name="password"]', process.env.QA_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL(url => url.pathname.includes('/dashboard'));
   });

@@ -7,7 +7,7 @@ test.describe('Frontend Product E2E Suite', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qaadmin', 'Password@123');
+    await loginPage.login('qaadmin', process.env.QA_ADMIN_PASSWORD);
   });
 
   test('POS-041 Display catalog product tables', async ({ page }) => {
@@ -106,10 +106,10 @@ test.describe('Frontend Product E2E Suite', () => {
 
     // Verify modal elements
     await expect(page.locator('span:has-text("Selling Price")')).toBeVisible();
-    await expect(page.locator('button:has-text("Close")')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
 
     // Close modal
-    await page.click('button:has-text("Close")');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(page.locator('span:has-text("Selling Price")')).not.toBeVisible();
   });
 
@@ -128,33 +128,38 @@ test.describe('Frontend Product E2E Suite', () => {
     const editBtn = page.locator(`table tr:has-text("${sku}") a[title="Edit Product"]`);
     await editBtn.click();
     await page.waitForURL(url => url.pathname.includes('/products/edit/'));
+    await expect(page.getByRole('heading', { name: /^Product Images \(\d+\)$/ })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('product-image-file')).toBeAttached();
 
     // Upload dummy 1x1 png image
     const buffer = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
       'base64'
     );
-    await page.setInputFiles('input[type="file"]', {
+    await page.setInputFiles('[data-testid="product-image-file"]', {
       name: 'product-tile.png',
       mimeType: 'image/png',
       buffer: buffer
     });
 
-    await expect(page.locator('button:has-text("Confirm Upload")')).toBeVisible();
-    await page.click('button:has-text("Confirm Upload")');
-    await expect(page.locator('span:has-text("1 uploaded")')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Upload', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Product Images (1)' })).toBeVisible({ timeout: 15000 });
+    const uploadedImage = page.getByRole('img', { name: 'Product image', exact: true });
+    await expect(uploadedImage).toHaveAttribute('src', /^blob:/);
+    await expect.poll(() => uploadedImage.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
 
     // Delete uploaded image
     page.on('dialog', dialog => dialog.accept());
     await page.click('button[title="Delete image"]');
-    await expect(page.locator('p:has-text("No images attached to this product yet.")')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('product-images-empty')).toBeVisible({ timeout: 15000 });
   });
 
   test('POS-074 SALES role cannot see mutation buttons or purchase price in details modal', async ({ page }) => {
     // Login as sales
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
-    await loginPage.login('qasales', 'Password@123');
+    await loginPage.login('qasales', process.env.QA_SALES_PASSWORD);
 
     await page.goto('/products');
     await page.locator('td:has-text("Fetching catalog list...")').waitFor({ state: 'detached', timeout: 35000 });
@@ -171,7 +176,7 @@ test.describe('Frontend Product E2E Suite', () => {
 
     // Purchase Price must NOT be visible to SALES
     await expect(page.locator('span:has-text("Purchase Price")')).not.toBeVisible();
-    await page.click('button:has-text("Close")');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
   });
 
   test('POS-075 Empty state and reset filters action', async ({ page }) => {
@@ -184,11 +189,11 @@ test.describe('Frontend Product E2E Suite', () => {
     await page.waitForTimeout(500);
 
     // Verify empty state
-    await expect(page.locator('p:has-text("No products found")')).toBeVisible();
-    await expect(page.locator('button:has-text("Clear all filters")')).toBeVisible();
+    await expect(page.getByTestId('empty-state').getByRole('heading', { name: 'No matching products' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Clear Filters', exact: true })).toBeVisible();
 
     // Reset filters
-    await page.click('button:has-text("Clear all filters")');
+    await page.getByRole('button', { name: 'Clear Filters', exact: true }).click();
     await page.waitForTimeout(500);
     await expect(page.locator('p:has-text("No products found")')).not.toBeVisible();
   });
@@ -213,7 +218,7 @@ test.describe('Frontend Product E2E Suite', () => {
     // Open detail modal
     const viewButton = page.locator('table tr button[title="View Details"]').first();
     await viewButton.click();
-    await expect(page.locator('div[role="dialog"]')).toBeVisible();
+    await expect(page.locator('dialog[open]')).toBeVisible();
 
     // Press Escape key
     await page.keyboard.press('Escape');

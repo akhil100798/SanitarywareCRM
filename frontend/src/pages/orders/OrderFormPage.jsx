@@ -25,6 +25,7 @@ const OrderFormPage = () => {
     const [products, setProducts] = useState([]);
     const [productSearchQuery, setProductSearchQuery] = useState('');
     const [uploadingFile, setUploadingFile] = useState(false);
+    const [billPadPreviewUrl, setBillPadPreviewUrl] = useState('');
     const [formData, setFormData] = useState({
         customerId: '',
         orderDate: new Date().toISOString().split('T')[0],
@@ -170,6 +171,7 @@ const OrderFormPage = () => {
             setUploadingFile(true);
             const response = await fileUploadService.uploadFile(file, 'billpads');
             setFormData({ ...formData, billPadImageUrl: response.fileName });
+            setBillPadPreviewUrl(URL.createObjectURL(file));
             toast.success('Bill pad uploaded');
         } catch (error) { toast.error('Upload failed'); }
         finally { setUploadingFile(false); e.target.value = null; }
@@ -339,8 +341,8 @@ const OrderFormPage = () => {
                                 </label>
                                 {formData.billPadImageUrl && (
                                     <div className="flex items-center gap-3 mt-2">
-                                        <img src={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')} alt="Bill pad" style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} />
-                                        <a href={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')} target="_blank" rel="noopener noreferrer" className="text-sm" style={{ color: 'var(--primary)' }}>View</a>
+                                        <img src={billPadPreviewUrl || fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')} alt="Bill pad" style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} />
+                                        <a href={billPadPreviewUrl || fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')} target="_blank" rel="noopener noreferrer" className="text-sm" style={{ color: 'var(--primary)' }}>View uploaded reference pad</a>
                                     </div>
                                 )}
                             </Field>

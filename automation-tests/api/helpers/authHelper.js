@@ -1,18 +1,19 @@
 const { getClient } = require('./apiClient');
+const { credentials } = require('../../config/testCredentials');
 
 const getAdminToken = async () => {
   const client = await getClient();
   let response = await client.post('/api/auth/login', {
     data: {
       username: 'qaadmin',
-      password: 'Password@123'
+      password: credentials.admin.password
     }
   });
   if (response.status() === 401) {
     const regRes = await client.post('/api/auth/register', {
       data: {
         username: 'qaadmin',
-        password: 'Password@123',
+        password: credentials.admin.password,
         email: 'qaadmin@test.com',
         fullName: 'QA Admin User',
         phoneNumber: '9000000001'
@@ -22,7 +23,7 @@ const getAdminToken = async () => {
     response = await client.post('/api/auth/login', {
       data: {
         username: 'qaadmin',
-        password: 'Password@123'
+        password: credentials.admin.password
       }
     });
     console.log(`[DEBUG] qaadmin login status: ${response.status()}`);
@@ -39,7 +40,7 @@ const getSalesToken = async () => {
   let response = await client.post('/api/auth/login', {
     data: {
       username: 'qasales',
-      password: 'Password@123'
+      password: credentials.sales.password
     }
   });
   if (response.status() === 401) {
@@ -48,7 +49,7 @@ const getSalesToken = async () => {
     const regRes = await adminClient.post('/api/auth/register', {
       data: {
         username: 'qasales',
-        password: 'Password@123',
+        password: credentials.sales.password,
         email: 'qasales@test.com',
         fullName: 'QA Sales User',
         phoneNumber: '9000000002'
@@ -58,7 +59,7 @@ const getSalesToken = async () => {
     response = await client.post('/api/auth/login', {
       data: {
         username: 'qasales',
-        password: 'Password@123'
+        password: credentials.sales.password
       }
     });
     console.log(`[DEBUG] qasales login status: ${response.status()}`);
@@ -75,7 +76,7 @@ const getManagerToken = async () => {
   const response = await client.post('/api/auth/login', {
     data: {
       username: process.env.QA_MANAGER_USERNAME || 'qamanager',
-      password: process.env.QA_MANAGER_PASSWORD || 'Password@123',
+      password: credentials.manager.password,
     },
   });
   if (response.ok()) {
@@ -90,7 +91,7 @@ const getWarehouseToken = async () => {
   const response = await client.post('/api/auth/login', {
     data: {
       username: process.env.QA_WAREHOUSE_USERNAME || 'qawarehouse',
-      password: process.env.QA_WAREHOUSE_PASSWORD || 'Password@123',
+      password: credentials.warehouse.password,
     },
   });
   if (response.ok()) {
