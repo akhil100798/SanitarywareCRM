@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Search } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
@@ -8,6 +8,7 @@ import Screen from '../components/Screen';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
 import { formatMoney } from '../utils/formatters';
+import { createLatestRequestRunner } from '../utils/latestRequest';
 
 const mapProduct = (product) => ({
   id: product.id,
@@ -25,23 +26,22 @@ const ProductPickerScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const requests = useRef(null);
+  if (!requests.current) requests.current = createLatestRequestRunner();
 
   const loadProducts = useCallback(async (nextQuery = '') => {
-    try {
-      setError('');
-      const data = await productService.searchProducts(nextQuery, { size: 50 });
-      setProducts(data.map(mapProduct));
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    setError('');
+    await requests.current.run(() => productService.searchProducts(nextQuery, { size: 50 }), {
+      onSuccess: (data) => { setError(''); setProducts(data.map(mapProduct)); },
+      onError: (err) => setError(getErrorMessage(err)),
+      onFinally: () => { setLoading(false); setRefreshing(false); }
+    });
   }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => loadProducts(query), query.trim() ? 350 : 0);
-    return () => clearTimeout(timer);
+    const runner = requests.current;
+    return () => { clearTimeout(timer); runner.invalidate(); };
   }, [loadProducts, query]);
 
   if (loading) return <LoadingView label="Loading products..." />;
@@ -81,11 +81,11 @@ const ProductPickerScreen = ({ navigation }) => {
           <ListCard
             item={item}
             onPress={() =>
-              navigation.navigate({
-                name: 'QuotationForm',
-                params: { selectedProduct: item.raw },
-                merge: true
-              })
+              navigation.navigate(
+                'QuotationForm',
+                { selectedProduct: item.raw },
+                { merge: true, pop: true }
+              )
             }
           />
         )}

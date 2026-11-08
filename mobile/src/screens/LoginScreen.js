@@ -50,6 +50,7 @@ const LoginScreen = () => {
         <View style={styles.card}>
           <Text style={styles.label}>Username</Text>
           <TextInput
+            accessibilityLabel="Username"
             autoCapitalize="none"
             autoCorrect={false}
             onChangeText={setUsername}
@@ -61,6 +62,7 @@ const LoginScreen = () => {
 
           <Text style={styles.label}>Password</Text>
           <TextInput
+            accessibilityLabel="Password"
             onChangeText={setPassword}
             placeholder="Password"
             placeholderTextColor={colors.muted}
@@ -72,6 +74,9 @@ const LoginScreen = () => {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Sign in"
+            accessibilityState={{ disabled: loading, busy: loading }}
             disabled={loading}
             onPress={handleLogin}
             style={[styles.button, loading && styles.buttonDisabled]}

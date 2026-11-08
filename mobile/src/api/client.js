@@ -18,6 +18,16 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+api.interceptors.response.use((response) => response, async (error) => {
+  if (error.response?.status === 401 && error.config?.url !== '/auth/login') {
+    const authorization = error.config?.headers?.Authorization;
+    if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
+      await sessionStorage.rejectToken(authorization.slice(7));
+    }
+  }
+  return Promise.reject(error);
+});
+
 export const getErrorMessage = (error) => {
   if (error.response?.data?.message) {
     return error.response.data.message;

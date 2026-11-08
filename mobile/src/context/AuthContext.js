@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authService } from '../api/services';
+import { sessionStorage } from '../api/storage';
 
 const AuthContext = createContext(null);
 
@@ -7,11 +8,49 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [bootstrapping, setBootstrapping] = useState(true);
 
+  useEffect(() => sessionStorage.subscribeRejected(() => setUser(null)), []);
+
   useEffect(() => {
-    authService
-      .getStoredUser()
-      .then(setUser)
-      .finally(() => setBootstrapping(false));
+    let active = true;
+
+    const restoreSession = async () => {
+      try {
+        const storedUser = await authService.getStoredUser();
+        if (!storedUser) {
+          return null;
+        }
+
+        try {
+          return await authService.getCurrentUser();
+        } catch (error) {
+          if (error.response?.status === 401) {
+            await authService.clearSession();
+            return null;
+          }
+          return storedUser;
+        }
+      } catch {
+        await authService.clearSession();
+        return null;
+      }
+    };
+
+    restoreSession()
+      .catch(() => null)
+      .then((restoredUser) => {
+        if (active) {
+          setUser(restoredUser);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setBootstrapping(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const value = useMemo(
@@ -25,8 +64,13 @@ export const AuthProvider = ({ children }) => {
         return loggedInUser;
       },
       async logout() {
-        await authService.logout();
-        setUser(null);
+        try {
+          await authService.logout();
+        } catch {
+          // A failed server logout must not trap the user in a stale local session.
+        } finally {
+          setUser(null);
+        }
       }
     }),
     [bootstrapping, user]

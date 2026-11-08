@@ -5,11 +5,20 @@ import { colors } from '../theme/colors';
 const PrimaryActionBar = ({ label, onPress, disabled, loading, secondaryLabel, onSecondaryPress }) => (
   <View style={styles.bar}>
     {secondaryLabel ? (
-      <Pressable style={styles.secondaryButton} onPress={onSecondaryPress} disabled={disabled || loading}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={secondaryLabel}
+        style={styles.secondaryButton}
+        onPress={onSecondaryPress}
+        disabled={disabled || loading}
+      >
         <Text style={styles.secondaryText}>{secondaryLabel}</Text>
       </Pressable>
     ) : null}
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [

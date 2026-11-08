@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Search } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
@@ -7,6 +7,7 @@ import ListCard from '../components/ListCard';
 import Screen from '../components/Screen';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
+import { createLatestRequestRunner } from '../utils/latestRequest';
 
 const detailRoutes = {
   customers: 'CustomerDetail',
@@ -22,31 +23,25 @@ const ListScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const requests = useRef(null);
+  if (!requests.current) requests.current = createLatestRequestRunner();
 
   const loadItems = useCallback(
     async (nextQuery = '') => {
-      try {
-        setError('');
-        const data = await fetchList(resource, nextQuery);
-        setItems(data);
-      } catch (err) {
-        setError(getErrorMessage(err));
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
+      setError('');
+      await requests.current.run(() => fetchList(resource, nextQuery), {
+        onSuccess: (data) => { setError(''); setItems(data); },
+        onError: (err) => setError(getErrorMessage(err)),
+        onFinally: () => { setLoading(false); setRefreshing(false); }
+      });
     },
     [resource]
   );
 
   useEffect(() => {
-    loadItems('');
-  }, [loadItems]);
-
-  useEffect(() => {
-    if (!config.searchEndpoint) return undefined;
-    const timer = setTimeout(() => loadItems(query), 350);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => loadItems(query), config.searchEndpoint && query.trim() ? 350 : 0);
+    const runner = requests.current;
+    return () => { clearTimeout(timer); runner.invalidate(); };
   }, [config.searchEndpoint, loadItems, query]);
 
   const handleSearch = (value) => {
@@ -62,7 +57,7 @@ const ListScreen = ({ route, navigation }) => {
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} safeTop={route.name !== 'ModuleList'}>
       <View style={styles.header}>
         <Text style={styles.title}>{config.title}</Text>
         <Text style={styles.count}>{items.length} records</Text>

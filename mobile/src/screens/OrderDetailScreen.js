@@ -6,11 +6,14 @@ import DetailSection from '../components/DetailSection';
 import FieldRow from '../components/FieldRow';
 import PrimaryActionBar from '../components/PrimaryActionBar';
 import Screen from '../components/Screen';
+import { useAuth } from '../context/AuthContext';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
 import { formatDate, formatMoney } from '../utils/formatters';
 
 const OrderDetailScreen = ({ route, navigation }) => {
+  const { user } = useAuth();
+  const canAccessPayments = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
   const orderId = route.params?.id;
   const refreshKey = route.params?.refreshKey;
   const [order, setOrder] = useState(null);
@@ -24,7 +27,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
       setError('');
       const [orderData, paymentData] = await Promise.all([
         orderService.getById(orderId),
-        paymentService.getByOrder(orderId)
+        canAccessPayments ? paymentService.getByOrder(orderId) : Promise.resolve([])
       ]);
       setOrder(orderData);
       setPayments(paymentData);
@@ -34,7 +37,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [orderId]);
+  }, [orderId, canAccessPayments]);
 
   useEffect(() => {
     loadOrder();
@@ -64,7 +67,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
           <FieldRow label="Customer" value={order.customerName} />
           <FieldRow label="Order Date" value={formatDate(order.orderDate)} />
           <FieldRow label="Order Status" value={order.status} />
-          <FieldRow label="Payment Status" value={order.paymentStatus} />
+          {canAccessPayments && <FieldRow label="Payment Status" value={order.paymentStatus} />}
         </DetailSection>
 
         <DetailSection title="Line Items">
@@ -79,14 +82,14 @@ const OrderDetailScreen = ({ route, navigation }) => {
           ))}
         </DetailSection>
 
-        <DetailSection title="Payment Summary">
+        {canAccessPayments && <DetailSection title="Payment Summary">
           <View style={styles.totalRow}><Text>Subtotal</Text><Text>{formatMoney(order.subtotal)}</Text></View>
           <View style={styles.totalRow}><Text>Total</Text><Text>{formatMoney(order.total)}</Text></View>
           <View style={styles.totalRow}><Text>Paid</Text><Text>{formatMoney(order.paidAmount)}</Text></View>
           <View style={styles.grandRow}><Text style={styles.grandText}>Balance</Text><Text style={styles.grandText}>{formatMoney(order.balanceAmount)}</Text></View>
-        </DetailSection>
+        </DetailSection>}
 
-        <DetailSection title="Payment History">
+        {canAccessPayments && <DetailSection title="Payment History">
           {payments.length ? (
             payments.map((payment) => (
               <View key={payment.id} style={styles.paymentRow}>
@@ -102,22 +105,27 @@ const OrderDetailScreen = ({ route, navigation }) => {
           ) : (
             <EmptyView title="No payments recorded" message="Record a payment when the customer pays." />
           )}
-        </DetailSection>
+        </DetailSection>}
       </ScrollView>
       <PrimaryActionBar
-        label="Record Payment"
-        secondaryLabel="Refresh"
+        label={canAccessPayments ? 'Record Payment' : 'Refresh'}
+        secondaryLabel={canAccessPayments ? 'Refresh' : undefined}
         onSecondaryPress={() => {
           setRefreshing(true);
           loadOrder();
         }}
-        onPress={() =>
+        onPress={() => {
+          if (!canAccessPayments) {
+            setRefreshing(true);
+            loadOrder();
+            return;
+          }
           navigation.navigate('PaymentForm', {
             orderId: order.id,
             orderNumber: order.orderNumber,
             balanceAmount: order.balanceAmount
-          })
-        }
+          });
+        }}
       />
     </Screen>
   );

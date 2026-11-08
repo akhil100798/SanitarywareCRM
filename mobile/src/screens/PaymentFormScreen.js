@@ -58,7 +58,11 @@ const PaymentFormScreen = ({ route, navigation }) => {
         ...form,
         amount: Number(form.amount)
       });
-      navigation.navigate('OrderDetail', { id: orderId, refreshKey: Date.now() });
+      navigation.navigate(
+        'OrderDetail',
+        { id: orderId, refreshKey: Date.now() },
+        { merge: true, pop: true }
+      );
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Grid3X3,
   Home,
@@ -33,6 +34,7 @@ const tabIcon = (Icon) =>
 
 const MainTabs = () => {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const canAccessCustomers = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
 
   return (
@@ -41,7 +43,7 @@ const MainTabs = () => {
       headerShown: false,
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.muted,
-      tabBarStyle: styles.tabBar,
+      tabBarStyle: [styles.tabBar, { height: 64 + insets.bottom, paddingBottom: 8 + insets.bottom }],
       tabBarLabelStyle: styles.tabLabel
     }}
   >
@@ -132,6 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   tabBar: {
+    backgroundColor: colors.surface,
     borderTopColor: colors.border,
     height: 64,
     paddingBottom: 8,

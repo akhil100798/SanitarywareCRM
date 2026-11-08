@@ -29,6 +29,15 @@ export const authService = {
     }
   },
 
+  async getCurrentUser() {
+    const response = await api.get('/auth/me');
+    return response.data;
+  },
+
+  clearSession() {
+    return sessionStorage.clear();
+  },
+
   getStoredUser() {
     return Promise.all([sessionStorage.getUser(), sessionStorage.getToken()]).then(([storedUser, accessToken]) => {
       if (!storedUser || !accessToken) {

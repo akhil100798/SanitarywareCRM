@@ -20,7 +20,7 @@ const modules = [
   { resource: 'distributors', title: 'Distributors', subtitle: 'Suppliers and outstanding balances', icon: Truck, roles: ['ADMIN', 'MANAGER'] },
   { resource: 'purchaseOrders', title: 'Purchase Orders', subtitle: 'Purchases from distributors', icon: ReceiptIndianRupee, roles: ['ADMIN', 'MANAGER'] },
   { resource: 'distributorPayments', title: 'Distributor Payments', subtitle: 'Payments made to suppliers', icon: Building2, roles: ['ADMIN', 'MANAGER'] },
-  { resource: 'brands', title: 'Brands', subtitle: 'Product brand catalog', icon: Tags },
+  { resource: 'brands', title: 'Brands', subtitle: 'Product brand catalog', icon: Tags, roles: ['ADMIN', 'MANAGER'] },
   { resource: 'categories', title: 'Categories', subtitle: 'Product category tree', icon: FolderTree, roles: ['ADMIN', 'MANAGER', 'SALES'] },
   { resource: 'settings', title: 'Settings', subtitle: 'Company profile and billing settings', icon: Settings, roles: ['ADMIN', 'MANAGER'] }
 ];

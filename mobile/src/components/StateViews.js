@@ -16,13 +16,22 @@ export const EmptyView = ({ title = 'Nothing here yet', message }) => (
   </View>
 );
 
-export const ErrorView = ({ message, onRetry }) => (
+export const ErrorView = ({ message, onRetry, onLogout }) => (
   <View style={styles.center}>
     <Text style={styles.title}>Could not load data</Text>
     <Text style={styles.muted}>{message}</Text>
     {onRetry ? (
       <TouchableOpacity style={styles.button} onPress={onRetry}>
         <Text style={styles.buttonText}>Retry</Text>
+      </TouchableOpacity>
+    ) : null}
+    {onLogout ? (
+      <TouchableOpacity
+        accessibilityRole="button"
+        style={styles.logoutButton}
+        onPress={onLogout}
+      >
+        <Text style={styles.logoutButtonText}>Sign out</Text>
       </TouchableOpacity>
     ) : null}
   </View>
@@ -57,6 +66,18 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.surface,
+    fontWeight: '700'
+  },
+  logoutButton: {
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 10
+  },
+  logoutButtonText: {
+    color: colors.text,
     fontWeight: '700'
   }
 });
