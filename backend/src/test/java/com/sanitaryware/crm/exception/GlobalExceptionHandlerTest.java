@@ -16,6 +16,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -158,6 +160,18 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.error").value("Internal Server Error"))
                 .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
+                .andExpect(this::assertSanitized);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void responseStatusExceptionPreservesItsSafeHttpStatus() throws Exception {
+        when(productService.getProductById(10L)).thenThrow(
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        mockMvc.perform(get("/api/products/{id}", 10L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Product not found"))
                 .andExpect(this::assertSanitized);
     }
 

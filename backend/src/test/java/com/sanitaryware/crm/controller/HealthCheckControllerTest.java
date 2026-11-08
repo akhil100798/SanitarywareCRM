@@ -52,14 +52,15 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void checkHealth_WhenDatabaseIsDown_ReturnsStatusDown() throws Exception {
+    void checkHealth_WhenDatabaseIsDown_ReturnsUnavailableWithoutDetails() throws Exception {
         doThrow(new RuntimeException("Connection Refused")).when(jdbcTemplate).execute("SELECT 1");
 
         mockMvc.perform(get("/api/health")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
+                .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.status").value("DOWN"))
-                .andExpect(jsonPath("$.database").value("DOWN: Connection Refused"));
+                .andExpect(jsonPath("$.database").value("DOWN"))
+                .andExpect(jsonPath("$.message").doesNotExist());
 
         verify(jdbcTemplate).execute("SELECT 1");
     }

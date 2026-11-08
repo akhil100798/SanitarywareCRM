@@ -47,6 +47,7 @@ import {
         { icon: CreditCard, label: 'Payments', path: '/payments', roles: ['ADMIN', 'MANAGER', 'SALES'] },
         { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
         { icon: ShieldCheck, label: 'Audit Logs', path: '/audit-logs', roles: ['ADMIN', 'MANAGER'] },
+        { icon: Users, label: 'User Management', path: '/users', roles: ['ADMIN', 'MANAGER'] },
         { icon: Settings, label: 'Settings', path: '/settings', roles: ['ADMIN', 'MANAGER'] },
     ];
 
@@ -184,8 +185,7 @@ const DashboardLayout = ({ children }) => {
                             <h2 className="text-lg font-bold text-slate-900 tracking-tight">{getPageTitle()}</h2>
                         </div>
                         <div className="flex items-center space-x-3">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span className="text-xs font-semibold text-slate-500">Live Database Connection</span>
+                            <span className="text-xs font-semibold text-slate-500">Operations workspace</span>
                         </div>
                     </div>
                 </header>

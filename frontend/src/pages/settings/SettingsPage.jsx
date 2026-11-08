@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Building2, Phone, MapPin } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 const SettingsPage = () => {
+    const user = useAuthStore((state) => state.user);
+    const canEditSettings = user?.role === 'ADMIN';
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -61,6 +64,7 @@ const SettingsPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!canEditSettings) return;
         try {
             setSaving(true);
             await settingsService.update(formData);
@@ -89,7 +93,8 @@ const SettingsPage = () => {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <form onSubmit={handleSubmit} className="p-6 space-y-8">
+                <form onSubmit={handleSubmit} className="p-6">
+                    <fieldset disabled={!canEditSettings} className="space-y-8">
                     {/* Company Information */}
                     <section className="space-y-4">
                         <div className="flex items-center space-x-2 border-b border-slate-50 pb-3">
@@ -243,16 +248,24 @@ const SettingsPage = () => {
                         </div>
                     </section>
 
-                    <div className="flex justify-end pt-6 border-t border-slate-100">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="btn-primary text-sm px-8"
-                        >
-                            <Save size={16} />
-                            <span>{saving ? 'Saving...' : 'Save Settings'}</span>
-                        </button>
-                    </div>
+                    </fieldset>
+
+                    {canEditSettings ? (
+                        <div className="flex justify-end pt-6 border-t border-slate-100">
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="btn-primary text-sm px-8"
+                            >
+                                <Save size={16} />
+                                <span>{saving ? 'Saving...' : 'Save Settings'}</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <p role="status" className="pt-6 text-sm text-slate-500">
+                            Only an administrator can change system settings.
+                        </p>
+                    )}
                 </form>
             </div>
         </div>

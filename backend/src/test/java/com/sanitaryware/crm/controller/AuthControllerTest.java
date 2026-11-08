@@ -3,7 +3,9 @@ package com.sanitaryware.crm.controller;
 import com.sanitaryware.crm.dto.RegisterRequest;
 import com.sanitaryware.crm.dto.UpdateProfileRequest;
 import com.sanitaryware.crm.dto.AuthResponse;
+import com.sanitaryware.crm.entity.BootstrapLock;
 import com.sanitaryware.crm.entity.User;
+import com.sanitaryware.crm.repository.BootstrapLockRepository;
 import com.sanitaryware.crm.repository.UserRepository;
 import com.sanitaryware.crm.security.JwtTokenProvider;
 import com.sanitaryware.crm.security.TokenRevocationService;
@@ -24,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,6 +38,9 @@ class AuthControllerTest {
 
     @Mock
     private AuthenticationManager authenticationManager;
+
+    @Mock
+    private BootstrapLockRepository bootstrapLockRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -61,6 +67,7 @@ class AuthControllerTest {
 
     @Test
     void register_WhenUsersExistAndCallerUnauthenticated_ReturnsForbidden() {
+        when(bootstrapLockRepository.findSingletonForUpdate()).thenReturn(Optional.of(new BootstrapLock(1)));
         when(userRepository.count()).thenReturn(1L);
 
         ResponseEntity<?> response = authController.register(registerRequest());
@@ -71,6 +78,7 @@ class AuthControllerTest {
 
     @Test
     void register_FirstUser_CreatesAdminAccount() {
+        when(bootstrapLockRepository.findSingletonForUpdate()).thenReturn(Optional.of(new BootstrapLock(1)));
         when(userRepository.count()).thenReturn(0L);
         when(userRepository.existsByUsername("owner")).thenReturn(false);
         when(userRepository.existsByEmail("owner@example.com")).thenReturn(false);
@@ -84,6 +92,27 @@ class AuthControllerTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(User.UserRole.ADMIN, userCaptor.getValue().getRole());
         assertEquals("encoded", userCaptor.getValue().getPassword());
+    }
+
+    @Test
+    void register_MissingBootstrapLock_FailsClosedBeforeCheckingUsers() {
+        when(bootstrapLockRepository.findSingletonForUpdate()).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> authController.register(registerRequest()));
+
+        verify(userRepository, never()).count();
+    }
+
+    @Test
+    void register_LocksBootstrapRowBeforeCheckingUsers() {
+        when(bootstrapLockRepository.findSingletonForUpdate()).thenReturn(Optional.of(new BootstrapLock(1)));
+        when(userRepository.count()).thenReturn(1L);
+
+        authController.register(registerRequest());
+
+        var inOrder = inOrder(bootstrapLockRepository, userRepository);
+        inOrder.verify(bootstrapLockRepository).findSingletonForUpdate();
+        inOrder.verify(userRepository).count();
     }
 
     @Test

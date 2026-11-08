@@ -3,6 +3,7 @@ package com.sanitaryware.crm.service;
 import com.sanitaryware.crm.dto.DashboardDTO;
 import com.sanitaryware.crm.dto.OrderDTO;
 import com.sanitaryware.crm.entity.Order;
+import com.sanitaryware.crm.entity.User;
 import com.sanitaryware.crm.mapper.OrderMapper;
 import com.sanitaryware.crm.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -34,30 +35,33 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional(readOnly = true)
     public DashboardDTO getDashboardStats() {
+        var currentUser = accessControlService.currentUser();
+        boolean warehouse = currentUser.getRole() == User.UserRole.WAREHOUSE;
         LocalDate now = LocalDate.now();
         LocalDate startOfMonth = now.withDayOfMonth(1);
         LocalDate endOfMonth = now.withDayOfMonth(now.lengthOfMonth());
 
-        BigDecimal totalRevenue = paymentRepository.getTotalPaymentsBetweenDates(startOfMonth, endOfMonth);
-        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalRevenue = warehouse ? null
+                : paymentRepository.getTotalPaymentsBetweenDates(startOfMonth, endOfMonth);
+        if (!warehouse && totalRevenue == null) totalRevenue = BigDecimal.ZERO;
 
         long totalOrders = orderRepository.count();
-        long totalCustomers = customerRepository.count();
+        Long totalCustomers = warehouse ? null : customerRepository.count();
         // Preserve the dashboard's existing <10 threshold (catalogue alerts use reorderLevel).
         long lowStockProducts = productRepository.countByStockQuantityLessThan(10);
-        BigDecimal distributorPaymentsTotal = distributorPaymentRepository
+        BigDecimal distributorPaymentsTotal = warehouse ? null : distributorPaymentRepository
                 .getTotalDistributorPaymentsBetweenDates(startOfMonth, endOfMonth);
-        BigDecimal totalReceivables = orderRepository.getTotalBalance();
-        BigDecimal totalPayables = purchaseOrderRepository.getTotalBalance();
+        BigDecimal totalReceivables = warehouse ? null : orderRepository.getTotalBalance();
+        BigDecimal totalPayables = warehouse ? null : purchaseOrderRepository.getTotalBalance();
 
-        var currentUser = accessControlService.currentUser();
         var recentPage = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<OrderDTO> recentOrders = (accessControlService.isSales(currentUser)
-                ? orderRepository.findByCreatedByUsername(currentUser.getUsername(), recentPage)
-                : orderRepository.findAll(recentPage))
-                .stream()
-                .map(orderMapper::toDTO)
-                .collect(Collectors.toList());
+        List<OrderDTO> recentOrders = warehouse ? null
+                : (accessControlService.isSales(currentUser)
+                    ? orderRepository.findByCreatedByUsername(currentUser.getUsername(), recentPage)
+                    : orderRepository.findAll(recentPage))
+                    .stream()
+                    .map(orderMapper::toDTO)
+                    .collect(Collectors.toList());
 
         // Order status breakdown across all order statuses
         Map<String, Long> orderStatusBreakdown = new HashMap<>();
@@ -70,17 +74,19 @@ public class DashboardServiceImpl implements DashboardService {
         long pendingOrders = orderStatusBreakdown.get(Order.OrderStatus.PENDING.name());
 
         // Monthly revenue for the last 6 months
-        Map<String, BigDecimal> monthlyRevenue = new java.util.LinkedHashMap<>();
-        for (int i = 5; i >= 0; i--) {
-            LocalDate monthDate = now.minusMonths(i);
-            LocalDate monthStart = monthDate.withDayOfMonth(1);
-            LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
-            String monthLabel = monthDate.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH);
-            BigDecimal rev = i == 0 ? totalRevenue : paymentRepository.getTotalPaymentsBetweenDates(monthStart, monthEnd);
-            monthlyRevenue.put(monthLabel, rev != null ? rev : BigDecimal.ZERO);
+        Map<String, BigDecimal> monthlyRevenue = warehouse ? null : new java.util.LinkedHashMap<>();
+        if (!warehouse) {
+            for (int i = 5; i >= 0; i--) {
+                LocalDate monthDate = now.minusMonths(i);
+                LocalDate monthStart = monthDate.withDayOfMonth(1);
+                LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
+                String monthLabel = monthDate.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH);
+                BigDecimal rev = i == 0 ? totalRevenue : paymentRepository.getTotalPaymentsBetweenDates(monthStart, monthEnd);
+                monthlyRevenue.put(monthLabel, rev != null ? rev : BigDecimal.ZERO);
+            }
         }
 
-        List<DashboardDTO.ProductSalesDTO> topProducts = orderRepository
+        List<DashboardDTO.ProductSalesDTO> topProducts = warehouse ? null : orderRepository
                 .findTopProductSales(Order.OrderStatus.CANCELLED, PageRequest.of(0, 5)).stream()
                 .map(row -> new DashboardDTO.ProductSalesDTO(
                         row.getProductName(), row.getQuantitySold(), row.getTotalRevenue()))

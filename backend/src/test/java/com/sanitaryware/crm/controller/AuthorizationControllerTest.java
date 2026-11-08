@@ -184,8 +184,13 @@ class AuthorizationControllerTest {
 
     @Test
     @WithMockUser(roles = "MANAGER")
-    void managerCanUpdateSettings() throws Exception {
-        assertCanUpdateSettings();
+    void managerCannotUpdateSettings() throws Exception {
+        mockMvc.perform(put("/api/settings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(settings())))
+                .andExpect(status().isForbidden());
+
+        verify(systemSettingsService, never()).updateSettings(any(SystemSettingsDTO.class));
     }
 
     @Test
@@ -216,6 +221,26 @@ class AuthorizationControllerTest {
 
         mockMvc.perform(get("/api/settings"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void managerCanReadSettingsWithoutMutationAccess() throws Exception {
+        when(systemSettingsService.getSettings()).thenReturn(settings());
+
+        mockMvc.perform(get("/api/settings"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAREHOUSE")
+    void warehouseCannotUpdateSettings() throws Exception {
+        mockMvc.perform(put("/api/settings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(settings())))
+                .andExpect(status().isForbidden());
+
+        verify(systemSettingsService, never()).updateSettings(any(SystemSettingsDTO.class));
     }
 
     @Test

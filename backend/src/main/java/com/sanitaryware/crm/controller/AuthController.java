@@ -5,6 +5,7 @@ import com.sanitaryware.crm.dto.LoginRequest;
 import com.sanitaryware.crm.dto.MessageResponse;
 import com.sanitaryware.crm.dto.RegisterRequest;
 import com.sanitaryware.crm.entity.User;
+import com.sanitaryware.crm.repository.BootstrapLockRepository;
 import com.sanitaryware.crm.repository.UserRepository;
 import com.sanitaryware.crm.security.JwtTokenProvider;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +34,7 @@ import java.time.LocalDateTime;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final BootstrapLockRepository bootstrapLockRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -100,8 +103,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Transactional
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registering new user: {}", request.getUsername());
+        bootstrapLockRepository.findSingletonForUpdate()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Bootstrap lock row is missing; apply database migrations"));
         boolean firstUser = userRepository.count() == 0;
         if (!firstUser && !isCurrentUserAdminOrManager()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -164,6 +171,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
@@ -186,6 +194,7 @@ public class AuthController {
         ));
     }
     @PutMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody com.sanitaryware.crm.dto.UpdateProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();

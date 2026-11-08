@@ -21,7 +21,7 @@ public class SystemSettingsController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SystemSettingsDTO> updateSettings(@RequestBody SystemSettingsDTO dto) {
         return ResponseEntity.ok(systemSettingsService.updateSettings(dto));
     }

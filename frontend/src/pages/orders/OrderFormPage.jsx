@@ -6,6 +6,7 @@ import quotationService from '../../services/quotationService';
 import customerService from '../../services/customerService';
 import { productService } from '../../services/productService';
 import fileUploadService from '../../services/fileUploadService';
+import { useFilePreview } from '../../hooks/useFilePreview';
 import toast from 'react-hot-toast';
 import { calculateDocumentTotals } from '../../utils/documentTotals';
 import ProductSearchSelect from '../../components/ProductSearchSelect';
@@ -22,6 +23,7 @@ const OrderFormPage = () => {
     const [products, setProducts] = useState([]);
     const [productSearchQuery, setProductSearchQuery] = useState('');
     const [uploadingFile, setUploadingFile] = useState(false);
+    const [localBillPadFile, setLocalBillPadFile] = useState(null);
     const [formData, setFormData] = useState({
         customerId: '',
         orderDate: new Date().toISOString().split('T')[0],
@@ -42,6 +44,8 @@ const OrderFormPage = () => {
         taxAmount: 0,
         total: 0
     });
+
+    const billPadPreview = useFilePreview(formData.billPadImageUrl, 'billpads', localBillPadFile);
 
     useEffect(() => {
         fetchInitialData();
@@ -234,7 +238,8 @@ const OrderFormPage = () => {
         try {
             setUploadingFile(true);
             const response = await fileUploadService.uploadFile(file, 'billpads');
-            setFormData({ ...formData, billPadImageUrl: response.fileName });
+            setLocalBillPadFile(file);
+            setFormData((current) => ({ ...current, billPadImageUrl: response.fileName }));
             toast.success('Bill Pad uploaded successfully');
         } catch (error) {
             toast.error('Failed to upload image');
@@ -600,16 +605,21 @@ const OrderFormPage = () => {
                                     />
                                 </label>
                             </div>
-                            {formData.billPadImageUrl && (
+                            {formData.billPadImageUrl && !billPadPreview.url && (
+                                <p role="status" className="text-sm text-slate-500">
+                                    {billPadPreview.error || 'Loading attachment preview...'}
+                                </p>
+                            )}
+                            {formData.billPadImageUrl && billPadPreview.url && (
                                 <div className="mt-3 flex items-center gap-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
                                     <img
-                                        src={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
+                                        src={billPadPreview.url}
                                         alt="Bill Pad"
                                         className="h-16 w-16 rounded-xl border border-slate-200 object-cover"
                                     />
                                     <div>
                                         <a
-                                            href={fileUploadService.getFileUrl(formData.billPadImageUrl, 'billpads')}
+                                            href={billPadPreview.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs text-teal hover:underline font-extrabold"

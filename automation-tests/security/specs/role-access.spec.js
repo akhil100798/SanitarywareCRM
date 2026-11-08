@@ -130,15 +130,19 @@ test.describe('Product and settings role authorization', () => {
     expect(updateResponse.status()).toBe(403);
   });
 
-  test('ADMIN and MANAGER can update settings', async () => {
+  test('only ADMIN can update settings; MANAGER retains read-only access', async () => {
     const adminResponse = await adminClient.put('/api/settings', {
       data: { companyName: 'HydroSleek CRM', currencySymbol: 'INR' },
     });
     expect(adminResponse.status()).toBe(200);
+
+    const managerReadResponse = await managerClient.get('/api/settings');
+    expect(managerReadResponse.status()).toBe(200);
+
     const managerResponse = await managerClient.put('/api/settings', {
       data: { companyName: 'HydroSleek CRM', currencySymbol: 'INR' },
     });
-    expect(managerResponse.status()).toBe(200);
+    expect(managerResponse.status()).toBe(403);
   });
 
   test('SALES can read settings but cannot update them', async () => {
@@ -148,6 +152,13 @@ test.describe('Product and settings role authorization', () => {
       data: { companyName: 'Unauthorized Sales Update' },
     });
     expect(updateResponse.status()).toBe(403);
+  });
+
+  test('WAREHOUSE cannot update system settings', async () => {
+    const response = await warehouseClient.put('/api/settings', {
+      data: { companyName: 'Unauthorized Warehouse Update' },
+    });
+    expect(response.status()).toBe(403);
   });
 
   test('unauthenticated settings update returns 401', async () => {

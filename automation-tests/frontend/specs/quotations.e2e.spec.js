@@ -14,7 +14,7 @@ test.describe('Frontend Quotations E2E Suite', () => {
     await page.goto('/quotations');
     await page.locator('span:has-text("Fetching quotations...")').waitFor({ state: 'detached', timeout: 35000 });
     const quotationPage = new QuotationPage(page);
-    await quotationPage.createQuotation('Ramesh Sharma', 'E2E Automated Pipe', 5);
+    await quotationPage.createQuotation('Ramesh Sharma', null, 5);
     await page.fill('input[placeholder*="Search"]', 'Ramesh Sharma');
     await page.keyboard.press('Enter');
     await expect(page.locator('table tr:has-text("Ramesh Sharma")').first()).toBeVisible();

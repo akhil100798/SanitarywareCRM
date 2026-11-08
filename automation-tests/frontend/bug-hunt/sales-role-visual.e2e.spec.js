@@ -77,7 +77,9 @@ test.describe('Role-aware frontend access', () => {
     await page.getByRole('link', { name: 'Settings', exact: true }).click();
 
     await expect(page).toHaveURL(/\/settings$/);
-    await expect(page.getByRole('button', { name: /save settings/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /save settings/i })).toHaveCount(0);
+    await expect(page.locator('input[name="companyName"]')).toBeDisabled();
+    await expect(page.locator('p[role="status"]')).toHaveText('Only an administrator can change system settings.');
   });
 
   test('SALES dashboard greeting uses the user name or role fallback', async ({ page }) => {
@@ -96,14 +98,14 @@ test.describe('Role-aware frontend access', () => {
     await page.goto('/products');
 
     await expect(page.getByRole('heading', { name: 'Product Catalog', level: 1 })).toBeVisible();
-    await expect(page.getByPlaceholder(/search by name, sku, or brand/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/search by name, sku, size, brand, barcode/i)).toBeVisible();
     await expect(page.getByRole('link', { name: 'Add Product', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Bulk Import', exact: true })).toHaveCount(0);
     await expect(page.getByTitle('Edit Product')).toHaveCount(0);
     await expect(page.getByTitle('Deactivate Product')).toHaveCount(0);
   });
 
-  test('SALES can read categories and brands without mutation controls', async ({ page }) => {
+  test('SALES can read categories but is denied the management-only brands route', async ({ page }) => {
     await loginAs(page, 'SALES');
 
     await page.goto('/categories');
@@ -113,10 +115,7 @@ test.describe('Role-aware frontend access', () => {
     await expect(page.getByTitle('Deactivate Category')).toHaveCount(0);
 
     await page.goto('/brands');
-    await expect(page.getByRole('heading', { name: 'Brands', level: 1 })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Add Brand', exact: true })).toHaveCount(0);
-    await expect(page.getByTitle('Edit Brand')).toHaveCount(0);
-    await expect(page.getByTitle('Delete Brand')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Access denied', level: 1 })).toBeVisible();
   });
 
   test('ADMIN product list shows mutation controls', async ({ page }) => {

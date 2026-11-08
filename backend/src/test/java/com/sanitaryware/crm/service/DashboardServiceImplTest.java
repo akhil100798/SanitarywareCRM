@@ -2,8 +2,10 @@ package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.DashboardDTO;
 import com.sanitaryware.crm.entity.Order;
+import com.sanitaryware.crm.entity.User;
 import com.sanitaryware.crm.mapper.OrderMapper;
 import com.sanitaryware.crm.repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -66,6 +68,9 @@ class DashboardServiceImplTest {
 
     @Test
     void getDashboardStats_UsesAggregatesAndPreservesEmptyStatusBuckets() {
+        var admin = new User();
+        admin.setRole(User.UserRole.ADMIN);
+        when(accessControlService.currentUser()).thenReturn(admin);
         when(paymentRepository.getTotalPaymentsBetweenDates(any(), any())).thenReturn(BigDecimal.valueOf(50000));
         when(orderRepository.count()).thenReturn(10L);
         when(orderRepository.countByStatus()).thenReturn(Collections.emptyList());
@@ -93,5 +98,41 @@ class DashboardServiceImplTest {
         assertNotNull(stats.getMonthlyRevenue());
         assertEquals(6, stats.getMonthlyRevenue().size());
         assertNotNull(stats.getTopProducts());
+    }
+
+    @Test
+    void warehouseDashboardOmitsCustomerFinanceAndOrderDetails() throws Exception {
+        var warehouse = new User();
+        warehouse.setRole(User.UserRole.WAREHOUSE);
+        when(accessControlService.currentUser()).thenReturn(warehouse);
+        when(orderRepository.count()).thenReturn(7L);
+        when(orderRepository.countByStatus()).thenReturn(Collections.emptyList());
+        when(productRepository.countByStockQuantityLessThan(10)).thenReturn(2L);
+
+        DashboardDTO stats = dashboardService.getDashboardStats();
+
+        assertEquals(7L, stats.getTotalOrders());
+        assertEquals(2L, stats.getLowStockProducts());
+        assertEquals(0L, stats.getPendingOrders());
+        assertNull(stats.getTotalCustomers());
+        assertNull(stats.getTotalRevenue());
+        assertNull(stats.getDistributorPaymentsTotal());
+        assertNull(stats.getTotalReceivables());
+        assertNull(stats.getTotalPayables());
+        assertNull(stats.getRecentOrders());
+        assertNull(stats.getTopProducts());
+        assertNull(stats.getMonthlyRevenue());
+
+        String json = new ObjectMapper().writeValueAsString(stats);
+        for (String sensitiveField : List.of("totalCustomers", "totalRevenue", "distributorPaymentsTotal",
+                "totalReceivables", "totalPayables", "monthlyRevenue", "recentOrders", "topProducts")) {
+            assertFalse(json.contains("\"" + sensitiveField + "\""), sensitiveField + " must not be serialized");
+        }
+        org.mockito.Mockito.verifyNoInteractions(paymentRepository, distributorPaymentRepository, purchaseOrderRepository);
+        org.mockito.Mockito.verify(orderRepository, org.mockito.Mockito.never()).getTotalBalance();
+        org.mockito.Mockito.verify(orderRepository, org.mockito.Mockito.never()).findAll(any(PageRequest.class));
+        org.mockito.Mockito.verify(orderRepository, org.mockito.Mockito.never()).findTopProductSales(any(), any());
+        org.mockito.Mockito.verifyNoInteractions(orderMapper);
+        org.mockito.Mockito.verify(customerRepository, org.mockito.Mockito.never()).count();
     }
 }

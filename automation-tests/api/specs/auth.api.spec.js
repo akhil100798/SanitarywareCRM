@@ -96,6 +96,18 @@ test.describe('Authentication API Suite', () => {
     expect(response.status()).toBe(401);
   });
 
+  test('NEG-008 Update profile without JWT returns 401', async () => {
+    const client = await getClient();
+    const response = await client.put('/api/auth/profile', {
+      data: {
+        fullName: 'Unauthorized Profile Update',
+        email: 'unauthorized@example.test',
+        phoneNumber: '9000000000',
+      },
+    });
+    expect(response.status()).toBe(401);
+  });
+
   test('NEG-007 Access profile with expired JWT returns 401', async () => {
     const client = await getClient('Bearer expired-token-xyz');
     const response = await client.get('/api/auth/me');

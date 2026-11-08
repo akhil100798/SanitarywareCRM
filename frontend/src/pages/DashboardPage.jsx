@@ -35,6 +35,8 @@ const DashboardPage = () => {
     const user = useAuthStore((state) => state.user);
     const canManageSales = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
     const canManageSuppliers = ['ADMIN', 'MANAGER'].includes(user?.role);
+    const canViewCustomerData = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
+    const canViewFinancials = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
     const displayName = user?.fullName?.trim()
         || user?.name?.trim()
         || fallbackName[user?.role]
@@ -105,7 +107,7 @@ const DashboardPage = () => {
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Customers */}
-                <DashboardLink allowed={canManageSales} to="/customers" className="card-container flex flex-col justify-between group">
+                {canViewCustomerData && <DashboardLink allowed={canManageSales} to="/customers" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Customers</span>
@@ -119,7 +121,7 @@ const DashboardPage = () => {
                         <span>{canManageSales ? 'View Directory' : 'Customer count'}</span>
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </div>
-                </DashboardLink>
+                </DashboardLink>}
 
                 {/* Orders */}
                 <Link to="/orders" className="card-container flex flex-col justify-between group">
@@ -138,7 +140,7 @@ const DashboardPage = () => {
                 </Link>
 
                 {/* Revenue */}
-                <DashboardLink allowed={canManageSales} to="/payments" className="card-container flex flex-col justify-between group">
+                {canViewFinancials && <DashboardLink allowed={canManageSales} to="/payments" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Gross Revenue</span>
@@ -152,10 +154,10 @@ const DashboardPage = () => {
                         <span>Recorded Payments</span>
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </div>
-                </DashboardLink>
+                </DashboardLink>}
 
                 {/* Payables */}
-                <DashboardLink allowed={canManageSuppliers} to="/distributor-payments" className="card-container flex flex-col justify-between group">
+                {canViewFinancials && <DashboardLink allowed={canManageSuppliers} to="/distributor-payments" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Supplier Payments</span>
@@ -168,11 +170,11 @@ const DashboardPage = () => {
                     <div className="mt-4 pt-3 border-t border-slate-50 text-slate-500 text-xs font-medium">
                         To pay: <span className="text-amber-600 font-bold">₹{(stats?.totalPayables || 0).toLocaleString('en-IN')}</span>
                     </div>
-                </DashboardLink>
+                </DashboardLink>}
             </div>
 
             {/* Financial Overview & Interactive charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {canViewFinancials && <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Payables vs Receivables */}
                 <div className="card-container flex flex-col justify-between space-y-6">
                     <div>
@@ -250,7 +252,7 @@ const DashboardPage = () => {
                         )}
                     </div>
                 </div>
-            </div>
+            </div>}
 
             {/* Quick Actions Hub & Tables */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -313,7 +315,7 @@ const DashboardPage = () => {
                 </div>
 
                 {/* Recent Orders List Table */}
-                <div className="card-container lg:col-span-2 flex flex-col justify-between space-y-6">
+                {canViewCustomerData && <div className="card-container lg:col-span-2 flex flex-col justify-between space-y-6">
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">Recent Customer Orders</h3>
@@ -362,7 +364,7 @@ const DashboardPage = () => {
                             ))
                         )}
                     </div>
-                </div>
+                </div>}
             </div>
 
             {/* Top Selling Products */}

@@ -33,6 +33,7 @@ const OrderFormPage = lazy(() => import('./pages/orders/OrderFormPage'));
 const PurchaseOrderFormPage = lazy(() => import('./pages/purchase-orders/PurchaseOrderFormPage'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage'));
+const UserManagementPage = lazy(() => import('./pages/users/UserManagementPage'));
 
 const managementRoles = ['ADMIN', 'MANAGER'];
 const orderAccessRoles = ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'];
@@ -205,6 +206,7 @@ function App() {
 
                     <Route path="/reports" element={<ProtectedRoute allowedRoles={managementRoles}><ReportsPage /></ProtectedRoute>} />
                     <Route path="/audit-logs" element={<ProtectedRoute allowedRoles={managementRoles}><AuditLogsPage /></ProtectedRoute>} />
+                    <Route path="/users" element={<ProtectedRoute allowedRoles={managementRoles}><UserManagementPage /></ProtectedRoute>} />
 
                     <Route
                         path="/profile"

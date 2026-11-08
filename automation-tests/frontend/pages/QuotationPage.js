@@ -4,7 +4,8 @@ class QuotationPage {
     this.createQuotationButton = page.locator('a:has-text("New Quotation"), a:has-text("Create Quotation"), button:has-text("New Quotation"), button:has-text("Create Quotation")');
     this.customerSelect = page.locator('select[name="customerId"]');
     this.addItemButton = page.locator('button:has-text("Add Line Item"), button:has-text("Add Item")');
-    this.productSelect = page.locator('select[name="productId"]');
+    this.productPicker = page.getByRole('button', { name: 'Select Product' });
+    this.productSearch = page.getByPlaceholder('Type to search name, SKU, barcode...');
     this.quantityInput = page.locator('input[name="quantity"]');
     this.saveQuotationButton = page.locator('a:has-text("Save"), button:has-text("Save")');
     this.tableRows = page.locator('table tbody tr');
@@ -26,17 +27,15 @@ class QuotationPage {
     }
     
     await this.addItemButton.click();
-    await this.page.locator('select[name="productId"] option:not([value=""])').first().waitFor({ state: 'attached', timeout: 15000 });
+    await this.productPicker.last().click();
     if (productName) {
-      const option = this.productSelect.locator('option').filter({ hasText: productName }).first();
-      if (await option.count() > 0) {
-        const value = await option.getAttribute('value');
-        await this.productSelect.selectOption(value);
-      } else {
-        await this.productSelect.selectOption({ index: 1 });
-      }
+      await this.productSearch.fill(productName);
+      await this.page.getByText(productName, { exact: true }).last().waitFor({ state: 'visible', timeout: 15000 });
+      await this.page.getByText(productName, { exact: true }).last().click();
     } else {
-      await this.productSelect.selectOption({ index: 1 });
+      const firstProduct = this.page.locator('div.max-h-56 > div[class*="cursor-pointer"]').first();
+      await firstProduct.waitFor({ state: 'visible', timeout: 15000 });
+      await firstProduct.click();
     }
     
     await this.quantityInput.fill(quantity.toString());
