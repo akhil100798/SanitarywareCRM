@@ -137,4 +137,22 @@ test.describe('Payments API Suite', () => {
     });
     expect(response.status()).toBe(404);
   });
+
+  test('EXP-006 Send Payment Receipt via WhatsApp endpoint', async () => {
+    const client = await getClient(adminToken);
+    // Fetch payments for the order
+    const listRes = await client.get(`/api/payments/order/${orderId}`);
+    expect(listRes.status()).toBe(200);
+    const payments = await listRes.json();
+    expect(payments.length).toBeGreaterThan(0);
+
+    const paymentId = payments[0].id;
+    const response = await client.post(`/api/payments/${paymentId}/send-whatsapp`, {
+      data: { phoneNumber: '+919876543210' }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(['SENT', 'SIMULATED']).toContain(body.status);
+    expect(body.recipient).toContain('9876543210');
+  });
 });

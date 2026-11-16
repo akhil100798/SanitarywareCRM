@@ -92,9 +92,16 @@ const runCleanup = async () => {
     } else {
       console.log('No fixture manifest found. Performing targeted cleanup of known test records by natural keys...');
 
+      const toArray = (obj) => {
+        if (!obj) return [];
+        if (Array.isArray(obj)) return obj;
+        if (Array.isArray(obj.content)) return obj.content;
+        return [];
+      };
+
       // Find and delete customer with phone 9123456789
       const customers = await getJson('/api/customers', token).catch(() => []);
-      for (const cust of (customers || [])) {
+      for (const cust of toArray(customers)) {
         if (cust.phoneNumber === '9123456789' || cust.name === 'Ramesh Sharma') {
           console.log(`Deleting test customer ${cust.name} (ID: ${cust.id})...`);
           await deleteRequest(`/api/customers/${cust.id}`, token);
@@ -104,7 +111,7 @@ const runCleanup = async () => {
 
       // Find and delete distributor with phone 8881234567
       const distributors = await getJson('/api/distributors', token).catch(() => []);
-      for (const dist of (distributors || [])) {
+      for (const dist of toArray(distributors)) {
         if (dist.phoneNumber === '8881234567' || dist.name === 'QA Distributor Supply') {
           console.log(`Deleting test distributor ${dist.name} (ID: ${dist.id})...`);
           await deleteRequest(`/api/distributors/${dist.id}`, token);
@@ -114,7 +121,7 @@ const runCleanup = async () => {
 
       // Find and delete product with SKU E2E-TEST-SKU
       const products = await getJson('/api/products', token).catch(() => []);
-      for (const prod of (products || [])) {
+      for (const prod of toArray(products)) {
         if (prod.sku === 'E2E-TEST-SKU') {
           console.log(`Deleting test product ${prod.name} (ID: ${prod.id})...`);
           await deleteRequest(`/api/products/${prod.id}`, token);
@@ -124,7 +131,7 @@ const runCleanup = async () => {
 
       // Find and delete category E2E Category Pipes
       const categories = await getJson('/api/categories', token).catch(() => []);
-      for (const cat of (categories || [])) {
+      for (const cat of toArray(categories)) {
         if (cat.name === 'E2E Category Pipes') {
           console.log(`Deleting test category ${cat.name} (ID: ${cat.id})...`);
           await deleteRequest(`/api/categories/${cat.id}`, token);
@@ -134,7 +141,7 @@ const runCleanup = async () => {
 
       // Find and delete brand E2E Brand Supreme
       const brands = await getJson('/api/brands', token).catch(() => []);
-      for (const b of (brands || [])) {
+      for (const b of toArray(brands)) {
         if (b.name === 'E2E Brand Supreme') {
           console.log(`Deleting test brand ${b.name} (ID: ${b.id})...`);
           await deleteRequest(`/api/brands/${b.id}`, token);
