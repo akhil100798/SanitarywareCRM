@@ -160,13 +160,33 @@ jobs:
       run:
         working-directory: mobile
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: mobile/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-      - run: npm run export:android
+
+      - name: Install Mobile Dependencies
+        run: npm ci
+
+      - name: Run Mobile Lint
+        run: npm run lint
+
+      - name: Run Mobile Unit Tests
+        run: npm test
+
+      - name: Export Android Bundle (Hermes Bytecode)
+        run: npm run export:android
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          CI: "true"
