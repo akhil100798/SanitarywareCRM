@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.controller;
 
 import com.sanitaryware.crm.dto.BulkUploadResponse;
+import com.sanitaryware.crm.dto.CatalogImportPreviewResponse;
 import com.sanitaryware.crm.dto.ProductDTO;
 import com.sanitaryware.crm.dto.ProductFilterDTO;
 import com.sanitaryware.crm.dto.ProductImageDTO;
@@ -56,6 +57,7 @@ public class ProductController {
             @RequestParam(required = false) Boolean inStock,
             @RequestParam(required = false) Boolean lowStock,
             @RequestParam(required = false) Boolean isActive,
+            @RequestParam(required = false) Boolean isAvailable,
             @RequestParam(required = false) String barcode,
             @RequestParam(required = false) String hsnCode,
             @RequestParam(defaultValue = "0") int page,
@@ -71,6 +73,7 @@ public class ProductController {
                 .inStock(inStock)
                 .lowStock(lowStock)
                 .isActive(isActive)
+                .isAvailable(isAvailable)
                 .barcode(barcode)
                 .hsnCode(hsnCode)
                 .build();
@@ -153,12 +156,38 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}/availability")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<com.sanitaryware.crm.dto.ProductDTO> updateAvailability(
+            @PathVariable Long id, @RequestParam boolean available) {
+        return ResponseEntity.ok(productService.updateProductAvailability(id, available));
+    }
+
     @PostMapping("/bulk-catalog-upload")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<BulkUploadResponse> bulkCatalogUpload(
             @RequestParam("brandId") Long brandId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("previewSha256") String previewSha256,
+            @RequestParam(value = "selectedSkus", required = false) List<String> selectedSkus,
+            @RequestParam(value = "unavailableSkus", required = false) List<String> unavailableSkus,
+            @RequestParam(defaultValue = "false") boolean confirmed) {
+        if (!confirmed) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.PRECONDITION_REQUIRED,
+                    "Review the catalogue preview and explicitly confirm before importing.");
+        }
+        return ResponseEntity.ok(productService.bulkCatalogUpload(
+                brandId, file, previewSha256, selectedSkus,
+                unavailableSkus == null ? java.util.Set.of() : new java.util.HashSet<>(unavailableSkus)));
+    }
+
+    @PostMapping("/bulk-catalog-preview")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CatalogImportPreviewResponse> previewBulkCatalogUpload(
+            @RequestParam("brandId") Long brandId,
             @RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(productService.bulkCatalogUpload(brandId, file));
+        return ResponseEntity.ok(productService.previewCatalogUpload(brandId, file));
     }
 
     @PostMapping("/{id}/images")

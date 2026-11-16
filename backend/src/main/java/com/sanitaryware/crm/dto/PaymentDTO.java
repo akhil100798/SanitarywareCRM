@@ -28,10 +28,12 @@ public class PaymentDTO {
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
+    @jakarta.validation.constraints.Digits(integer = 8, fraction = 2)
     private BigDecimal amount;
 
     @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
+    @jakarta.validation.constraints.Size(max = 100)
     private String referenceNumber;
     private String notes;
     private Long receivedById;

@@ -39,6 +39,7 @@ class QuotationServiceImplTest {
 
     @Mock
     private AuditService auditService;
+    @Mock private jakarta.persistence.EntityManager entityManager;
 
     @InjectMocks
     private QuotationServiceImpl quotationService;
@@ -159,7 +160,7 @@ class QuotationServiceImplTest {
         quotation.setId(1L);
         quotation.setStatus(Quotation.QuotationStatus.DRAFT);
 
-        when(quotationRepository.findById(1L)).thenReturn(Optional.of(quotation));
+        when(quotationRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(quotation));
         when(quotationRepository.save(any(Quotation.class))).thenAnswer(inv -> inv.getArgument(0));
         when(quotationMapper.toDTO(any(Quotation.class))).thenReturn(new QuotationDTO());
 

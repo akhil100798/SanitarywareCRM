@@ -5,6 +5,7 @@ import java.util.List;
 
 public interface PaymentService {
     PaymentDTO recordPayment(PaymentDTO paymentDTO);
+    PaymentDTO recordPayment(PaymentDTO paymentDTO, String idempotencyKey);
     PaymentDTO getPaymentById(Long id);
     List<PaymentDTO> getPaymentsByOrder(Long orderId);
     List<PaymentDTO> getAllPayments();

@@ -20,6 +20,7 @@ public class ProductFilterDTO {
     private Boolean inStock;
     private Boolean lowStock;
     private Boolean isActive;
+    private Boolean isAvailable;
     private String barcode;
     private String hsnCode;
 }

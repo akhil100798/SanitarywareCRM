@@ -156,5 +156,11 @@ public class Order {
         if (this.total == null) this.total = BigDecimal.ZERO;
         if (this.paidAmount == null) this.paidAmount = BigDecimal.ZERO;
         this.balanceAmount = this.total.subtract(this.paidAmount);
+        this.paymentStatus = derivedPaymentStatus();
+    }
+
+    public PaymentStatus derivedPaymentStatus() {
+        if (paidAmount == null || paidAmount.signum() == 0) return PaymentStatus.UNPAID;
+        return paidAmount.compareTo(total) >= 0 ? PaymentStatus.PAID : PaymentStatus.PARTIAL;
     }
 }

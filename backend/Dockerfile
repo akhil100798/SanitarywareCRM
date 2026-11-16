@@ -16,8 +16,13 @@ RUN groupadd --system crm \
     && useradd --system --gid crm --home-dir /app crm
 
 WORKDIR /app
+RUN mkdir -p /app/uploads \
+    && chown -R crm:crm /app \
+    && chmod 755 /app/uploads
+
 COPY --from=build --chown=crm:crm /workspace/target/*.jar app.jar
 
+VOLUME ["/app/uploads"]
 USER crm
 ENV SPRING_PROFILES_ACTIVE=prod \
     SERVER_PORT=8081

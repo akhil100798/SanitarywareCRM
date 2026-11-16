@@ -235,6 +235,16 @@ const ProductListPage = () => {
         }
     };
 
+    const handleAvailabilityChange = async (product) => {
+        try {
+            await productService.updateAvailability(product.id, !product.isAvailable);
+            toast.success(product.isAvailable ? 'Product marked unavailable' : 'Product marked available');
+            fetchProducts(currentPage);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update product availability');
+        }
+    };
+
     const openProductDetail = (product) => {
         setSelectedProductForDetail(product);
         setIsDetailModalOpen(true);
@@ -522,16 +532,21 @@ const ProductListPage = () => {
                                                             <Package size={18} />
                                                         )}
                                                     </div>
-                                                    <div className="min-w-0">
+                                                    <div className={`min-w-0 rounded-md px-2 py-1 ${product.isAvailable === false ? 'bg-black text-white' : ''}`}>
+                                                        {product.isAvailable === false && (
+                                                            <span className="mb-1 inline-block rounded bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
+                                                                Unavailable
+                                                            </span>
+                                                        )}
                                                         <button
                                                             type="button"
                                                             onClick={() => openProductDetail(product)}
-                                                            className="font-bold text-slate-900 hover:text-teal text-left transition-colors truncate max-w-xs block"
+                                                            className={`font-bold text-left transition-colors truncate max-w-xs block ${product.isAvailable === false ? 'text-white line-through hover:text-gray-200' : 'text-slate-900 hover:text-teal'}`}
                                                             title={product.name}
                                                         >
                                                             {product.name}
                                                         </button>
-                                                        <div className="text-xxs text-slate-400 font-mono tracking-wider mt-0.5">
+                                                        <div className={`text-xxs font-mono tracking-wider mt-0.5 ${product.isAvailable === false ? 'text-gray-300' : 'text-slate-400'}`}>
                                                             SKU: {product.sku}
                                                         </div>
                                                     </div>
@@ -570,6 +585,12 @@ const ProductListPage = () => {
                                                 {product.hsnCode && (
                                                     <div className="text-slate-400 text-xxs">HSN: {product.hsnCode}</div>
                                                 )}
+                                                {product.materialCode && (
+                                                    <div className="text-slate-400 text-xxs">Material: {product.materialCode}</div>
+                                                )}
+                                                {product.itemCode && (
+                                                    <div className="text-slate-400 text-xxs">Item: {product.itemCode}</div>
+                                                )}
                                                 {product.gstRate !== null && product.gstRate !== undefined && (
                                                     <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-xxs font-sans font-semibold">
                                                         GST: {product.gstRate}%
@@ -583,6 +604,11 @@ const ProductListPage = () => {
                                                 <span className={product.isActive ? 'badge-paid' : 'badge-unpaid'}>
                                                     {product.isActive ? 'Active' : 'Inactive'}
                                                 </span>
+                                                {product.isAvailable === false && (
+                                                    <span className="ml-1 inline-flex rounded bg-black px-2 py-1 text-xs font-semibold text-white">
+                                                        Unavailable
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end space-x-1.5">
@@ -597,6 +623,14 @@ const ProductListPage = () => {
                                                     </button>
                                                     {canManageProducts && (
                                                         <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAvailabilityChange(product)}
+                                                                className="rounded-xl px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                                                aria-label={`${product.isAvailable === false ? 'Mark available' : 'Mark unavailable'}: ${product.name}`}
+                                                            >
+                                                                {product.isAvailable === false ? 'Mark available' : 'Mark unavailable'}
+                                                            </button>
                                                             <Link
                                                                 to={`/products/edit/${product.id}`}
                                                                 className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"

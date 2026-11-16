@@ -33,59 +33,71 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     private final UserRepository userRepository;
     private final DistributorPaymentMapper paymentMapper;
     private final AuditService auditService;
+    private final PurchaseOrderLockService locks;
+    private final FinancialConsistencyService financialConsistency;
+    private final PaymentIdempotencyService idempotency;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public DistributorPaymentDTO createPayment(DistributorPaymentDTO dto) {
-        DistributorPayment payment = paymentMapper.toEntity(dto);
+        return createPayment(dto, null);
+    }
 
-        if (payment.getPaymentNumber() == null || payment.getPaymentNumber().isEmpty()) {
-            payment.setPaymentNumber(generatePaymentNumber());
+    @Override
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public DistributorPaymentDTO createPayment(DistributorPaymentDTO dto, String key) {
+        if (dto.getAmount() == null || dto.getAmount().signum() <= 0) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amount must be greater than zero");
         }
-
-        if (payment.getPaymentDate() == null) {
-            payment.setPaymentDate(LocalDate.now());
+        try {
+            dto.getAmount().setScale(2, java.math.RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException ex) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amounts must have at most two decimal places");
         }
-
+        if (dto.getPaymentMethod() == null) throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment method is required");
+        DistributorPayment.PaymentMethod method = DistributorPayment.PaymentMethod.valueOf(dto.getPaymentMethod().toUpperCase(java.util.Locale.ROOT));
+        PurchaseOrder po = dto.getPurchaseOrderId() == null ? null : locks.purchaseOrder(dto.getPurchaseOrderId(), null);
+        Distributor distributor = po == null ? locks.distributor(dto.getDistributorId()) : po.getDistributor();
+        if (po != null && dto.getDistributorId() != null && !dto.getDistributorId().equals(distributor.getId())) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("The selected supplier does not own this purchase order");
+        }
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        userRepository.findByUsername(username).ifPresent(payment::setPaidBy);
-
-        if (payment.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Payment amount must be greater than zero");
+        com.sanitaryware.crm.entity.User actor = userRepository.findByUsername(username)
+                .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("User not found"));
+        String fingerprint = key == null ? null : idempotency.fingerprint(dto.getPurchaseOrderId(), dto.getDistributorId(),
+                dto.getAmount().stripTrailingZeros().toPlainString(), dto.getPaymentDate(), method, dto.getReferenceNumber(), dto.getNotes());
+        if (key != null) {
+            var replay = idempotency.replay(actor.getId(), "SUPPLIER_PAYMENT", key, fingerprint,
+                    DistributorPaymentDTO.class, paymentRepository::existsById);
+            if (replay.isPresent()) return replay.get();
         }
-
-        PurchaseOrder po = payment.getPurchaseOrder();
-
+        DistributorPayment payment = paymentMapper.toEntity(dto);
+        payment.setPurchaseOrder(po);
+        payment.setDistributor(distributor);
+        payment.setPaidBy(actor);
+        payment.setPaymentMethod(method);
+        payment.setPaymentNumber(generatePaymentNumber());
+        if (payment.getPaymentDate() == null) payment.setPaymentDate(LocalDate.now());
         if (po != null) {
+            financialConsistency.requireConsistent(po);
             if (po.getStatus() == PurchaseOrder.POStatus.CANCELLED) {
-                throw new IllegalArgumentException("Cannot record payment for a cancelled Purchase Order");
+                throw new com.sanitaryware.crm.exception.BusinessValidationException("Cannot record payment for a cancelled Purchase Order");
             }
             // Validate and update PO balance
             if (po.getBalanceAmount().compareTo(payment.getAmount()) < 0) {
-                throw new IllegalArgumentException("Payment amount ₹" + payment.getAmount() + " exceeds the PO balance ₹" + po.getBalanceAmount());
+                throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amount INR " + payment.getAmount() + " exceeds the PO balance INR " + po.getBalanceAmount());
             }
             po.setPaidAmount(po.getPaidAmount().add(payment.getAmount()));
             po.calculateBalance();
             purchaseOrderRepository.save(po);
 
-            // Update distributor outstanding balance from PO's distributor
-            Distributor distributor = po.getDistributor();
-            if (distributor != null) {
-                distributor.setOutstandingBalance(distributor.getOutstandingBalance().subtract(payment.getAmount()));
-                distributorRepository.save(distributor);
-            }
-        } else if (dto.getDistributorId() != null) {
-            // Independent payment linked directly to distributor (no PO)
-            distributorRepository.findById(dto.getDistributorId()).ifPresent(distributor -> {
-                distributor.setOutstandingBalance(distributor.getOutstandingBalance().subtract(payment.getAmount()));
-                distributorRepository.save(distributor);
-                payment.setDistributor(distributor);
-            });
-        } else {
-            throw new IllegalArgumentException("Either a Purchase Order or a Distributor must be specified for the payment.");
         }
+        // Payments before receipt are supplier advances. Receiving the PO later
+        // adds its full liability, not its already-reduced remaining balance.
+        distributor.setOutstandingBalance(distributor.getOutstandingBalance().subtract(payment.getAmount()));
+        distributorRepository.save(distributor);
 
         DistributorPayment savedPayment = paymentRepository.save(payment);
 
@@ -93,7 +105,10 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
                 "Recorded payment " + savedPayment.getPaymentNumber() + " of Rs. " + savedPayment.getAmount() + " to distributor "
                         + (savedPayment.getDistributor() != null ? savedPayment.getDistributor().getName() : "N/A"));
 
-        return paymentMapper.toDTO(savedPayment);
+        paymentRepository.flush();
+        DistributorPaymentDTO response = paymentMapper.toDTO(savedPayment);
+        idempotency.remember(actor.getId(), "SUPPLIER_PAYMENT", key, fingerprint, savedPayment.getId(), response);
+        return response;
     }
 
     @Override
@@ -116,30 +131,26 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void deletePayment(Long id) {
-        DistributorPayment payment = paymentRepository.findById(id)
+        DistributorPayment initial = paymentRepository.findById(id)
                 .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Payment not found with id: " + id));
-
-        PurchaseOrder po = payment.getPurchaseOrder();
+        PurchaseOrder po = initial.getPurchaseOrder() == null ? null : locks.purchaseOrder(initial.getPurchaseOrder().getId(), null);
+        Distributor distributor = po == null ? locks.distributor(initial.getDistributor().getId()) : po.getDistributor();
+        if (po != null) financialConsistency.requireConsistent(po);
+        DistributorPayment payment = paymentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new com.sanitaryware.crm.exception.ResourceNotFoundException("Payment not found with id: " + id));
         if (po != null) {
             // Restore PO balance
             po.setPaidAmount(po.getPaidAmount().subtract(payment.getAmount()));
             po.calculateBalance();
             purchaseOrderRepository.save(po);
 
-            // Restore Distributor balance
-            Distributor distributor = po.getDistributor();
-            if (distributor != null) {
-                distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
-                distributorRepository.save(distributor);
-            }
-        } else if (payment.getDistributor() != null) {
-            Distributor distributor = payment.getDistributor();
-            distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
-            distributorRepository.save(distributor);
         }
+        distributor.setOutstandingBalance(distributor.getOutstandingBalance().add(payment.getAmount()));
+        distributorRepository.save(distributor);
 
+        if (po != null) po.getPayments().removeIf(receipt -> receipt.getId().equals(id));
         paymentRepository.delete(payment);
 
         auditService.logEvent("DELETE_DISTRIBUTOR_PAYMENT", "DISTRIBUTOR_PAYMENT", id,

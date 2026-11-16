@@ -72,12 +72,32 @@ const getSalesToken = async () => {
 
 const getManagerToken = async () => {
   const client = await getClient();
-  const response = await client.post('/api/auth/login', {
+  let response = await client.post('/api/auth/login', {
     data: {
       username: process.env.QA_MANAGER_USERNAME || 'qamanager',
       password: process.env.QA_MANAGER_PASSWORD || 'Password@123',
     },
   });
+  if (response.status() === 401) {
+    const adminToken = await getAdminToken();
+    const adminClient = await getClient(adminToken);
+    await adminClient.post('/api/users', {
+      data: {
+        username: process.env.QA_MANAGER_USERNAME || 'qamanager',
+        password: process.env.QA_MANAGER_PASSWORD || 'Password@123',
+        email: 'qamanager@test.com',
+        fullName: 'QA Manager User',
+        phoneNumber: '9000000003',
+        role: 'MANAGER',
+      },
+    });
+    response = await client.post('/api/auth/login', {
+      data: {
+        username: process.env.QA_MANAGER_USERNAME || 'qamanager',
+        password: process.env.QA_MANAGER_PASSWORD || 'Password@123',
+      },
+    });
+  }
   if (response.ok()) {
     const json = await response.json();
     return json.token;
@@ -87,12 +107,32 @@ const getManagerToken = async () => {
 
 const getWarehouseToken = async () => {
   const client = await getClient();
-  const response = await client.post('/api/auth/login', {
+  let response = await client.post('/api/auth/login', {
     data: {
       username: process.env.QA_WAREHOUSE_USERNAME || 'qawarehouse',
       password: process.env.QA_WAREHOUSE_PASSWORD || 'Password@123',
     },
   });
+  if (response.status() === 401) {
+    const adminToken = await getAdminToken();
+    const adminClient = await getClient(adminToken);
+    await adminClient.post('/api/users', {
+      data: {
+        username: process.env.QA_WAREHOUSE_USERNAME || 'qawarehouse',
+        password: process.env.QA_WAREHOUSE_PASSWORD || 'Password@123',
+        email: 'qawarehouse@test.com',
+        fullName: 'QA Warehouse User',
+        phoneNumber: '9000000004',
+        role: 'WAREHOUSE',
+      },
+    });
+    response = await client.post('/api/auth/login', {
+      data: {
+        username: process.env.QA_WAREHOUSE_USERNAME || 'qawarehouse',
+        password: process.env.QA_WAREHOUSE_PASSWORD || 'Password@123',
+      },
+    });
+  }
   if (response.ok()) {
     const json = await response.json();
     return json.token;

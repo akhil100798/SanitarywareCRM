@@ -16,10 +16,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
@@ -42,6 +43,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private AuditService auditService;
+
+    @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
+    private FinancialConsistencyService financialConsistency;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -66,7 +76,7 @@ public class OrderServiceImpl implements OrderService {
             
             // Reserve stock when an order enters fulfillment
             if (reservesStock(order.getStatus())) {
-                deductStock(items);
+                inventoryService.changeReservation(Map.of(), inventoryService.quantities(items));
             }
         }
 
@@ -81,10 +91,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO createOrderFromQuotation(Long quotationId) {
-        Quotation quotation = quotationRepository.findById(quotationId)
+        Quotation quotation = quotationRepository.findByIdForUpdate(quotationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + quotationId));
+        entityManager.refresh(quotation, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 
         accessControlService.requireQuotationAccess(quotation);
+        if (quotation.getItems().stream().anyMatch(item -> item.getProduct() == null
+                || !Boolean.TRUE.equals(item.getProduct().getIsAvailable()))) {
+            throw new IllegalArgumentException(
+                    "This quotation contains a product that is currently unavailable; update the quotation before converting it.");
+        }
 
         if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
             throw new IllegalArgumentException("Quotation has already been converted to an order");
@@ -140,10 +156,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updateOrder(Long id, OrderDTO orderDTO) {
-        Order existingOrder = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        Order existingOrder = lockedOrder(id);
 
         accessControlService.requireOrderAccess(existingOrder);
+        financialConsistency.requireConsistent(existingOrder);
 
         if (existingOrder.getStatus() == Order.OrderStatus.CANCELLED) {
             throw new IllegalArgumentException("Cannot update a cancelled order");
@@ -152,32 +168,27 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Cannot update a delivered order");
         }
 
-        boolean stockReserved = reservesStock(existingOrder.getStatus());
-        List<OrderItem> previousItems = List.copyOf(existingOrder.getItems());
+        Map<Long, Integer> previousReservation = reservation(existingOrder);
 
         orderMapper.updateEntity(existingOrder, orderDTO);
 
         if (orderDTO.getStatus() != null && !orderDTO.getStatus().equals(existingOrder.getStatus().name())) {
             Order.OrderStatus newStatus = parseOrderStatus(orderDTO.getStatus());
-            OrderStateValidator.validateTransition(existingOrder.getStatus(), newStatus, existingOrder.getPaymentStatus(), existingOrder.getPaidAmount());
+            OrderStateValidator.validateTransition(existingOrder.getStatus(), newStatus, existingOrder.derivedPaymentStatus(), existingOrder.getPaidAmount());
             existingOrder.setStatus(newStatus);
         }
 
         if (orderDTO.getItems() != null) {
-            if (stockReserved) {
-                restoreStock(previousItems);
-            }
             existingOrder.getItems().clear();
             List<OrderItem> updatedItems = orderDTO.getItems().stream()
                     .map(itemDTO -> orderMapper.toItemEntity(itemDTO, existingOrder))
                     .collect(Collectors.toList());
             existingOrder.getItems().addAll(updatedItems);
-            if (stockReserved) {
-                deductStock(updatedItems);
-            }
         }
 
         existingOrder.calculateTotal();
+        financialConsistency.requirePayableTotal(existingOrder.getTotal(), existingOrder.getPaidAmount());
+        inventoryService.changeReservation(previousReservation, reservation(existingOrder));
         Order updatedOrder = orderRepository.save(existingOrder);
 
         auditService.logEvent("UPDATE", "ORDER", updatedOrder.getId(),
@@ -205,9 +216,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void deleteOrder(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        Order order = lockedOrder(id);
         accessControlService.requireOrderAccess(order);
+        financialConsistency.requireConsistent(order);
+        if (order.getPaidAmount().signum() > 0) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Reverse recorded payments before deleting this order.");
+        }
 
         if (reservesStock(order.getStatus())) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete an order with reserved stock. Cancel it first to restore stock.");
@@ -221,21 +235,17 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updateStatus(Long id, String statusString) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        Order order = lockedOrder(id);
         accessControlService.requireOrderAccess(order);
+        financialConsistency.requireConsistent(order);
         
         Order.OrderStatus newStatus = parseOrderStatus(statusString);
-        OrderStateValidator.validateTransition(order.getStatus(), newStatus, order.getPaymentStatus(), order.getPaidAmount());
+        OrderStateValidator.validateTransition(order.getStatus(), newStatus, order.derivedPaymentStatus(), order.getPaidAmount());
 
-        // Adjust stock only when crossing the reservation boundary
-        if (reservesStock(newStatus) && !reservesStock(order.getStatus())) {
-            deductStock(order.getItems());
-        } else if (!reservesStock(newStatus) && reservesStock(order.getStatus())) {
-            restoreStock(order.getItems());
-        }
-
+        Map<Long, Integer> previous = reservation(order);
         order.setStatus(newStatus);
+        inventoryService.changeReservation(previous, reservation(order));
+        order.calculateBalance();
         Order saved = orderRepository.save(order);
 
         auditService.logEvent("STATUS_CHANGE", "ORDER", id,
@@ -246,11 +256,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updatePaymentStatus(Long id, String paymentStatus) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        Order order = lockedOrder(id);
         accessControlService.requireOrderAccess(order);
-        
-        order.setPaymentStatus(Order.PaymentStatus.valueOf(paymentStatus.toUpperCase()));
+        financialConsistency.requireConsistent(order);
+        if (paymentStatus == null || Order.PaymentStatus.valueOf(paymentStatus.toUpperCase()) != order.derivedPaymentStatus()) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Payment status is calculated from recorded receipts. Record or reverse a payment instead.");
+        }
+        order.calculateBalance();
         Order saved = orderRepository.save(order);
 
         auditService.logEvent("PAYMENT_STATUS_CHANGE", "ORDER", id,
@@ -297,44 +309,16 @@ public class OrderServiceImpl implements OrderService {
         return status != Order.OrderStatus.PENDING && status != Order.OrderStatus.CANCELLED;
     }
 
-    private void deductStock(List<OrderItem> items) {
-        for (OrderItem item : items) {
-            if (item.getQuantity() <= 0) {
-                continue; // Skip invalid quantities to prevent stock inflation
-            }
-            if (item.getProduct() == null || item.getProduct().getId() == null) {
-                throw new IllegalArgumentException("Order item product is required");
-            }
-            Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + item.getProduct().getId()));
-            int availableStock = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
-            if (availableStock < item.getQuantity()) {
-                throw new IllegalArgumentException("Insufficient stock for product " + product.getSku()
-                        + ". Available: " + availableStock + ", requested: " + item.getQuantity());
-            }
-            product.setStockQuantity(availableStock - item.getQuantity());
-            productRepository.save(product);
-            item.setProduct(product);
-        }
+    private Map<Long, Integer> reservation(Order order) {
+        return reservesStock(order.getStatus()) ? inventoryService.quantities(order.getItems()) : Map.of();
     }
 
-    private void restoreStock(List<OrderItem> items) {
-        for (OrderItem item : items) {
-            if (item.getQuantity() <= 0) {
-                continue; // Skip invalid quantities
-            }
-            if (item.getProduct() == null || item.getProduct().getId() == null) {
-                throw new IllegalArgumentException("Order item product is required");
-            }
-            Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + item.getProduct().getId()));
-            int availableStock = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
-            product.setStockQuantity(availableStock + item.getQuantity());
-            productRepository.save(product);
-            item.setProduct(product);
-        }
+    private Order lockedOrder(Long id) {
+        Order order = orderRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        entityManager.refresh(order, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return order;
     }
-
     @Override
     @Transactional(readOnly = true)
     public byte[] getOrderInvoicePdf(Long id) {

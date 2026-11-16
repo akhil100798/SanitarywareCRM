@@ -38,6 +38,9 @@ public class QuotationServiceImpl implements QuotationService {
     @Autowired
     private AuditService auditService;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -79,8 +82,7 @@ public class QuotationServiceImpl implements QuotationService {
             throw new IllegalArgumentException("Quotation must contain at least one item");
         }
 
-        Quotation existingQuotation = quotationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        Quotation existingQuotation = lockedQuotation(id);
         accessControlService.requireQuotationAccess(existingQuotation);
 
         if (existingQuotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
@@ -129,8 +131,7 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public void deleteQuotation(Long id) {
-        Quotation quotation = quotationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        Quotation quotation = lockedQuotation(id);
         accessControlService.requireQuotationAccess(quotation);
 
         if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
@@ -145,8 +146,7 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public QuotationDTO updateStatus(Long id, String status) {
-        Quotation quotation = quotationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        Quotation quotation = lockedQuotation(id);
         accessControlService.requireQuotationAccess(quotation);
         
         Quotation.QuotationStatus newStatus = Quotation.QuotationStatus.valueOf(status.toUpperCase());
@@ -195,5 +195,12 @@ public class QuotationServiceImpl implements QuotationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(quotation);
         return pdfGeneratorService.generateQuotationPdf(quotation);
+    }
+
+    private Quotation lockedQuotation(Long id) {
+        Quotation quotation = quotationRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
+        entityManager.refresh(quotation, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return quotation;
     }
 }

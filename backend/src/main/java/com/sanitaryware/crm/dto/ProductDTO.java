@@ -64,9 +64,12 @@ public class ProductDTO {
     private BigDecimal gstRate;
     private String color;
     private String material;
+    private String materialCode;
+    private String itemCode;
     private String size;
     private String specifications;
     private Boolean isActive;
+    private Boolean isAvailable;
     private Boolean isFeatured;
     private List<String> imageUrls;
     private List<ProductImageDTO> images;

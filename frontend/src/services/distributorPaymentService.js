@@ -20,8 +20,8 @@ const distributorPaymentService = {
     },
 
     // Create a new payment
-    createPayment: async (paymentData) => {
-        const response = await api.post('/distributor-payments', paymentData);
+    createPayment: async (paymentData, key) => {
+        const response = await api.post('/distributor-payments', paymentData, key ? { headers: { 'Idempotency-Key': key } } : {});
         return response.data;
     },
 

@@ -39,6 +39,10 @@ class PaymentServiceImplTest {
     @Mock
     private AuditService auditService;
 
+    @Mock private FinancialConsistencyService financialConsistency;
+    @Mock private PaymentIdempotencyService idempotency;
+    @Mock private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 
@@ -52,7 +56,7 @@ class PaymentServiceImplTest {
         PaymentDTO payload = paymentPayload("-500.00");
         Order order = orderWithBalance("1000.00");
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(accessControlService.currentUser()).thenReturn(new User());
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -67,7 +71,7 @@ class PaymentServiceImplTest {
         PaymentDTO payload = paymentPayload("0.00");
         Order order = orderWithBalance("1000.00");
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(accessControlService.currentUser()).thenReturn(new User());
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -82,7 +86,7 @@ class PaymentServiceImplTest {
         PaymentDTO payload = paymentPayload("1500.00");
         Order order = orderWithBalance("1000.00");
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(accessControlService.currentUser()).thenReturn(new User());
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -98,7 +102,7 @@ class PaymentServiceImplTest {
         Order order = orderWithBalance("1000.00");
         order.setTotal(new BigDecimal("1000.00"));
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(accessControlService.currentUser()).thenReturn(new User());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -117,7 +121,7 @@ class PaymentServiceImplTest {
         Order order = orderWithBalance("1000.00");
         order.setTotal(new BigDecimal("1000.00"));
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(accessControlService.currentUser()).thenReturn(new User());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -142,6 +146,7 @@ class PaymentServiceImplTest {
         Order order = new Order();
         order.setId(1L);
         order.setBalanceAmount(new BigDecimal(balance));
+        order.setTotal(new BigDecimal(balance));
         order.setPaidAmount(BigDecimal.ZERO);
         return order;
     }

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     const isEditMode = !!initialData;
     const [loading, setLoading] = useState(false);
+    const [catalogFile, setCatalogFile] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -30,6 +31,7 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 isActive: true
             });
         }
+        setCatalogFile(null);
         if (isOpen && firstInputRef.current) {
             setTimeout(() => firstInputRef.current.focus(), 50);
         }
@@ -67,13 +69,26 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         e.preventDefault();
         try {
             setLoading(true);
+            let savedBrand;
             if (isEditMode) {
-                await brandService.update(initialData.id, formData);
-                toast.success('Brand updated successfully');
+                const response = await brandService.update(initialData.id, formData);
+                savedBrand = response.data;
             } else {
-                await brandService.create(formData);
-                toast.success('Brand created successfully');
+                const response = await brandService.create(formData);
+                savedBrand = response.data;
             }
+            if (catalogFile) {
+                try {
+                    const response = await brandService.attachCatalog(savedBrand.id, catalogFile);
+                    savedBrand = response.data;
+                } catch (error) {
+                    toast.error(`Brand saved, but catalog upload failed: ${error.response?.data?.message || 'please retry from Edit Brand'}`);
+                    onSuccess();
+                    onClose();
+                    return;
+                }
+            }
+            toast.success(isEditMode ? 'Brand updated successfully' : 'Brand created successfully');
             onSuccess();
             onClose();
         } catch (error) {
@@ -155,6 +170,40 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                                     onChange={handleChange}
                                     placeholder="https://example.com/logo.png"
                                 />
+                            </div>
+
+                            <div>
+                                <label htmlFor="brand-catalog" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Brand Catalog (PDF)
+                                </label>
+                                {initialData?.catalogFileName && (
+                                    <p className="mb-1 text-xs text-gray-500">Associated: {initialData.catalogFileName}</p>
+                                )}
+                                <input
+                                    id="brand-catalog"
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    onChange={(event) => {
+                                        const selected = event.target.files?.[0] || null;
+                                        if (selected && !selected.name.toLowerCase().endsWith('.pdf')) {
+                                            toast.error('Please select a PDF catalog');
+                                            event.target.value = '';
+                                            setCatalogFile(null);
+                                            return;
+                                        }
+                                        if (selected && selected.size > 160 * 1024 * 1024) {
+                                            toast.error('Catalog PDF exceeds the 160 MB limit');
+                                            event.target.value = '';
+                                            setCatalogFile(null);
+                                            return;
+                                        }
+                                        setCatalogFile(selected);
+                                    }}
+                                    className="w-full text-sm text-gray-700"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Uploading associates the PDF with this brand; it does not import products.
+                                </p>
                             </div>
 
                             <div className="flex items-center">

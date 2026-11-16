@@ -11,6 +11,10 @@ import java.util.List;
 
 @Repository
 public interface DistributorRepository extends JpaRepository<Distributor, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Distributor d where d.id = :id")
+    java.util.Optional<Distributor> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
     Page<Distributor> findByIsActiveTrue(Pageable pageable);
     List<Distributor> findByIsActiveTrue();
 

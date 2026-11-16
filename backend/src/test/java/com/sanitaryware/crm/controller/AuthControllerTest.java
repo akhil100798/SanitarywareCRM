@@ -57,6 +57,9 @@ class AuthControllerTest {
     @Mock
     private com.sanitaryware.crm.service.AuditService auditService;
 
+    @Mock
+    private com.sanitaryware.crm.security.LoginRateLimiter loginRateLimiter;
+
     @InjectMocks
     private AuthController authController;
 
@@ -150,6 +153,40 @@ class AuthControllerTest {
         ResponseEntity<?> response = authController.updateProfile(request);
 
         assertEquals("9111111111", ((AuthResponse) response.getBody()).getPhoneNumber());
+    }
+
+    @Test
+    void login_WhenAccountIsDisabled_ReturnsForbidden() {
+        org.springframework.mock.web.MockHttpServletRequest httpRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        httpRequest.setRemoteAddr("127.0.0.1");
+
+        com.sanitaryware.crm.dto.LoginRequest request = new com.sanitaryware.crm.dto.LoginRequest();
+        request.setUsername("sales");
+        request.setPassword("Password@123");
+
+        when(authenticationManager.authenticate(any())).thenThrow(new org.springframework.security.authentication.DisabledException("User is disabled"));
+
+        ResponseEntity<?> response = authController.login(request, httpRequest);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals("Account is deactivated", ((com.sanitaryware.crm.dto.MessageResponse) response.getBody()).getMessage());
+    }
+
+    @Test
+    void login_WhenAccountIsLocked_ReturnsForbidden() {
+        org.springframework.mock.web.MockHttpServletRequest httpRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        httpRequest.setRemoteAddr("127.0.0.1");
+
+        com.sanitaryware.crm.dto.LoginRequest request = new com.sanitaryware.crm.dto.LoginRequest();
+        request.setUsername("sales");
+        request.setPassword("Password@123");
+
+        when(authenticationManager.authenticate(any())).thenThrow(new org.springframework.security.authentication.LockedException("User is locked"));
+
+        ResponseEntity<?> response = authController.login(request, httpRequest);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals("Account is locked", ((com.sanitaryware.crm.dto.MessageResponse) response.getBody()).getMessage());
     }
 
     private RegisterRequest registerRequest() {

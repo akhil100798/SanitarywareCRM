@@ -28,15 +28,34 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final AccessControlService accessControlService;
     private final AuditService auditService;
+    private final FinancialConsistencyService financialConsistency;
+    private final PaymentIdempotencyService idempotency;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PaymentDTO recordPayment(PaymentDTO dto) {
-        Order order = orderRepository.findById(dto.getOrderId())
+        return recordPayment(dto, null);
+    }
+
+    @Override
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public PaymentDTO recordPayment(PaymentDTO dto, String key) {
+        Order order = orderRepository.findByIdForUpdate(dto.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + dto.getOrderId()));
+        entityManager.refresh(order, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         accessControlService.requireOrderAccess(order);
 
         User currentUser = accessControlService.currentUser();
+        String fingerprint = key == null ? null : idempotency.fingerprint(dto.getOrderId(),
+                dto.getAmount() == null ? null : dto.getAmount().stripTrailingZeros().toPlainString(),
+                dto.getPaymentDate(), dto.getPaymentMethod(), dto.getPaymentNumber(), dto.getReferenceNumber(), dto.getNotes());
+        if (key != null) {
+            var replay = idempotency.replay(currentUser.getId(), "CUSTOMER_PAYMENT", key, fingerprint,
+                    PaymentDTO.class, paymentRepository::existsById);
+            if (replay.isPresent()) return replay.get();
+        }
+        financialConsistency.requireConsistent(order);
         validatePayment(dto, order);
 
         Payment payment = PaymentMapper.toEntity(dto, order, currentUser);
@@ -52,18 +71,15 @@ public class PaymentServiceImpl implements PaymentService {
         order.setPaidAmount(order.getPaidAmount().add(payment.getAmount()));
         order.calculateBalance();
 
-        if (order.getBalanceAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            order.setPaymentStatus(Order.PaymentStatus.PAID);
-        } else if (order.getPaidAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
-            order.setPaymentStatus(Order.PaymentStatus.PARTIAL);
-        }
-
         orderRepository.save(order);
 
         auditService.logEvent("RECORD_PAYMENT", "PAYMENT", savedPayment.getId(),
                 "Recorded payment " + savedPayment.getPaymentNumber() + " of Rs. " + savedPayment.getAmount() + " for order " + order.getOrderNumber());
 
-        return PaymentMapper.toDTO(savedPayment);
+        paymentRepository.flush();
+        PaymentDTO response = PaymentMapper.toDTO(savedPayment);
+        idempotency.remember(currentUser.getId(), "CUSTOMER_PAYMENT", key, fingerprint, savedPayment.getId(), response);
+        return response;
     }
 
     @Override
@@ -96,25 +112,22 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void deletePayment(Long id) {
-        Payment payment = paymentRepository.findById(id)
+        Long orderId = paymentRepository.findOrderIdById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
-        accessControlService.requireOrderAccess(payment.getOrder());
-
-        Order order = payment.getOrder();
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        entityManager.refresh(order, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        accessControlService.requireOrderAccess(order);
+        financialConsistency.requireConsistent(order);
+        Payment payment = paymentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
         order.setPaidAmount(order.getPaidAmount().subtract(payment.getAmount()));
         order.calculateBalance();
 
-        if (order.getPaidAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            order.setPaymentStatus(Order.PaymentStatus.UNPAID);
-        } else if (order.getBalanceAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
-            order.setPaymentStatus(Order.PaymentStatus.PARTIAL);
-        } else {
-            order.setPaymentStatus(Order.PaymentStatus.PAID);
-        }
-
         orderRepository.save(order);
+        order.getPayments().removeIf(receipt -> receipt.getId().equals(id));
         paymentRepository.delete(payment);
 
         auditService.logEvent("DELETE_PAYMENT", "PAYMENT", id,
@@ -136,16 +149,21 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void validatePayment(PaymentDTO dto, Order order) {
         if (order.getStatus() == Order.OrderStatus.CANCELLED) {
-            throw new IllegalArgumentException("Cannot record payment for a cancelled order");
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Cannot record payment for a cancelled order");
         }
         if (dto.getAmount() == null || dto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Payment amount must be greater than zero");
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amount must be greater than zero");
+        }
+        try {
+            dto.getAmount().setScale(2, java.math.RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException ex) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amounts must have at most two decimal places");
         }
         if (dto.getPaymentMethod() == null) {
-            throw new IllegalArgumentException("Payment method is required");
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment method is required");
         }
         if (order.getBalanceAmount().compareTo(dto.getAmount()) < 0) {
-            throw new IllegalArgumentException("Payment amount INR " + dto.getAmount()
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amount INR " + dto.getAmount()
                     + " exceeds the balance due INR " + order.getBalanceAmount());
         }
     }

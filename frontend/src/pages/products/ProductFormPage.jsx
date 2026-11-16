@@ -33,6 +33,8 @@ const ProductFormPage = () => {
         unit: 'Piece',
         color: '',
         material: '',
+        materialCode: '',
+        itemCode: '',
         size: '',
         specifications: '',
         isActive: true,
@@ -95,6 +97,8 @@ const ProductFormPage = () => {
                 unit: data.unit || 'Piece',
                 color: data.color || '',
                 material: data.material || '',
+                materialCode: data.materialCode || '',
+                itemCode: data.itemCode || '',
                 size: data.size || '',
                 specifications: data.specifications || '',
                 isActive: data.isActive !== undefined ? data.isActive : true,
@@ -202,6 +206,8 @@ const ProductFormPage = () => {
                 gstRate: formData.gstRate !== '' ? Number(formData.gstRate) : null,
                 barcode: formData.barcode.trim() || null,
                 hsnCode: formData.hsnCode.trim() || null,
+                materialCode: formData.materialCode.trim() || null,
+                itemCode: formData.itemCode.trim() || null,
                 stockQuantity: Number(formData.stockQuantity || 0),
                 reorderLevel: Number(formData.reorderLevel || 10)
             };
@@ -580,6 +586,26 @@ const ProductFormPage = () => {
                                     name="material"
                                     className="input-field text-sm"
                                     value={formData.material}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="materialCode" className="text-xs font-semibold text-slate-500">Material Code</label>
+                                <input
+                                    id="materialCode"
+                                    name="materialCode"
+                                    className="input-field text-sm"
+                                    value={formData.materialCode}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="itemCode" className="text-xs font-semibold text-slate-500">Item / Product Code</label>
+                                <input
+                                    id="itemCode"
+                                    name="itemCode"
+                                    className="input-field text-sm"
+                                    value={formData.itemCode}
                                     onChange={handleChange}
                                 />
                             </div>

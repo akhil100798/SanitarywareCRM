@@ -6,8 +6,10 @@ import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.BrandMapper;
 import com.sanitaryware.crm.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +21,7 @@ public class BrandServiceImpl implements BrandService {
 
     private final BrandRepository brandRepository;
     private final AuditService auditService;
+    private final FileUploadService fileUploadService;
 
     @Override
     public BrandDTO createBrand(BrandDTO brandDTO) {
@@ -68,6 +71,31 @@ public class BrandServiceImpl implements BrandService {
                 .filter(Brand::getIsActive)
                 .map(BrandMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public BrandDTO attachCatalog(Long id, MultipartFile file) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + id));
+        String storageKey = fileUploadService.storeCatalogFile(file, "brand-catalogs/" + id);
+        brand.setCatalogFileName(org.springframework.util.StringUtils.cleanPath(file.getOriginalFilename()));
+        brand.setCatalogStorageKey(storageKey);
+        Brand savedBrand = brandRepository.save(brand);
+        auditService.logEvent("UPLOAD_CATALOG", "BRAND", id,
+                "Associated catalog " + savedBrand.getCatalogFileName() + " with brand " + savedBrand.getName());
+        return BrandMapper.toDTO(savedBrand);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BrandCatalogFile getCatalog(Long id) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + id));
+        if (brand.getCatalogStorageKey() == null || brand.getCatalogFileName() == null) {
+            throw new ResourceNotFoundException("No catalog is associated with brand: " + brand.getName());
+        }
+        Resource catalog = fileUploadService.loadFileAsResource(brand.getCatalogStorageKey());
+        return new BrandCatalogFile(catalog, brand.getCatalogFileName());
     }
 
     @Override

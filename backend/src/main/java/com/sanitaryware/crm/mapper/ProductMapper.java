@@ -33,9 +33,12 @@ public class ProductMapper {
                 .gstRate(product.getGstRate())
                 .color(product.getColor())
                 .material(product.getMaterial())
+                .materialCode(product.getMaterialCode())
+                .itemCode(product.getItemCode())
                 .size(product.getSize())
                 .specifications(product.getSpecifications())
                 .isActive(product.getIsActive())
+                .isAvailable(product.getIsAvailable())
                 .isFeatured(product.getIsFeatured())
                 .imageUrls(product.getImages() != null ? 
                         product.getImages().stream().map(ProductImage::getImageUrl).collect(Collectors.toList()) : null)
@@ -74,9 +77,12 @@ public class ProductMapper {
         product.setGstRate(dto.getGstRate());
         product.setColor(dto.getColor());
         product.setMaterial(dto.getMaterial());
+        product.setMaterialCode(dto.getMaterialCode());
+        product.setItemCode(dto.getItemCode());
         product.setSize(dto.getSize());
         product.setSpecifications(dto.getSpecifications());
         product.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
+        product.setIsAvailable(dto.getIsAvailable() != null ? dto.getIsAvailable() : true);
         product.setIsFeatured(dto.getIsFeatured() != null ? dto.getIsFeatured() : false);
 
         return product;
@@ -101,6 +107,8 @@ public class ProductMapper {
         product.setGstRate(dto.getGstRate());
         product.setColor(dto.getColor());
         product.setMaterial(dto.getMaterial());
+        product.setMaterialCode(dto.getMaterialCode());
+        product.setItemCode(dto.getItemCode());
         product.setSize(dto.getSize());
         product.setSpecifications(dto.getSpecifications());
         if (dto.getIsActive() != null) {
@@ -108,6 +116,9 @@ public class ProductMapper {
         }
         if (dto.getIsFeatured() != null) {
             product.setIsFeatured(dto.getIsFeatured());
+        }
+        if (dto.getIsAvailable() != null) {
+            product.setIsAvailable(dto.getIsAvailable());
         }
     }
 }

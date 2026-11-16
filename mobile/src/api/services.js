@@ -273,8 +273,8 @@ export const paymentService = {
     return unwrapPage(response.data);
   },
 
-  async create(payload) {
-    const response = await api.post('/payments', payload);
+  async create(payload, key) {
+    const response = await api.post('/payments', payload, key ? { headers: { 'Idempotency-Key': key } } : {});
     return response.data;
   }
 };

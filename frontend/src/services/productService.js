@@ -10,6 +10,7 @@ export const productService = {
     getLowStock: () => api.get('/products/low-stock'),
     getFeatured: () => api.get('/products/featured'),
     updateStock: (id, quantity) => api.patch(`/products/${id}/stock`, null, { params: { quantity } }),
+    updateAvailability: (id, available) => api.patch(`/products/${id}/availability`, null, { params: { available } }),
     getByCategory: (categoryId, params) => api.get(`/products/category/${categoryId}`, { params }),
     getByBrand: (brandId, params) => api.get(`/products/brand/${brandId}`, { params }),
     getByBarcode: (barcode) => api.get(`/products/barcode/${encodeURIComponent(barcode)}`),
@@ -31,10 +32,24 @@ export const productService = {
         });
     },
     deleteImage: (productId, imageId) => api.delete(`/products/${productId}/images/${imageId}`),
-    bulkCatalogUpload: (brandId, file) => {
+    previewCatalogUpload: (brandId, file) => {
         const formData = new FormData();
         formData.append('brandId', brandId);
         formData.append('file', file);
+        return api.post('/products/bulk-catalog-preview', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+    bulkCatalogUpload: (brandId, file, previewSha256, selectedSkus, unavailableSkus) => {
+        const formData = new FormData();
+        formData.append('brandId', brandId);
+        formData.append('file', file);
+        formData.append('previewSha256', previewSha256);
+        selectedSkus.forEach((sku) => formData.append('selectedSkus', sku));
+        unavailableSkus.forEach((sku) => formData.append('unavailableSkus', sku));
+        formData.append('confirmed', 'true');
         return api.post('/products/bulk-catalog-upload', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
@@ -51,6 +66,14 @@ export const brandService = {
     create: (data) => api.post('/brands', data),
     update: (id, data) => api.put(`/brands/${id}`, data),
     delete: (id) => api.delete(`/brands/${id}`),
+    attachCatalog: (id, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post(`/brands/${id}/catalog`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+    downloadCatalog: (id) => api.get(`/brands/${id}/catalog`, { responseType: 'blob' }),
 };
 
 export const categoryService = {

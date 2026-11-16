@@ -23,6 +23,7 @@ public class DistributorPaymentDTO {
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
 
     private String paymentMethod;

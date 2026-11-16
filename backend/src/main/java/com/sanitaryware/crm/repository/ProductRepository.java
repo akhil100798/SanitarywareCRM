@@ -13,12 +13,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
     long countByStockQuantityLessThan(Integer threshold);
 
     Optional<Product> findBySku(String sku);
+    List<Product> findBySkuIn(Collection<String> skus);
     Optional<Product> findByBarcode(String barcode);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

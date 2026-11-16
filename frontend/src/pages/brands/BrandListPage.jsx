@@ -105,6 +105,7 @@ const BrandListPage = () => {
                             <tr>
                                 <th className="px-6 py-4">Brand</th>
                                 <th className="px-6 py-4">Description</th>
+                                <th className="px-6 py-4">Catalog PDF</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
@@ -112,13 +113,13 @@ const BrandListPage = () => {
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500">
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
                                         Loading brands...
                                     </td>
                                 </tr>
                             ) : filteredBrands.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500">
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
                                         No brands found.
                                     </td>
                                 </tr>
@@ -139,6 +140,9 @@ const BrandListPage = () => {
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 text-sm max-w-xs truncate">
                                             {brand.description || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                            {brand.catalogFileName || 'No catalog attached'}
                                         </td>
                                         <td className="px-6 py-4">
                                             {brand.isActive ? (

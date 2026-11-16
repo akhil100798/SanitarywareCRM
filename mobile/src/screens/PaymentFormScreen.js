@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getErrorMessage } from '../api/client';
-import { paymentService } from '../api/services';
+import { paymentService, orderService } from '../api/services';
+import { useAuth } from '../context/AuthContext';
+import { createPaymentIntentStore, paymentErrorMessage } from '../utils/paymentIntent';
 import AppSelect from '../components/AppSelect';
 import AppTextInput from '../components/AppTextInput';
 import DetailSection from '../components/DetailSection';
@@ -33,6 +36,12 @@ const validatePayment = (form, balanceAmount) => {
 
 const PaymentFormScreen = ({ route, navigation }) => {
   const { orderId, orderNumber, balanceAmount } = route.params || {};
+  const { user } = useAuth();
+  const intentScope = `customer:${user?.id}:${orderId}`;
+  const intents = useRef(createPaymentIntentStore(AsyncStorage)).current;
+  const submitting = useRef(false);
+  const [restoring, setRestoring] = useState(true);
+  const [currentBalance, setCurrentBalance] = useState(balanceAmount);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -44,28 +53,48 @@ const PaymentFormScreen = ({ route, navigation }) => {
     notes: ''
   });
 
-  const submitPayment = async () => {
-    const validationError = validatePayment(form, balanceAmount);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+  useEffect(() => {
+    let active = true;
+    setRestoring(true);
+    intents.read(intentScope).then(pending => {
+      if (active && pending) {
+        setForm(prev => ({ ...prev, ...pending.payload, amount: String(pending.payload.amount) }));
+        setError('An earlier payment attempt is pending. Retry its original details to confirm its result.');
+      }
+    }).catch(err => { if (active) setError(getErrorMessage(err)); })
+      .finally(() => { if (active) setRestoring(false); });
+    return () => { active = false; };
+  }, [intentScope, intents]);
 
+  const submitPayment = async () => {
+    if (submitting.current || restoring) return;
+    submitting.current = true;
     try {
       setSaving(true);
       setError('');
-      await paymentService.create({
+      const pending = await intents.read(intentScope);
+      const validationError = validatePayment(form, pending ? undefined : currentBalance);
+      if (validationError) { setError(validationError); return; }
+      const payload = {
         ...form,
         amount: Number(form.amount)
-      });
+      };
+      const key = await intents.prepare(intentScope, payload);
+      await paymentService.create(payload, key);
+      await intents.complete(intentScope);
       navigation.navigate(
         'OrderDetail',
         { id: orderId, refreshKey: Date.now() },
         { merge: true, pop: true }
       );
     } catch (err) {
-      setError(getErrorMessage(err));
+      try { await intents.failed(intentScope, err); } catch { /* Preserve the original actionable error. */ }
+      setError(paymentErrorMessage(err));
+      if ([400, 409].includes(err.response?.status)) {
+        try { setCurrentBalance((await orderService.getById(orderId)).balanceAmount); } catch { /* Preserve the original intent. */ }
+      }
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   };
@@ -80,7 +109,7 @@ const PaymentFormScreen = ({ route, navigation }) => {
         <DetailSection title="Order Balance">
           <View style={styles.balanceBox}>
             <Text style={styles.balanceLabel}>Balance Due</Text>
-            <Text style={styles.balanceValue}>{formatMoney(balanceAmount)}</Text>
+            <Text style={styles.balanceValue}>{formatMoney(currentBalance)}</Text>
           </View>
         </DetailSection>
 
@@ -115,7 +144,7 @@ const PaymentFormScreen = ({ route, navigation }) => {
           />
         </DetailSection>
       </ScrollView>
-      <PrimaryActionBar label="Record Payment" onPress={submitPayment} loading={saving} disabled={saving} />
+      <PrimaryActionBar label="Record Payment" onPress={submitPayment} loading={saving || restoring} disabled={saving || restoring} />
     </Screen>
   );
 };

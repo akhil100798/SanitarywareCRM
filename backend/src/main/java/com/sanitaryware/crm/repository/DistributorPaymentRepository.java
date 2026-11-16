@@ -14,6 +14,14 @@ import java.util.Optional;
 
 @Repository
 public interface DistributorPaymentRepository extends JpaRepository<DistributorPayment, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select p from DistributorPayment p where p.id = :id")
+    java.util.Optional<DistributorPayment> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select p from DistributorPayment p where p.purchaseOrder.id = :id order by p.id")
+    List<DistributorPayment> findForPurchaseOrderForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
     Optional<DistributorPayment> findByPaymentNumber(String paymentNumber);
     List<DistributorPayment> findByPurchaseOrderId(Long purchaseOrderId);
     Page<DistributorPayment> findAll(Pageable pageable);

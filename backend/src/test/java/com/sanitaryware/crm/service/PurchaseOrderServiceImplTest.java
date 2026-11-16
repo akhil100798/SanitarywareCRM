@@ -47,6 +47,10 @@ class PurchaseOrderServiceImplTest {
     @Mock
     private AuditService auditService;
 
+    @Mock private PurchaseOrderLockService locks;
+    @Mock private FinancialConsistencyService financialConsistency;
+    @Mock private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private PurchaseOrderMapper purchaseOrderMapper;
 
@@ -55,13 +59,14 @@ class PurchaseOrderServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new PurchaseOrderServiceImpl(
-                purchaseOrderRepository, distributorRepository, productRepository, purchaseOrderMapper, pdfGeneratorService, auditService);
+                purchaseOrderRepository, distributorRepository, productRepository, purchaseOrderMapper, pdfGeneratorService, auditService,
+                locks, new InventoryService(productRepository, entityManager), financialConsistency);
     }
 
     @Test
     void createPurchaseOrder_WithMissingDistributor_ThrowsResourceNotFound_AndDoesNotSave() {
         PurchaseOrderDTO request = purchaseOrderRequest(999L, 10L);
-        when(distributorRepository.findById(999L)).thenReturn(Optional.empty());
+        when(locks.distributor(999L)).thenThrow(new ResourceNotFoundException("Distributor not found"));
 
         assertThatThrownBy(() -> service.createPurchaseOrder(request))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -74,7 +79,7 @@ class PurchaseOrderServiceImplTest {
     void createPurchaseOrder_WithMissingProduct_ThrowsResourceNotFound_AndDoesNotSave() {
         Distributor distributor = distributor(1L);
         PurchaseOrderDTO request = purchaseOrderRequest(1L, 999L);
-        when(distributorRepository.findById(1L)).thenReturn(Optional.of(distributor));
+        when(locks.distributor(1L)).thenReturn(distributor);
         when(productRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createPurchaseOrder(request))
@@ -88,8 +93,8 @@ class PurchaseOrderServiceImplTest {
         PurchaseOrder existing = existingPurchaseOrder(55L, distributor(1L));
         PurchaseOrderDTO request = purchaseOrderRequest(999L, 10L);
         request.setItems(null);
-        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
-        when(distributorRepository.findById(999L)).thenReturn(Optional.empty());
+        when(locks.purchaseOrder(55L, 999L)).thenReturn(existing);
+        when(locks.distributor(999L)).thenThrow(new ResourceNotFoundException("Distributor not found"));
 
         assertThatThrownBy(() -> service.updatePurchaseOrder(55L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -102,8 +107,8 @@ class PurchaseOrderServiceImplTest {
         Distributor distributor = distributor(1L);
         PurchaseOrder existing = existingPurchaseOrder(55L, distributor);
         PurchaseOrderDTO request = purchaseOrderRequest(1L, 999L);
-        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
-        when(distributorRepository.findById(1L)).thenReturn(Optional.of(distributor));
+        when(locks.purchaseOrder(55L, 1L)).thenReturn(existing);
+        when(locks.distributor(1L)).thenReturn(distributor);
         when(productRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updatePurchaseOrder(55L, request))
@@ -117,7 +122,7 @@ class PurchaseOrderServiceImplTest {
         Distributor distributor = distributor(1L);
         Product product = product(10L);
         PurchaseOrderDTO request = purchaseOrderRequest(1L, 10L);
-        when(distributorRepository.findById(1L)).thenReturn(Optional.of(distributor));
+        when(locks.distributor(1L)).thenReturn(distributor);
         when(productRepository.findById(10L)).thenReturn(Optional.of(product));
         when(purchaseOrderRepository.findByPoNumber(any())).thenReturn(Optional.empty());
         when(purchaseOrderRepository.save(any(PurchaseOrder.class)))
@@ -147,7 +152,7 @@ class PurchaseOrderServiceImplTest {
         PurchaseOrderDTO request = purchaseOrderRequest(1L, 10L);
         request.getItems().get(0).setUnitCost(null); // No unit cost supplied
 
-        when(distributorRepository.findById(1L)).thenReturn(Optional.of(distributor));
+        when(locks.distributor(1L)).thenReturn(distributor);
         when(productRepository.findById(10L)).thenReturn(Optional.of(product));
         when(purchaseOrderRepository.findByPoNumber(any())).thenReturn(Optional.empty());
         when(purchaseOrderRepository.save(any(PurchaseOrder.class)))
@@ -170,7 +175,7 @@ class PurchaseOrderServiceImplTest {
         PurchaseOrderDTO request = purchaseOrderRequest(1L, 10L);
         request.getItems().get(0).setUnitCost(null);
 
-        when(distributorRepository.findById(1L)).thenReturn(Optional.of(distributor));
+        when(locks.distributor(1L)).thenReturn(distributor);
         when(productRepository.findById(10L)).thenReturn(Optional.of(product));
         when(purchaseOrderRepository.findByPoNumber(any())).thenReturn(Optional.empty());
         when(purchaseOrderRepository.save(any(PurchaseOrder.class)))
@@ -204,7 +209,8 @@ class PurchaseOrderServiceImplTest {
         item.calculateLineTotal();
         existing.setItems(List.of(item));
 
-        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
+        when(locks.purchaseOrder(55L, null)).thenReturn(existing);
+        when(productRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(product));
         when(purchaseOrderRepository.save(any(PurchaseOrder.class))).thenAnswer(inv -> inv.getArgument(0));
 
         PurchaseOrderDTO result = service.receivePurchaseOrder(55L);
@@ -222,7 +228,7 @@ class PurchaseOrderServiceImplTest {
         PurchaseOrder existing = existingPurchaseOrder(55L, distributor(1L));
         existing.setStatus(PurchaseOrder.POStatus.RECEIVED);
 
-        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
+        when(locks.purchaseOrder(55L, null)).thenReturn(existing);
 
         assertThatThrownBy(() -> service.receivePurchaseOrder(55L))
                 .isInstanceOf(com.sanitaryware.crm.exception.ConflictException.class)
@@ -236,7 +242,7 @@ class PurchaseOrderServiceImplTest {
         PurchaseOrder existing = existingPurchaseOrder(55L, distributor(1L));
         existing.setStatus(PurchaseOrder.POStatus.CANCELLED);
 
-        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
+        when(locks.purchaseOrder(55L, null)).thenReturn(existing);
 
         assertThatThrownBy(() -> service.receivePurchaseOrder(55L))
                 .isInstanceOf(com.sanitaryware.crm.exception.ConflictException.class)
@@ -263,7 +269,7 @@ class PurchaseOrderServiceImplTest {
         PurchaseOrder existing = existingPurchaseOrder(55L, distributor(1L));
         existing.setStatus(PurchaseOrder.POStatus.RECEIVED);
 
-        when(purchaseOrderRepository.findById(55L)).thenReturn(Optional.of(existing));
+        when(locks.purchaseOrder(55L, null)).thenReturn(existing);
 
         assertThatThrownBy(() -> service.deletePurchaseOrder(55L))
                 .isInstanceOf(com.sanitaryware.crm.exception.ConflictException.class)

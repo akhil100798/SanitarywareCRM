@@ -54,6 +54,15 @@ class OrderServiceImplTest {
     @Mock
     private AuditService auditService;
 
+    @Mock private FinancialConsistencyService financialConsistency;
+    @Mock private jakarta.persistence.EntityManager entityManager;
+
+    @org.junit.jupiter.api.BeforeEach
+    void configureInventory() {
+        org.springframework.test.util.ReflectionTestUtils.setField(orderService, "inventoryService",
+                new InventoryService(productRepository, entityManager));
+    }
+
     @InjectMocks
     private OrderServiceImpl orderService;
 
@@ -105,7 +114,7 @@ class OrderServiceImplTest {
         quotation.setTotal(BigDecimal.valueOf(2242));
         quotation.setItems(List.of(quotationItem));
 
-        when(quotationRepository.findById(1L)).thenReturn(Optional.of(quotation));
+        when(quotationRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(quotation));
         when(accessControlService.currentUser()).thenReturn(new User());
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(orderMapper.toDTO(any(Order.class))).thenReturn(new OrderDTO());
@@ -127,7 +136,7 @@ class OrderServiceImplTest {
         Quotation quotation = new Quotation();
         quotation.setStatus(Quotation.QuotationStatus.CONVERTED);
 
-        when(quotationRepository.findById(1L)).thenReturn(Optional.of(quotation));
+        when(quotationRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(quotation));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> orderService.createOrderFromQuotation(1L));
@@ -148,7 +157,7 @@ class OrderServiceImplTest {
         order.setStatus(Order.OrderStatus.PENDING);
         order.setItems(List.of(item));
 
-        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(order));
         when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(prod));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
         when(orderMapper.toDTO(any(Order.class))).thenReturn(new OrderDTO());
@@ -173,7 +182,7 @@ class OrderServiceImplTest {
         order.setStatus(Order.OrderStatus.CONFIRMED);
         order.setItems(List.of(item));
 
-        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(order));
         when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(prod));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
         when(orderMapper.toDTO(any(Order.class))).thenReturn(new OrderDTO());
@@ -192,7 +201,7 @@ class OrderServiceImplTest {
         order.setId(100L);
         order.setStatus(Order.OrderStatus.CANCELLED);
 
-        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(order));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderService.updateStatus(100L, "CONFIRMED"));
@@ -220,7 +229,7 @@ class OrderServiceImplTest {
         OrderItem item = new OrderItem(); item.setProduct(product); item.setQuantity(4);
         Order order = new Order(); order.setId(100L); order.setItems(List.of(item));
         order.setStatus(Order.OrderStatus.valueOf(before));
-        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(order));
         if (expectedStock != 6) {
             when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
         }
@@ -245,8 +254,11 @@ class OrderServiceImplTest {
         order.setOrderNumber("ORD-TEST-001");
         order.setStatus(Order.OrderStatus.CONFIRMED);
         order.setPaymentStatus(Order.PaymentStatus.PAID);
+        order.setTotal(new BigDecimal("1000.00"));
+        order.setPaidAmount(new BigDecimal("1000.00"));
+        order.setBalanceAmount(BigDecimal.ZERO);
 
-        when(orderRepository.findById(200L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(200L)).thenReturn(Optional.of(order));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderService.updateStatus(200L, "CANCELLED"));
@@ -271,7 +283,7 @@ class OrderServiceImplTest {
         order.setPaymentStatus(Order.PaymentStatus.UNPAID);
         order.setItems(List.of(item));
 
-        when(orderRepository.findById(201L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(201L)).thenReturn(Optional.of(order));
         when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(prod));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
         when(orderMapper.toDTO(any(Order.class))).thenReturn(new OrderDTO());
@@ -290,9 +302,11 @@ class OrderServiceImplTest {
         order.setOrderNumber("ORD-TEST-003");
         order.setStatus(Order.OrderStatus.CONFIRMED);
         order.setPaymentStatus(Order.PaymentStatus.PARTIAL);
+        order.setTotal(new BigDecimal("1000.00"));
+        order.setBalanceAmount(new BigDecimal("500.00"));
         order.setPaidAmount(new BigDecimal("500.00"));
 
-        when(orderRepository.findById(202L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(202L)).thenReturn(Optional.of(order));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderService.updateStatus(202L, "CANCELLED"));
@@ -309,7 +323,7 @@ class OrderServiceImplTest {
         order.setOrderNumber("ORD-TEST-004");
         order.setStatus(Order.OrderStatus.DELIVERED);
 
-        when(orderRepository.findById(203L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(203L)).thenReturn(Optional.of(order));
 
         IllegalArgumentException exPending = assertThrows(IllegalArgumentException.class,
                 () -> orderService.updateStatus(203L, "PENDING"));
@@ -330,7 +344,7 @@ class OrderServiceImplTest {
         order.setOrderNumber("ORD-TEST-005");
         order.setStatus(Order.OrderStatus.CANCELLED);
 
-        when(orderRepository.findById(204L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(204L)).thenReturn(Optional.of(order));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderService.updateStatus(204L, "CONFIRMED"));
@@ -347,7 +361,7 @@ class OrderServiceImplTest {
         order.setOrderNumber("ORD-TEST-006");
         order.setStatus(Order.OrderStatus.DELIVERED);
 
-        when(orderRepository.findById(205L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(205L)).thenReturn(Optional.of(order));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> orderService.updateOrder(205L, new OrderDTO()));

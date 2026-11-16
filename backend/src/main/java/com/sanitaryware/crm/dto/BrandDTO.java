@@ -16,6 +16,7 @@ public class BrandDTO {
     private String name;
     private String description;
     private String logoUrl;
+    private String catalogFileName;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

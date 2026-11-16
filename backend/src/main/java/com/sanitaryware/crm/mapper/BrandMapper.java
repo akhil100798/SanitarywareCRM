@@ -13,6 +13,7 @@ public class BrandMapper {
                 .name(brand.getName())
                 .description(brand.getDescription())
                 .logoUrl(brand.getLogoUrl())
+                .catalogFileName(brand.getCatalogFileName())
                 .isActive(brand.getIsActive())
                 .createdAt(brand.getCreatedAt())
                 .updatedAt(brand.getUpdatedAt())

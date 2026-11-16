@@ -54,9 +54,12 @@ class ProductMapperTest {
         product.setGstRate(BigDecimal.valueOf(18.00));
         product.setColor("White");
         product.setMaterial("Ceramic");
+        product.setMaterialCode("MAT-01");
+        product.setItemCode("ITEM-01");
         product.setSize("550x400mm");
         product.setSpecifications("Glossy finish");
         product.setIsActive(true);
+        product.setIsAvailable(false);
         product.setIsFeatured(true);
 
         ProductDTO dto = ProductMapper.toDTO(product);
@@ -74,6 +77,9 @@ class ProductMapperTest {
         assertEquals(BigDecimal.valueOf(3800.00), dto.getSellingPrice());
         assertEquals("69101000", dto.getHsnCode());
         assertEquals(BigDecimal.valueOf(18.00), dto.getGstRate());
+        assertEquals("MAT-01", dto.getMaterialCode());
+        assertEquals("ITEM-01", dto.getItemCode());
+        assertFalse(dto.getIsAvailable());
     }
 
     @Test

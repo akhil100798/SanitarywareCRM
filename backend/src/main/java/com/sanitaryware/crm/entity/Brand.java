@@ -31,6 +31,12 @@ public class Brand {
     @Column(length = 255)
     private String logoUrl;
 
+    @Column(length = 255)
+    private String catalogFileName;
+
+    @Column(length = 500)
+    private String catalogStorageKey;
+
     @Column(nullable = false)
     private Boolean isActive = true;
 

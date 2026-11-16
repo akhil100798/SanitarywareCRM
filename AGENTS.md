@@ -12,7 +12,7 @@ Sanitaryware CRM is an enterprise-grade Customer Relationship Management system 
 SanitarywareCRM/
 ├── backend/            # Java Spring Boot 3.2.2 REST API
 ├── frontend/           # React 18 + Vite Web Admin Portal
-├── mobile/             # React Native + Expo SDK 55 Mobile App
+├── mobile/             # React Native 0.88 + Expo SDK 58 Mobile App
 ├── automation-tests/   # Playwright E2E & API Test Automation Suite
 ├── docs/               # Architecture, QA test plans, and superpower specs
 ├── .superpowers/       # Brainstorming & design artifacts
@@ -24,7 +24,7 @@ SanitarywareCRM/
 ### Core Architecture Components
 - **Backend**: Spring Boot 3.2.2, JDK 17, Spring Data JPA (Hibernate), Spring Security (JWT), Flyway, MySQL 8.0+.
 - **Frontend**: React 18, Vite, TailwindCSS, Zustand state management, Axios HTTP client, Lucide icons, react-hot-toast.
-- **Mobile**: React Native 0.83.6, Expo SDK 55, React Navigation (Native Stack & Bottom Tabs), AsyncStorage for JWT sessions, Axios.
+- **Mobile**: React Native 0.88.1, Expo SDK 58, React Navigation (Native Stack & Bottom Tabs), Expo SecureStore (native) / sessionStorage (web) for JWT sessions, Axios.
 - **Automation Suite**: Node.js Playwright suite covering API endpoints, web frontend, mobile viewports, database integrity, and security checks.
 - **Deployment**: Multi-stage Docker builds with Docker Compose for staging and production environments.
 
@@ -46,7 +46,8 @@ SanitarywareCRM/
    - Handle validation errors globally using `GlobalExceptionHandler` and standard `ApiErrorResponse`.
 4. **Dependency Injection**: Use constructor injection (preferably via Lombok `@RequiredArgsConstructor`).
 5. **Spring Profiles**:
-   - `dev`: Default local development (MySQL).
+   - `default` (no active profile): Local development against configured MySQL database (`application.properties`).
+   - `dev`: Local in-memory development profile using disposable H2 database (`application-dev.properties`).
    - `qa`: Local testing profile using zero-install H2 in-memory database (`-Dspring-boot.run.profiles=qa`).
    - `prod`: Production profile with strict schema validation (`ddl-auto=validate`), Flyway migrations enabled, and non-sensitive logging.
 
@@ -72,12 +73,12 @@ SanitarywareCRM/
 
 ## 4. Mobile Development Rules
 
-1. **Stack**: React Native 0.83.6 on Expo SDK 55 (requires Node.js 20.19.x+).
+1. **Stack**: React Native 0.88.1 on Expo SDK 58 (requires Node.js 20.19.x+).
 2. **Navigation**: React Navigation with native stack and bottom tab bar layouts.
-3. **Session Persistence**: Securely store JWT auth tokens using `@react-native-async-storage/async-storage`.
+3. **Session Persistence**: Securely store JWT auth tokens using `expo-secure-store` on native platforms with deliberate `sessionStorage` fallback on web (`mobile/src/utils/secureSessionStorage.js`).
 4. **API Communication**:
    - Base URL must be configurable via environment variables (`EXPO_PUBLIC_API_BASE_URL`).
-   - Support Android Emulator (`http://10.0.2.2:8080/api`), physical LAN devices (`http://<LAN_IP>:8080/api`), and production HTTPS endpoints.
+   - Support Android Emulator (`http://10.0.2.2:8081/api`), physical LAN devices (`http://<LAN_IP>:8081/api`), and production HTTPS endpoints.
 5. **Platform Target**: Android (primary) and cross-platform mobile compatibility.
 
 ---

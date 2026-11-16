@@ -21,7 +21,7 @@ module.exports = defineConfig({
   webServer: {
     command: 'cmd.exe /c "set NODE_OPTIONS=--max-old-space-size=4096 && npm run dev -- --host 127.0.0.1"',
     cwd: path.resolve(__dirname, '../frontend'),
-    url: 'http://127.0.0.1:5173',
+    url: process.env.FRONTEND_BASE_URL || 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 120 * 1000
   },

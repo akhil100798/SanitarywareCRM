@@ -112,6 +112,9 @@ public class QuotationMapper {
         if (dto.getProductId() != null) {
             Product product = productRepository.findById(dto.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId()));
+            if (!Boolean.TRUE.equals(product.getIsAvailable())) {
+                throw new IllegalArgumentException("Product " + product.getName() + " is currently unavailable");
+            }
             item.setProduct(product);
             item.setBarcode(dto.getBarcode() != null ? dto.getBarcode() : product.getBarcode());
             item.setHsnCode(dto.getHsnCode() != null ? dto.getHsnCode() : product.getHsnCode());

@@ -1,0 +1,6 @@
+ALTER TABLE brands ADD COLUMN catalog_file_name VARCHAR(255) NULL;
+ALTER TABLE brands ADD COLUMN catalog_storage_key VARCHAR(500) NULL;
+
+ALTER TABLE products ADD COLUMN material_code VARCHAR(100) NULL;
+ALTER TABLE products ADD COLUMN item_code VARCHAR(100) NULL;
+ALTER TABLE products ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE;

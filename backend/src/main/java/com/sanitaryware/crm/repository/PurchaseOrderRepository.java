@@ -14,6 +14,13 @@ import java.util.Optional;
 
 @Repository
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from PurchaseOrder p where p.id = :id")
+    Optional<PurchaseOrder> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
+    @Query("select p.distributor.id from PurchaseOrder p where p.id = :id")
+    Optional<Long> findDistributorIdById(@org.springframework.data.repository.query.Param("id") Long id);
+
     @Query("SELECT COALESCE(SUM(po.balanceAmount), 0) FROM PurchaseOrder po")
     BigDecimal getTotalBalance();
 

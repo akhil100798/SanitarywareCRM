@@ -26,6 +26,8 @@ mobile/android/
 automation-tests/test-results/
 automation-tests/playwright-report/
 automation-tests/reports/
+automation-tests/.fixtures-manifest.json
+.fixtures-manifest.json
 test-results/
 playwright-report/
 coverage/
@@ -41,6 +43,14 @@ logs/
 .env.test.local
 .env.production
 .env.staging
+
+# Certificates and private keys
+docker/certs/
+*.pem
+*.p12
+*.key
+*.csr
+*.srl
 
 # Keep examples
 !.env.example

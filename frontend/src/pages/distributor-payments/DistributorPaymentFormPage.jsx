@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, CreditCard, ArrowUpRight } from 'lucide-react';
 import distributorPaymentService from '../../services/distributorPaymentService';
 import purchaseOrderService from '../../services/purchaseOrderService';
 import distributorService from '../../services/distributorService';
 import toast from 'react-hot-toast';
+import { createPaymentIntentStore, paymentErrorMessage } from '../../utils/paymentIntent';
+import { useAuthStore } from '../../store/authStore';
 
 const DistributorPaymentFormPage = () => {
     const [searchParams] = useSearchParams();
     const poId = searchParams.get('poId');
     const navigate = useNavigate();
+    const actor = useAuthStore(state => state.user?.id);
+    const intentScope = `supplier:${actor}`;
+    const intents = useRef(createPaymentIntentStore(sessionStorage)).current;
+    const submitting = useRef(false);
+    const [paymentError, setPaymentError] = useState('');
 
     const [loading, setLoading] = useState(false);
     const [purchaseOrder, setPurchaseOrder] = useState(null);
@@ -27,8 +34,16 @@ const DistributorPaymentFormPage = () => {
     });
 
     useEffect(() => {
-        fetchInitialData();
-        if (poId) fetchPurchaseOrder(poId);
+        const restore = async () => {
+            await fetchInitialData();
+            const pending = await intents.read(intentScope);
+            if (pending) {
+                setFormData(prev => ({ ...prev, ...pending.payload }));
+                setPaymentError('An earlier payment attempt is pending. Retry its original details to confirm its result.');
+                if (pending.payload.purchaseOrderId) await fetchPurchaseOrder(pending.payload.purchaseOrderId, pending.payload);
+            } else if (poId) await fetchPurchaseOrder(poId);
+        };
+        restore().catch(error => setPaymentError(error.message));
     }, [poId]);
 
     const fetchInitialData = async () => {
@@ -53,7 +68,7 @@ const DistributorPaymentFormPage = () => {
         }
     };
 
-    const fetchPurchaseOrder = async (id) => {
+    const fetchPurchaseOrder = async (id, restoredPayload) => {
         try {
             setLoading(true);
             const res = await purchaseOrderService.getPurchaseOrderById(id);
@@ -61,7 +76,8 @@ const DistributorPaymentFormPage = () => {
             setFormData(prev => ({
                 ...prev,
                 amount: res.balanceAmount,
-                distributorId: res.distributorId
+                distributorId: res.distributorId,
+                ...restoredPayload
             }));
         } catch (error) {
             toast.error('Failed to load purchase order details');
@@ -103,6 +119,7 @@ const DistributorPaymentFormPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (submitting.current) return;
         if (formData.amount <= 0) {
             toast.error('Amount must be greater than 0');
             return;
@@ -113,14 +130,20 @@ const DistributorPaymentFormPage = () => {
             return;
         }
 
-        if (purchaseOrder && formData.amount > purchaseOrder.balanceAmount) {
-            toast.error(`Amount cannot exceed the PO balance (₹${purchaseOrder.balanceAmount.toLocaleString('en-IN')})`);
-            return;
-        }
-
         try {
+            submitting.current = true;
             setLoading(true);
-            await distributorPaymentService.createPayment(formData);
+            setPaymentError('');
+            const pending = await intents.read(intentScope);
+            if (!pending && purchaseOrder && formData.amount > purchaseOrder.balanceAmount) {
+                toast.error('Amount cannot exceed the purchase order balance. Refresh and review its receipts.');
+                return;
+            }
+            const payload = { ...formData, purchaseOrderId: formData.purchaseOrderId ? Number(formData.purchaseOrderId) : null,
+                distributorId: formData.distributorId ? Number(formData.distributorId) : null };
+            const key = await intents.prepare(intentScope, payload);
+            await distributorPaymentService.createPayment(payload, key);
+            await intents.complete(intentScope);
             toast.success('Payment recorded successfully');
 
             if (formData.purchaseOrderId) {
@@ -129,8 +152,12 @@ const DistributorPaymentFormPage = () => {
                 navigate(`/distributors/edit/${formData.distributorId}`);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to record payment');
+            try { await intents.failed(intentScope, error); } catch { /* Preserve the original actionable error. */ }
+            const message = paymentErrorMessage(error);
+            setPaymentError(message);
+            toast.error(message);
         } finally {
+            submitting.current = false;
             setLoading(false);
         }
     };
@@ -142,6 +169,7 @@ const DistributorPaymentFormPage = () => {
             </button>
 
             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8 space-y-6">
+                {paymentError && <div role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{paymentError}</div>}
                 <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <h2 className="text-xl font-bold flex items-center text-gray-800">
                         <ArrowUpRight size={24} className="mr-2 text-red-500 bg-red-50 p-1 rounded-md" />

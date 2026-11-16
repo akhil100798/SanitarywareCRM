@@ -6,6 +6,7 @@ import com.sanitaryware.crm.web.PaginationFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class DistributorController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<DistributorDTO> createDistributor(@RequestBody DistributorDTO dto) {
-        return ResponseEntity.ok(distributorService.createDistributor(dto));
+        return new ResponseEntity<>(distributorService.createDistributor(dto), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")

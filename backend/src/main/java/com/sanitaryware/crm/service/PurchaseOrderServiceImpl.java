@@ -22,6 +22,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,15 +36,20 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final PurchaseOrderMapper purchaseOrderMapper;
     private final PdfGeneratorService pdfGeneratorService;
     private final AuditService auditService;
+    private final PurchaseOrderLockService locks;
+    private final InventoryService inventoryService;
+    private final FinancialConsistencyService financialConsistency;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrderDTO createPurchaseOrder(PurchaseOrderDTO dto) {
         Distributor distributor = resolveDistributor(dto.getDistributorId());
         PurchaseOrder po = purchaseOrderMapper.toEntity(dto);
         po.setDistributor(distributor);
+        PurchaseOrder.POStatus requestedStatus = requestedStatus(dto.getStatus(), po.getStatus());
+        if (requestedStatus == PurchaseOrder.POStatus.RECEIVED) po.setStatus(PurchaseOrder.POStatus.DRAFT);
         
         if (po.getPoNumber() == null || po.getPoNumber().isEmpty()) {
             po.setPoNumber(generatePoNumber());
@@ -75,6 +82,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         po.calculateTotal();
         PurchaseOrder savedPo = purchaseOrderRepository.save(po);
+        if (requestedStatus == PurchaseOrder.POStatus.RECEIVED) {
+            purchaseOrderRepository.flush();
+            return receivePurchaseOrder(savedPo.getId());
+        }
 
         auditService.logEvent("CREATE", "PURCHASE_ORDER", savedPo.getId(),
                 "Created Purchase Order " + savedPo.getPoNumber() + " with total Rs. " + savedPo.getTotal());
@@ -83,10 +94,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrderDTO updatePurchaseOrder(Long id, PurchaseOrderDTO dto) {
-        PurchaseOrder existingPo = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder existingPo = locks.purchaseOrder(id, dto.getDistributorId());
+        financialConsistency.requireConsistent(existingPo);
 
         if (existingPo.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot update an already received Purchase Order");
@@ -98,6 +109,12 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         Distributor distributor = dto.getDistributorId() == null
                 ? existingPo.getDistributor()
                 : resolveDistributor(dto.getDistributorId());
+        if (!distributor.getId().equals(existingPo.getDistributor().getId()) && existingPo.getPaidAmount().signum() > 0) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Reverse purchase order payments before changing its supplier.");
+        }
+        PurchaseOrder.POStatus oldStatus = existingPo.getStatus();
+        PurchaseOrder.POStatus targetStatus = requestedStatus(dto.getStatus(), oldStatus);
+        requireCancellable(existingPo, targetStatus);
 
         List<PurchaseOrderItem> updatedItems = null;
         if (dto.getItems() != null) {
@@ -121,6 +138,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         purchaseOrderMapper.updateEntity(existingPo, dto);
+        existingPo.setStatus(targetStatus == PurchaseOrder.POStatus.RECEIVED ? oldStatus : targetStatus);
         existingPo.setDistributor(distributor);
 
         if (updatedItems != null) {
@@ -129,7 +147,12 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         existingPo.calculateTotal();
+        financialConsistency.requirePayableTotal(existingPo.getTotal(), existingPo.getPaidAmount());
         PurchaseOrder updatedPo = purchaseOrderRepository.save(existingPo);
+        if (targetStatus == PurchaseOrder.POStatus.RECEIVED) {
+            purchaseOrderRepository.flush();
+            return receivePurchaseOrder(updatedPo.getId());
+        }
 
         auditService.logEvent("UPDATE", "PURCHASE_ORDER", updatedPo.getId(),
                 "Updated Purchase Order " + updatedPo.getPoNumber() + " (total Rs. " + updatedPo.getTotal() + ")");
@@ -150,10 +173,13 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void deletePurchaseOrder(Long id) {
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder po = locks.purchaseOrder(id, null);
+        financialConsistency.requireConsistent(po);
+        if (po.getPaidAmount().signum() > 0) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Reverse purchase order payments before deleting it.");
+        }
         
         if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot delete an already received Purchase Order");
@@ -166,7 +192,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrderDTO updateStatus(Long id, String statusString) {
         if (statusString == null || statusString.trim().isEmpty()) {
             throw new IllegalArgumentException("Status string cannot be empty");
@@ -183,13 +209,17 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             return receivePurchaseOrder(id);
         }
 
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder po = locks.purchaseOrder(id, null);
+        financialConsistency.requireConsistent(po);
 
         if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED && newStatus != PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot change status of an already received Purchase Order");
         }
 
+        if (po.getStatus() == PurchaseOrder.POStatus.CANCELLED && newStatus != PurchaseOrder.POStatus.CANCELLED) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Cannot change status of a cancelled Purchase Order");
+        }
+        requireCancellable(po, newStatus);
         po.setStatus(newStatus);
         PurchaseOrder saved = purchaseOrderRepository.save(po);
 
@@ -200,10 +230,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrderDTO receivePurchaseOrder(Long id) {
-        PurchaseOrder po = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        PurchaseOrder po = locks.purchaseOrder(id, null);
+        financialConsistency.requireConsistent(po);
 
         if (po.getStatus() == PurchaseOrder.POStatus.RECEIVED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Purchase Order has already been received");
@@ -215,6 +245,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             throw new IllegalArgumentException("Cannot receive Purchase Order without line items");
         }
 
+        Map<Long, Integer> incoming = new TreeMap<>();
         for (PurchaseOrderItem item : po.getItems()) {
             Product product = item.getProduct();
             if (product == null) {
@@ -229,16 +260,16 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             int incomingQty = (item.getReceivedQuantity() != null && item.getReceivedQuantity() > 0)
                     ? item.getReceivedQuantity()
                     : item.getQuantity();
-
-            int currentStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
-            product.setStockQuantity(currentStock + incomingQty);
-
-            if (item.getUnitCost() != null && item.getUnitCost().compareTo(BigDecimal.ZERO) >= 0) {
-                product.setPurchasePrice(item.getUnitCost());
+            if (incomingQty > item.getQuantity()) {
+                throw new IllegalArgumentException("Received quantity cannot exceed the ordered quantity");
             }
-
+            incoming.merge(product.getId(), incomingQty, InventoryService::addQuantities);
             item.setReceivedQuantity(incomingQty);
-            productRepository.save(product);
+        }
+        inventoryService.changeStock(incoming);
+        for (PurchaseOrderItem item : po.getItems()) {
+            Product product = item.getProduct();
+            if (item.getUnitCost() != null && item.getUnitCost().signum() >= 0) product.setPurchasePrice(item.getUnitCost());
         }
 
         if (po.getReceivedDate() == null) {
@@ -248,8 +279,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         Distributor distributor = po.getDistributor();
         if (distributor != null) {
             BigDecimal currentBalance = distributor.getOutstandingBalance() != null ? distributor.getOutstandingBalance() : BigDecimal.ZERO;
-            BigDecimal poBalance = po.getBalanceAmount() != null ? po.getBalanceAmount() : BigDecimal.ZERO;
-            distributor.setOutstandingBalance(currentBalance.add(poBalance));
+            distributor.setOutstandingBalance(currentBalance.add(po.getTotal()));
             distributorRepository.save(distributor);
         }
 
@@ -294,9 +324,17 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         if (distributorId == null) {
             throw new ResourceNotFoundException("Distributor not found");
         }
-        return distributorRepository.findById(distributorId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Distributor not found with id: " + distributorId));
+        return locks.distributor(distributorId);
+    }
+
+    private PurchaseOrder.POStatus requestedStatus(String status, PurchaseOrder.POStatus fallback) {
+        return status == null || status.isBlank() ? fallback : PurchaseOrder.POStatus.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
+    }
+
+    private void requireCancellable(PurchaseOrder order, PurchaseOrder.POStatus target) {
+        if (target == PurchaseOrder.POStatus.CANCELLED && order.getPaidAmount().signum() > 0) {
+            throw new com.sanitaryware.crm.exception.ConflictException("Reverse purchase order payments before cancelling it.");
+        }
     }
 
     private Product resolveProduct(Long productId) {

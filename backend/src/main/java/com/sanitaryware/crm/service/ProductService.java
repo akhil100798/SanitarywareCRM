@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.BulkUploadResponse;
+import com.sanitaryware.crm.dto.CatalogImportPreviewResponse;
 import com.sanitaryware.crm.dto.ProductDTO;
 import com.sanitaryware.crm.dto.ProductFilterDTO;
 import com.sanitaryware.crm.dto.ProductImageDTO;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ProductService {
     ProductDTO createProduct(ProductDTO productDTO);
@@ -25,7 +27,11 @@ public interface ProductService {
     List<ProductDTO> getFeaturedProducts();
     void deleteProduct(Long id);
     void updateStock(Long id, Integer quantity);
-    BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file);
+    CatalogImportPreviewResponse previewCatalogUpload(Long brandId, MultipartFile file);
+    BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String reviewedSha256);
+    BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String reviewedSha256,
+                                         List<String> selectedSkus, Set<String> unavailableSkus);
+    ProductDTO updateProductAvailability(Long id, boolean available);
     ProductImageDTO addProductImage(Long productId, MultipartFile file, Boolean isPrimary, Integer displayOrder);
     void deleteProductImage(Long productId, Long imageId);
     List<ProductImageDTO> getProductImages(Long productId);

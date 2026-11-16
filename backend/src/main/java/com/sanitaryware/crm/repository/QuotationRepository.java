@@ -14,6 +14,10 @@ import java.util.Optional;
 
 @Repository
 public interface QuotationRepository extends JpaRepository<Quotation, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select q from Quotation q where q.id = :id")
+    Optional<Quotation> findByIdForUpdate(@Param("id") Long id);
+
     Optional<Quotation> findByQuotationNumber(String quotationNumber);
     Page<Quotation> findByCreatedByUsername(String username, Pageable pageable);
     Page<Quotation> findByCustomerId(Long customerId, Pageable pageable);

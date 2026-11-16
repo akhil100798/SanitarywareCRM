@@ -71,6 +71,10 @@ public class ProductSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("isActive"), filter.getIsActive()));
             }
 
+            if (filter.getIsAvailable() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("isAvailable"), filter.getIsAvailable()));
+            }
+
             // 8. Barcode (exact lookup)
             if (StringUtils.hasText(filter.getBarcode())) {
                 predicates.add(criteriaBuilder.equal(root.get("barcode"), filter.getBarcode().trim()));

@@ -46,6 +46,10 @@ class DistributorPaymentServiceImplTest {
     @Mock
     private AuditService auditService;
 
+    @Mock private PurchaseOrderLockService locks;
+    @Mock private FinancialConsistencyService financialConsistency;
+    @Mock private PaymentIdempotencyService idempotency;
+
     @InjectMocks
     private DistributorPaymentServiceImpl paymentService;
 
@@ -54,6 +58,9 @@ class DistributorPaymentServiceImplTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("qaadmin", "pass")
         );
+        com.sanitaryware.crm.entity.User actor = new com.sanitaryware.crm.entity.User();
+        actor.setId(1L);
+        when(userRepository.findByUsername("qaadmin")).thenReturn(Optional.of(actor));
     }
 
     @Test
@@ -61,6 +68,7 @@ class DistributorPaymentServiceImplTest {
         DistributorPaymentDTO dto = new DistributorPaymentDTO();
         dto.setAmount(BigDecimal.valueOf(5000));
         dto.setPurchaseOrderId(1L);
+        dto.setPaymentMethod("CASH");
 
         Distributor distributor = new Distributor();
         distributor.setId(10L);
@@ -76,6 +84,7 @@ class DistributorPaymentServiceImplTest {
         DistributorPayment payment = new DistributorPayment();
         payment.setAmount(BigDecimal.valueOf(5000));
         payment.setPurchaseOrder(po);
+        when(locks.purchaseOrder(1L, null)).thenReturn(po);
 
         when(paymentMapper.toEntity(dto)).thenReturn(payment);
         when(paymentRepository.save(any(DistributorPayment.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -97,10 +106,15 @@ class DistributorPaymentServiceImplTest {
         DistributorPaymentDTO dto = new DistributorPaymentDTO();
         dto.setAmount(BigDecimal.valueOf(15000));
         dto.setPurchaseOrderId(1L);
+        dto.setPaymentMethod("CASH");
 
         PurchaseOrder po = new PurchaseOrder();
         po.setId(1L);
         po.setBalanceAmount(BigDecimal.valueOf(10000));
+        Distributor distributor = new Distributor();
+        distributor.setId(10L);
+        po.setDistributor(distributor);
+        when(locks.purchaseOrder(1L, null)).thenReturn(po);
 
         DistributorPayment payment = new DistributorPayment();
         payment.setAmount(BigDecimal.valueOf(15000));

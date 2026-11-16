@@ -418,12 +418,14 @@ const OrderFormPage = () => {
                             <select
                                 className="input-field text-sm font-medium"
                                 value={formData.paymentStatus}
-                                onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
+                                disabled
+                                aria-label="Payment status calculated from receipts"
                             >
                                 <option value="UNPAID">Unpaid</option>
                                 <option value="PARTIAL">Partially Paid</option>
                                 <option value="PAID">Fully Paid</option>
                             </select>
+                            <p className="text-xs text-slate-500">Calculated from recorded payments.</p>
                         </div>
                     </div>
                 </div>

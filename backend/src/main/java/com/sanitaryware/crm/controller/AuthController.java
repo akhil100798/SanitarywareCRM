@@ -95,6 +95,18 @@ public class AuthController {
             log.warn("Invalid login attempt for: {}", request.getUsername());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse("Invalid username or password"));
+        } catch (org.springframework.security.authentication.DisabledException e) {
+            log.warn("Login attempt for deactivated account: {}", request.getUsername());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new MessageResponse("Account is deactivated"));
+        } catch (org.springframework.security.authentication.LockedException e) {
+            log.warn("Login attempt for locked account: {}", request.getUsername());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new MessageResponse("Account is locked"));
+        } catch (org.springframework.security.authentication.AccountStatusException e) {
+            log.warn("Login attempt for inactive account: {}", request.getUsername());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new MessageResponse("Account is not active"));
         } catch (Exception e) {
             log.error("Unexpected error during login: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

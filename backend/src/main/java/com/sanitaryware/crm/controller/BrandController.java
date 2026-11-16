@@ -4,10 +4,15 @@ import com.sanitaryware.crm.dto.BrandDTO;
 import com.sanitaryware.crm.service.BrandService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -43,6 +48,24 @@ public class BrandController {
     @GetMapping("/active")
     public ResponseEntity<List<BrandDTO>> getActiveBrands() {
         return ResponseEntity.ok(brandService.getActiveBrands());
+    }
+
+    @PostMapping("/{id}/catalog")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<BrandDTO> attachCatalog(@PathVariable Long id,
+                                                   @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(brandService.attachCatalog(id, file));
+    }
+
+    @GetMapping("/{id}/catalog")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<Resource> downloadCatalog(@PathVariable Long id) {
+        BrandService.BrandCatalogFile catalog = brandService.getCatalog(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(catalog.fileName()).build().toString())
+                .body(catalog.content());
     }
 
     @DeleteMapping("/{id}")

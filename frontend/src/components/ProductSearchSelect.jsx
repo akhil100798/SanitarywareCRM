@@ -55,7 +55,12 @@ const ProductSearchSelect = ({
         const timer = setTimeout(async () => {
             setIsSearching(true);
             try {
-                const res = await productService.getAll({ query: trimmed, isActive: true, size: 50 });
+                const res = await productService.getAll({
+                    query: trimmed,
+                    isActive: true,
+                    isAvailable: true,
+                    size: 50
+                });
                 const fetched = res.data?.content || res.data || [];
                 if (fetched.length > 0 && onProductsUpdate) {
                     onProductsUpdate(fetched);
@@ -75,9 +80,10 @@ const ProductSearchSelect = ({
         const query = searchQuery.trim().toLowerCase() || filterQuery.trim().toLowerCase();
         
         // If no filter, return products
-        if (!query) return products;
+        const availableProducts = products.filter(p => p.isAvailable !== false);
+        if (!query) return availableProducts;
 
-        return products.filter(p => {
+        return availableProducts.filter(p => {
             // Always keep selected item visible
             if (selectedProduct && p.id === selectedProduct.id) return true;
             return (

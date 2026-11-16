@@ -77,6 +77,12 @@ public class Product {
     private String material;
 
     @Column(length = 100)
+    private String materialCode;
+
+    @Column(length = 100)
+    private String itemCode;
+
+    @Column(length = 100)
     private String size;
 
     @Column(columnDefinition = "TEXT")
@@ -84,6 +90,9 @@ public class Product {
 
     @Column(nullable = false)
     private Boolean isActive = true;
+
+    @Column(nullable = false)
+    private Boolean isAvailable = true;
 
     @Column(nullable = false)
     private Boolean isFeatured = false;

@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.service;
 
 import com.sanitaryware.crm.dto.BulkUploadResponse;
+import com.sanitaryware.crm.dto.CatalogImportPreviewResponse;
 import com.sanitaryware.crm.dto.ProductDTO;
 import com.sanitaryware.crm.dto.ProductFilterDTO;
 import com.sanitaryware.crm.dto.ProductImageDTO;
@@ -218,14 +219,43 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file) {
+    @Transactional(readOnly = true)
+    public CatalogImportPreviewResponse previewCatalogUpload(Long brandId, MultipartFile file) {
         Brand brand = brandRepository.findById(brandId)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + brandId));
-        BulkUploadResponse response = catalogPdfImportService.importCatalog(brand, file);
+        return catalogPdfImportService.previewCatalog(brand, file);
+    }
+
+    @Override
+    public BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String reviewedSha256) {
+        return bulkCatalogUpload(brandId, file, reviewedSha256, null, java.util.Set.of());
+    }
+
+    @Override
+    public BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String reviewedSha256,
+                                                List<String> selectedSkus, java.util.Set<String> unavailableSkus) {
+        Brand brand = brandRepository.findById(brandId)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + brandId));
+        BulkUploadResponse response = selectedSkus == null && unavailableSkus.isEmpty()
+                ? catalogPdfImportService.importCatalog(brand, file, reviewedSha256)
+                : catalogPdfImportService.importCatalog(
+                        brand, file, reviewedSha256, selectedSkus, unavailableSkus);
         auditService.logEvent("BULK_IMPORT", "PRODUCT", brandId,
                 "Imported " + response.getTotalProcessed() + " catalogue products and linked "
                         + response.getImagesLinkedCount() + " images for brand " + brand.getName());
         return response;
+    }
+
+    @Override
+    public ProductDTO updateProductAvailability(Long id, boolean available) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+        product.setIsAvailable(available);
+        Product saved = productRepository.save(product);
+        auditService.logEvent(available ? "MARK_AVAILABLE" : "MARK_UNAVAILABLE", "PRODUCT", id,
+                (available ? "Marked available " : "Marked unavailable ") + saved.getName()
+                        + " (SKU: " + saved.getSku() + ")");
+        return ProductMapper.toDTO(saved);
     }
 
     @Override

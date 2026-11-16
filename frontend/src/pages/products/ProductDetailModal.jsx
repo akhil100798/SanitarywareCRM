@@ -80,10 +80,15 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                             <Package size={20} />
                         </div>
                         <div className="min-w-0">
-                            <h2 id="product-detail-title" className="text-lg font-bold text-slate-900 leading-snug truncate">
+                            <h2 id="product-detail-title" className={`text-lg font-bold leading-snug truncate ${product.isAvailable === false ? 'rounded bg-black px-2 py-1 text-white line-through' : 'text-slate-900'}`}>
                                 {product.name}
                             </h2>
                             <p className="text-xs text-slate-500 font-mono truncate">SKU: {product.sku}</p>
+                            {product.isAvailable === false && (
+                                <span className="mt-1 inline-block rounded bg-black px-2 py-0.5 text-xs font-bold text-white">
+                                    Unavailable
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button
@@ -256,6 +261,14 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                                 <span className="text-xxs text-slate-400 uppercase font-bold">Material</span>
                                 <div className="text-xs font-semibold text-slate-800 mt-0.5 truncate">{product.material || '—'}</div>
+                            </div>
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-xxs text-slate-400 uppercase font-bold">Material Code</span>
+                                <div className="text-xs font-semibold text-slate-800 mt-0.5 truncate">{product.materialCode || '—'}</div>
+                            </div>
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-xxs text-slate-400 uppercase font-bold">Item Code</span>
+                                <div className="text-xs font-semibold text-slate-800 mt-0.5 truncate">{product.itemCode || '—'}</div>
                             </div>
                             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                                 <span className="text-xxs text-slate-400 uppercase font-bold">Size</span>

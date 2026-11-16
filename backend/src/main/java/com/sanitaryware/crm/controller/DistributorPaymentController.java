@@ -23,8 +23,9 @@ public class DistributorPaymentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<DistributorPaymentDTO> createPayment(@Valid @RequestBody DistributorPaymentDTO dto) {
-        return ResponseEntity.ok(paymentService.createPayment(dto));
+    public ResponseEntity<DistributorPaymentDTO> createPayment(@Valid @RequestBody DistributorPaymentDTO dto,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseEntity.ok(key == null ? paymentService.createPayment(dto) : paymentService.createPayment(dto, key));
     }
 
     @GetMapping("/{id}")

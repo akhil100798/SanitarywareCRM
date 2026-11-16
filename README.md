@@ -30,9 +30,9 @@ Enterprise-level Customer Relationship Management system built specifically for 
 - **UI Components**: TailwindCSS components and Lucide icons
 
 ### Mobile
-- **Framework**: React Native with Expo
+- **Framework**: React Native 0.88 with Expo SDK 58
 - **Navigation**: React Navigation
-- **Authentication Storage**: AsyncStorage-backed JWT session
+- **Authentication Storage**: SecureStore (native) / sessionStorage (web) for JWT session
 - **API Client**: Axios against the same Spring Boot REST API
 
 ## Features
@@ -114,7 +114,7 @@ The frontend will start on `http://localhost:5173`
 ### Mobile Android Setup
 
 The mobile app lives in `mobile/` and reuses the existing Spring Boot API.
-It is scaffolded on Expo SDK 55, which targets React Native 0.83 and requires Node.js 20.19.x or newer.
+It is scaffolded on Expo SDK 58, which targets React Native 0.88 and requires Node.js 20.19.x or newer.
 
 1. Navigate to the mobile directory:
 ```bash

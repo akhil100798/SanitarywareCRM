@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, CreditCard, DollarSign } from 'lucide-react';
 import paymentService from '../../services/paymentService';
 import orderService from '../../services/orderService';
 import toast from 'react-hot-toast';
+import { createPaymentIntentStore, paymentErrorMessage } from '../../utils/paymentIntent';
+import { useAuthStore } from '../../store/authStore';
 
 const PaymentFormPage = () => {
     const [searchParams] = useSearchParams();
     const orderId = searchParams.get('orderId');
     const navigate = useNavigate();
+    const actor = useAuthStore(state => state.user?.id);
+    const intentScope = `customer:${actor}:${orderId}`;
+    const intents = useRef(createPaymentIntentStore(sessionStorage)).current;
+    const submitting = useRef(false);
+    const [paymentError, setPaymentError] = useState('');
 
     const [loading, setLoading] = useState(false);
     const [order, setOrder] = useState(null);
@@ -29,7 +36,9 @@ const PaymentFormPage = () => {
         try {
             const res = await orderService.getById(orderId);
             setOrder(res.data);
-            setFormData(prev => ({ ...prev, amount: res.data.balanceAmount }));
+            const pending = await intents.read(intentScope);
+            setFormData(prev => ({ ...prev, amount: res.data.balanceAmount, ...pending?.payload }));
+            if (pending) setPaymentError('An earlier payment attempt is pending. Retry the original details to confirm its result.');
         } catch (error) {
             toast.error('Failed to load order details');
         }
@@ -37,24 +46,37 @@ const PaymentFormPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (submitting.current) return;
         if (formData.amount <= 0) {
             toast.error('Amount must be greater than 0');
             return;
         }
 
-        if (order && formData.amount > order.balanceAmount) {
-            toast.error(`Amount cannot exceed the balance due (₹${order.balanceAmount.toLocaleString()})`);
-            return;
-        }
-
         try {
+            submitting.current = true;
             setLoading(true);
-            await paymentService.create(formData);
+            setPaymentError('');
+            const pending = await intents.read(intentScope);
+            if (!pending && order && formData.amount > order.balanceAmount) {
+                toast.error('Amount cannot exceed the current balance due. Refresh the order and review its receipts.');
+                return;
+            }
+            const payload = { ...formData, orderId: Number(formData.orderId) };
+            const key = await intents.prepare(intentScope, payload);
+            await paymentService.create(payload, key);
+            await intents.complete(intentScope);
             toast.success('Payment recorded successfully');
             navigate(`/orders/edit/${formData.orderId}`);
         } catch (error) {
-            toast.error('Failed to record payment');
+            try { await intents.failed(intentScope, error); } catch { /* Preserve the original actionable error. */ }
+            const message = paymentErrorMessage(error);
+            setPaymentError(message);
+            toast.error(message);
+            if ([400, 409].includes(error.response?.status) && orderId) {
+                try { const latest = await orderService.getById(orderId); setOrder(latest.data); } catch { /* Keep retry details intact. */ }
+            }
         } finally {
+            submitting.current = false;
             setLoading(false);
         }
     };
@@ -70,6 +92,7 @@ const PaymentFormPage = () => {
                     <CreditCard size={24} className="mr-2 text-blue-600" />
                     Record Payment
                 </h2>
+                {paymentError && <div role="alert" className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{paymentError}</div>}
 
                 {orderId && !order && !loading && (
                     <div className="bg-yellow-50 p-4 rounded-lg text-sm text-yellow-700">

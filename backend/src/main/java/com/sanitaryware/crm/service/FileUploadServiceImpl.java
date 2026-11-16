@@ -25,6 +25,7 @@ public class FileUploadServiceImpl implements FileUploadService {
     private final Path fileStorageLocation;
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx", ".csv", ".xlsx");
     private static final long MAX_UPLOAD_SIZE_BYTES = 10L * 1024 * 1024;
+    private static final long MAX_CATALOG_SIZE_BYTES = 160L * 1024 * 1024;
     private static final Map<String, List<String>> ALLOWED_MEDIA_TYPES = Map.of(
             ".jpg", List.of("image/jpeg"),
             ".jpeg", List.of("image/jpeg"),
@@ -95,6 +96,44 @@ public class FileUploadServiceImpl implements FileUploadService {
             return newFileName;
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + originalFileName + ". Please try again!", ex);
+        }
+    }
+
+    @Override
+    public String storeCatalogFile(MultipartFile file, String subDirectory) {
+        if (file == null || file.isEmpty() || file.getSize() > MAX_CATALOG_SIZE_BYTES) {
+            throw new IllegalArgumentException("Catalog PDF must be non-empty and no larger than 160 MB");
+        }
+        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename() == null
+                ? "" : file.getOriginalFilename());
+        if (originalFileName.contains("..") || !originalFileName.toLowerCase().endsWith(".pdf")) {
+            throw new IllegalArgumentException("A valid PDF catalog is required");
+        }
+
+        try (InputStream input = file.getInputStream()) {
+            if (!startsWith(input.readNBytes(5), 0x25, 0x50, 0x44, 0x46, 0x2D)) {
+                throw new IllegalArgumentException("Uploaded catalog content is not a PDF");
+            }
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Could not read the catalog PDF", exception);
+        }
+
+        if (subDirectory == null || subDirectory.isBlank() || subDirectory.contains("..")) {
+            throw new IllegalArgumentException("Invalid catalog storage directory");
+        }
+        try {
+            Path targetDirectory = fileStorageLocation.resolve(subDirectory).normalize();
+            if (!targetDirectory.startsWith(fileStorageLocation)) {
+                throw new IllegalArgumentException("Cannot store catalog outside the upload directory");
+            }
+            Files.createDirectories(targetDirectory);
+            String storedName = UUID.randomUUID() + ".pdf";
+            try (InputStream input = file.getInputStream()) {
+                Files.copy(input, targetDirectory.resolve(storedName));
+            }
+            return subDirectory + "/" + storedName;
+        } catch (IOException exception) {
+            throw new RuntimeException("Could not store brand catalog PDF", exception);
         }
     }
 

@@ -19,8 +19,10 @@ public class PaymentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
-    public ResponseEntity<PaymentDTO> recordPayment(@Valid @RequestBody PaymentDTO paymentDTO) {
-        return ResponseEntity.ok(paymentService.recordPayment(paymentDTO));
+    public ResponseEntity<PaymentDTO> recordPayment(@Valid @RequestBody PaymentDTO paymentDTO,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseEntity.ok(key == null ? paymentService.recordPayment(paymentDTO)
+                : paymentService.recordPayment(paymentDTO, key));
     }
 
     @GetMapping("/{id}")

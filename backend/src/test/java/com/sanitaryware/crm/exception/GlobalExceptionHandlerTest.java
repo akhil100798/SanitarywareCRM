@@ -3,6 +3,8 @@ package com.sanitaryware.crm.exception;
 import com.sanitaryware.crm.config.CorsConfig;
 import com.sanitaryware.crm.config.SecurityConfig;
 import com.sanitaryware.crm.controller.ProductController;
+import com.sanitaryware.crm.dto.CatalogImportPreviewItem;
+import com.sanitaryware.crm.dto.CatalogImportPreviewResponse;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtAuthenticationFilter;
 import com.sanitaryware.crm.security.JwtTokenProvider;
@@ -21,13 +23,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -173,6 +182,92 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("Product not found"))
                 .andExpect(this::assertSanitized);
+    }
+
+    @Test
+    void oversizedMultipartRequestReturnsPayloadTooLarge() {
+        var response = new GlobalExceptionHandler()
+                .handleMaxUploadSizeExceeded(new MaxUploadSizeExceededException(160L * 1024 * 1024));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Uploaded files must be 160 MB or smaller.");
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void catalogUploadWithoutExplicitConfirmationDoesNotInvokeImport() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "catalog.pdf", "application/pdf", "%PDF".getBytes());
+
+        mockMvc.perform(multipart("/api/products/bulk-catalog-upload")
+                        .file(file)
+                        .param("brandId", "2")
+                        .param("previewSha256", "reviewed-hash"))
+                .andExpect(status().isPreconditionRequired())
+                .andExpect(jsonPath("$.message").value(
+                        "Review the catalogue preview and explicitly confirm before importing."));
+
+        verify(productService, never()).bulkCatalogUpload(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void catalogPreviewAcceptsMultipartFixtureAndDoesNotInvokeImport() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "catalog.pdf", "application/pdf", "%PDF".getBytes());
+        CatalogImportPreviewResponse preview = new CatalogImportPreviewResponse(
+                2L, "parryware", "catalog.pdf", file.getSize(), "abc123", 1, 1,
+                1, 0, 0, 0, true,
+                java.util.List.of(new CatalogImportPreviewItem(
+                        "E8306", "Seat Cover", java.math.BigDecimal.valueOf(6650),
+                        "CREATE", 1, null, null, null, null, null, null, null, true)),
+                java.util.List.of());
+        when(productService.previewCatalogUpload(eq(2L), any(MultipartFile.class))).thenReturn(preview);
+
+        mockMvc.perform(multipart("/api/products/bulk-catalog-preview")
+                        .file(file)
+                        .param("brandId", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.importAllowed").value(true))
+                .andExpect(jsonPath("$.items[0].sku").value("E8306"))
+                .andExpect(jsonPath("$.items[0].sourcePage").value(1));
+
+        verify(productService).previewCatalogUpload(eq(2L), any(MultipartFile.class));
+        verify(productService, never()).bulkCatalogUpload(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void multipartParserReportsUploadLimitWhenCauseIndicatesOversize() {
+        MultipartException exception = new MultipartException(
+                "Could not parse multipart request",
+                new IllegalStateException("File size exceeds the maximum permitted size"));
+
+        var response = new GlobalExceptionHandler().handleMultipartException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Uploaded files must be 160 MB or smaller.");
+    }
+
+    @Test
+    void concurrentMutationIsAControlledConflictWithoutDatabaseDetails() {
+        var response = new GlobalExceptionHandler().handleConcurrentMutation(
+                new org.springframework.dao.PessimisticLockingFailureException("SQL deadlock at internal database host"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().message()).contains("retry").doesNotContain("SQL", "internal database");
+    }
+
+    @Test
+    void deliberateBusinessValidationIsActionable() {
+        var response = new GlobalExceptionHandler().handleBusinessValidation(
+                new BusinessValidationException("Payment exceeds the balance due"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).isEqualTo("Payment exceeds the balance due");
     }
 
     private void assertSanitized(org.springframework.test.web.servlet.MvcResult result) throws Exception {

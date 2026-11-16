@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface DistributorPaymentService {
     DistributorPaymentDTO createPayment(DistributorPaymentDTO paymentDTO);
+    DistributorPaymentDTO createPayment(DistributorPaymentDTO paymentDTO, String idempotencyKey);
     DistributorPaymentDTO getPaymentById(Long id);
     Page<DistributorPaymentDTO> getAllPayments(Pageable pageable);
     List<DistributorPaymentDTO> getPaymentsByPurchaseOrder(Long purchaseOrderId);

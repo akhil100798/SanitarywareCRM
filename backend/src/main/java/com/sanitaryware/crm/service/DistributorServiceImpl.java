@@ -21,6 +21,7 @@ public class DistributorServiceImpl implements DistributorService {
     private final DistributorRepository distributorRepository;
     private final DistributorMapper distributorMapper;
     private final AuditService auditService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Override
     @Transactional
@@ -37,8 +38,7 @@ public class DistributorServiceImpl implements DistributorService {
     @Override
     @Transactional
     public DistributorDTO updateDistributor(Long id, DistributorDTO dto) {
-        Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
+        Distributor distributor = lockedDistributor(id);
         
         distributorMapper.updateEntity(distributor, dto);
         distributor = distributorRepository.save(distributor);
@@ -79,8 +79,7 @@ public class DistributorServiceImpl implements DistributorService {
     @Override
     @Transactional
     public void deleteDistributor(Long id) {
-        Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
+        Distributor distributor = lockedDistributor(id);
         
         // Soft delete by setting inactive
         distributor.setIsActive(false);
@@ -93,8 +92,7 @@ public class DistributorServiceImpl implements DistributorService {
     @Override
     @Transactional
     public DistributorDTO toggleActiveStatus(Long id) {
-        Distributor distributor = distributorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
+        Distributor distributor = lockedDistributor(id);
         
         distributor.setIsActive(!distributor.getIsActive());
         distributor = distributorRepository.save(distributor);
@@ -103,5 +101,12 @@ public class DistributorServiceImpl implements DistributorService {
                 "Toggled active status of distributor " + distributor.getName() + " to " + distributor.getIsActive());
 
         return distributorMapper.toDTO(distributor);
+    }
+
+    private Distributor lockedDistributor(Long id) {
+        Distributor distributor = distributorRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Distributor not found with id: " + id));
+        entityManager.refresh(distributor, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return distributor;
     }
 }

@@ -72,4 +72,26 @@ class FileUploadServiceImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> service.storeFile(file, "invoices"));
     }
+
+    @Test
+    void storesBrandCatalogPdfUnderGeneratedName() throws Exception {
+        FileUploadServiceImpl service = new FileUploadServiceImpl(directory.toString());
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "brand price list.pdf", "application/pdf", "%PDF-1.4\nfixture".getBytes());
+
+        String storageKey = service.storeCatalogFile(file, "brand-catalogs/42");
+
+        assertTrue(storageKey.matches("brand-catalogs/42/[0-9a-f-]+\\.pdf"));
+        assertArrayEquals(file.getBytes(), Files.readAllBytes(directory.resolve(storageKey)));
+    }
+
+    @Test
+    void rejectsNonPdfBrandCatalogContent() {
+        FileUploadServiceImpl service = new FileUploadServiceImpl(directory.toString());
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "catalog.pdf", "application/pdf", "not a pdf".getBytes());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.storeCatalogFile(file, "brand-catalogs/42"));
+    }
 }

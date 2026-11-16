@@ -63,6 +63,9 @@ public class PurchaseOrderMapper {
         if (dto == null) return null;
 
         PurchaseOrder po = new PurchaseOrder();
+        po.setOrderDate(dto.getOrderDate());
+        po.setExpectedDeliveryDate(dto.getExpectedDeliveryDate());
+        po.setReceivedDate(dto.getReceivedDate());
         updateEntity(po, dto);
         return po;
     }
@@ -70,9 +73,9 @@ public class PurchaseOrderMapper {
     public void updateEntity(PurchaseOrder po, PurchaseOrderDTO dto) {
         if (dto == null || po == null) return;
 
-        po.setOrderDate(dto.getOrderDate());
-        po.setExpectedDeliveryDate(dto.getExpectedDeliveryDate());
-        po.setReceivedDate(dto.getReceivedDate());
+        if (dto.getOrderDate() != null) po.setOrderDate(dto.getOrderDate());
+        if (dto.getExpectedDeliveryDate() != null) po.setExpectedDeliveryDate(dto.getExpectedDeliveryDate());
+        if (dto.getReceivedDate() != null) po.setReceivedDate(dto.getReceivedDate());
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
             try {
                 po.setStatus(PurchaseOrder.POStatus.valueOf(dto.getStatus().trim().toUpperCase()));

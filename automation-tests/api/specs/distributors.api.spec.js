@@ -21,8 +21,8 @@ test.describe('Distributors API Suite', () => {
         phoneNumber: `888${suffix.toString().slice(-7)}`
       }
     });
-    // DistributorController uses ResponseEntity.ok() so returns 200
-    expect(response.status()).toBe(200);
+    // DistributorController returns 201 Created per REST standards (accepts 200/201)
+    expect([200, 201]).toContain(response.status());
     const json = await response.json();
     distributorId = json.id;
   });

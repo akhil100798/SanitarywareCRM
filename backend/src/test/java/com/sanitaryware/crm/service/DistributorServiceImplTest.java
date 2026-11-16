@@ -28,12 +28,13 @@ class DistributorServiceImplTest {
 
     @Mock
     private AuditService auditService;
+    @Mock private jakarta.persistence.EntityManager entityManager;
 
     private DistributorServiceImpl distributorService;
 
     @BeforeEach
     void setUp() {
-        distributorService = new DistributorServiceImpl(distributorRepository, distributorMapper, auditService);
+        distributorService = new DistributorServiceImpl(distributorRepository, distributorMapper, auditService, entityManager);
     }
 
     @Test
@@ -59,7 +60,7 @@ class DistributorServiceImplTest {
 
     @Test
     void deleteDistributor_WhenNotFound_ThrowsResourceNotFoundException() {
-        when(distributorRepository.findById(999L)).thenReturn(Optional.empty());
+        when(distributorRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> distributorService.deleteDistributor(999L));
         verify(auditService, never()).logEvent(any(), any(), any(), any());
@@ -72,7 +73,7 @@ class DistributorServiceImplTest {
         entity.setName("Ceramic Hub");
         entity.setIsActive(true);
 
-        when(distributorRepository.findById(5L)).thenReturn(Optional.of(entity));
+        when(distributorRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(entity));
 
         distributorService.deleteDistributor(5L);
 
@@ -83,7 +84,7 @@ class DistributorServiceImplTest {
 
     @Test
     void toggleActiveStatus_WhenNotFound_ThrowsResourceNotFoundException() {
-        when(distributorRepository.findById(999L)).thenReturn(Optional.empty());
+        when(distributorRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> distributorService.toggleActiveStatus(999L));
     }

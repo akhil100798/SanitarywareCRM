@@ -130,12 +130,12 @@ class ProductServiceImplTest {
                 .build();
 
         when(brandRepository.findById(1L)).thenReturn(Optional.of(testBrand));
-        when(catalogPdfImportService.importCatalog(testBrand, file)).thenReturn(expected);
+        when(catalogPdfImportService.importCatalog(testBrand, file, "reviewed-hash")).thenReturn(expected);
 
-        BulkUploadResponse result = productService.bulkCatalogUpload(1L, file);
+        BulkUploadResponse result = productService.bulkCatalogUpload(1L, file, "reviewed-hash");
 
         assertSame(expected, result);
-        verify(catalogPdfImportService).importCatalog(testBrand, file);
+        verify(catalogPdfImportService).importCatalog(testBrand, file, "reviewed-hash");
         verify(auditService).logEvent(eq("BULK_IMPORT"), eq("PRODUCT"), eq(1L), contains("7 catalogue products"));
     }
 
