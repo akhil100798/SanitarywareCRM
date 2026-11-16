@@ -89,7 +89,7 @@ public class WhatsAppServiceImpl implements WhatsAppService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public WhatsAppMessageResponse sendPaymentReceipt(Long paymentId, String customPhoneNumber) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + paymentId));

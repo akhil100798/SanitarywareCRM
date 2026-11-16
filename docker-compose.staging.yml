@@ -30,7 +30,7 @@ services:
       context: ./backend
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
       SERVER_PORT: ${SERVER_PORT:-8081}
       DATABASE_URL: ${DATABASE_URL:-jdbc:mysql://mysql:3306/sanitaryware_crm_staging?sslMode=VERIFY_IDENTITY&trustCertificateKeyStoreUrl=file:/app/certs/truststore.p12&trustCertificateKeyStorePassword=staging_truststore_secret&trustCertificateKeyStoreType=PKCS12}
       DATABASE_USERNAME: ${DATABASE_USERNAME:?DATABASE_USERNAME is required}
