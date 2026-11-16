@@ -16,6 +16,7 @@ import java.util.List;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final com.sanitaryware.crm.service.WhatsAppService whatsAppService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
@@ -48,5 +49,14 @@ public class PaymentController {
     public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
         paymentService.deletePayment(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/send-whatsapp")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<com.sanitaryware.crm.dto.WhatsAppMessageResponse> sendPaymentWhatsApp(
+            @PathVariable Long id,
+            @RequestBody(required = false) com.sanitaryware.crm.dto.WhatsAppMessageRequest request) {
+        String phone = request != null ? request.getPhoneNumber() : null;
+        return ResponseEntity.ok(whatsAppService.sendPaymentReceipt(id, phone));
     }
 }

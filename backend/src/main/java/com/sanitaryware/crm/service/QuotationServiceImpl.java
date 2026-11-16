@@ -17,6 +17,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,6 +55,10 @@ public class QuotationServiceImpl implements QuotationService {
         // Set quotation number if not provided
         if (quotation.getQuotationNumber() == null || quotation.getQuotationNumber().isEmpty()) {
             quotation.setQuotationNumber(generateQuotationNumber());
+        }
+
+        if (quotation.getShareToken() == null || quotation.getShareToken().isBlank()) {
+            quotation.setShareToken(UUID.randomUUID().toString());
         }
 
         // Set creator
@@ -117,6 +122,10 @@ public class QuotationServiceImpl implements QuotationService {
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(quotation);
+        if (quotation.getShareToken() == null || quotation.getShareToken().isBlank()) {
+            quotation.setShareToken(UUID.randomUUID().toString());
+            quotation = quotationRepository.save(quotation);
+        }
         return quotationMapper.toDTO(quotation);
     }
 
@@ -195,6 +204,53 @@ public class QuotationServiceImpl implements QuotationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(quotation);
         return pdfGeneratorService.generateQuotationPdf(quotation);
+    }
+
+    @Override
+    @Transactional
+    public QuotationDTO getQuotationByShareToken(String shareToken) {
+        if (shareToken == null || shareToken.trim().isEmpty()) {
+            throw new ResourceNotFoundException("Invalid or missing quotation share token");
+        }
+        Quotation quotation = quotationRepository.findByShareToken(shareToken)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found for share token: " + shareToken));
+        return quotationMapper.toDTO(quotation);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] getQuotationPdfByShareToken(String shareToken) {
+        if (shareToken == null || shareToken.trim().isEmpty()) {
+            throw new ResourceNotFoundException("Invalid or missing quotation share token");
+        }
+        Quotation quotation = quotationRepository.findByShareToken(shareToken)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found for share token: " + shareToken));
+        return pdfGeneratorService.generateQuotationPdf(quotation);
+    }
+
+    @Override
+    @Transactional
+    public QuotationDTO acceptQuotationByShareToken(String shareToken) {
+        if (shareToken == null || shareToken.trim().isEmpty()) {
+            throw new ResourceNotFoundException("Invalid or missing quotation share token");
+        }
+        Quotation quotation = quotationRepository.findByShareToken(shareToken)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found for share token: " + shareToken));
+
+        if (quotation.getStatus() == Quotation.QuotationStatus.EXPIRED) {
+            throw new IllegalStateException("Cannot accept an expired quotation");
+        }
+        if (quotation.getStatus() == Quotation.QuotationStatus.CONVERTED) {
+            throw new IllegalStateException("Quotation has already been converted to an order");
+        }
+
+        quotation.setStatus(Quotation.QuotationStatus.ACCEPTED);
+        Quotation saved = quotationRepository.save(quotation);
+
+        auditService.logEvent("PORTAL_ACCEPT", "QUOTATION", saved.getId(),
+                "Customer accepted quotation " + saved.getQuotationNumber() + " via self-service portal");
+
+        return quotationMapper.toDTO(saved);
     }
 
     private Quotation lockedQuotation(Long id) {

@@ -27,7 +27,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 && !error.config.url.includes('/auth/login')) {
+        const url = error.config?.url || '';
+        if (error.response?.status === 401 && !url.includes('/auth/login') && !url.includes('/portal/')) {
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('user');
             window.location.href = '/login';

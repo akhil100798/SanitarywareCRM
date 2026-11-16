@@ -34,6 +34,7 @@ const PurchaseOrderFormPage = lazy(() => import('./pages/purchase-orders/Purchas
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage'));
 const UserManagementPage = lazy(() => import('./pages/users/UserManagementPage'));
+const CustomerPortalPage = lazy(() => import('./pages/portal/CustomerPortalPage'));
 
 const managementRoles = ['ADMIN', 'MANAGER'];
 const orderAccessRoles = ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'];
@@ -46,6 +47,7 @@ function App() {
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/portal/quotations/:token" element={<CustomerPortalPage />} />
                     <Route
                         path="/dashboard"
                         element={

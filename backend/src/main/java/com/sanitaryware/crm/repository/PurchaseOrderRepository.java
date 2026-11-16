@@ -36,4 +36,13 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
     BigDecimal getTotalOutstandingPayables();
 
     long countByStatus(PurchaseOrder.POStatus status);
+
+    interface DistributorSupplierInfo {
+        Long getDistributorId();
+        String getDistributorName();
+    }
+
+    @Query("SELECT poi.purchaseOrder.distributor.id AS distributorId, poi.purchaseOrder.distributor.name AS distributorName " +
+           "FROM PurchaseOrderItem poi WHERE poi.product.id = :productId ORDER BY poi.purchaseOrder.orderDate DESC")
+    List<DistributorSupplierInfo> findRecentSuppliersForProduct(@org.springframework.data.repository.query.Param("productId") Long productId, Pageable pageable);
 }

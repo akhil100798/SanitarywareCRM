@@ -29,6 +29,9 @@ public class Quotation {
     @Column(nullable = false, unique = true, length = 50)
     private String quotationNumber;
 
+    @Column(name = "share_token", unique = true, length = 64)
+    private String shareToken;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
@@ -87,6 +90,13 @@ public class Quotation {
         REJECTED,
         EXPIRED,
         CONVERTED
+    }
+
+    @PrePersist
+    public void ensureShareToken() {
+        if (this.shareToken == null || this.shareToken.isBlank()) {
+            this.shareToken = java.util.UUID.randomUUID().toString();
+        }
     }
 
     public void calculateTotal() {

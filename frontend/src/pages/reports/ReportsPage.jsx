@@ -13,10 +13,12 @@ import {
     AlertCircle,
     ArrowUpRight,
     Search,
-    RefreshCw
+    RefreshCw,
+    Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import reportService from '../../services/reportService';
+import InventoryAnalyticsWidget from '../../components/InventoryAnalyticsWidget';
 
 const tabs = [
     { id: 'sales', label: 'Sales Summary', icon: TrendingUp },
@@ -24,7 +26,8 @@ const tabs = [
     { id: 'distributor-outstanding', label: 'Distributor Outstanding', icon: Truck },
     { id: 'payments', label: 'Payment Summary', icon: CreditCard },
     { id: 'purchases', label: 'Purchase Summary', icon: DollarSign },
-    { id: 'inventory', label: 'Inventory Summary', icon: Package }
+    { id: 'inventory', label: 'Inventory Summary', icon: Package },
+    { id: 'inventory-intelligence', label: 'Predictive Intelligence', icon: Sparkles }
 ];
 
 export const ReportsPage = () => {
@@ -42,6 +45,11 @@ export const ReportsPage = () => {
     }, [activeTab]);
 
     const fetchReportData = async () => {
+        if (activeTab === 'inventory-intelligence') {
+            setData({});
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const params = {};
@@ -189,6 +197,7 @@ export const ReportsPage = () => {
                     {activeTab === 'payments' && <PaymentSummaryView data={data} />}
                     {activeTab === 'purchases' && <PurchaseSummaryView data={data} />}
                     {activeTab === 'inventory' && <InventorySummaryView data={data} />}
+                    {activeTab === 'inventory-intelligence' && <InventoryAnalyticsWidget />}
                 </div>
             )}
         </div>

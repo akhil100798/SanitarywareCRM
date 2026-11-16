@@ -23,6 +23,9 @@ public class QuotationController {
     @Autowired
     private PaginationFactory paginationFactory;
 
+    @Autowired
+    private com.sanitaryware.crm.service.WhatsAppService whatsAppService;
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
     public ResponseEntity<QuotationDTO> createQuotation(@RequestBody @Valid QuotationDTO quotationDTO) {
@@ -78,5 +81,14 @@ public class QuotationController {
                 .header("Content-Type", "application/pdf")
                 .header("Content-Disposition", "attachment; filename=\"quotation-" + id + ".pdf\"")
                 .body(pdf);
+    }
+
+    @PostMapping("/{id}/send-whatsapp")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<com.sanitaryware.crm.dto.WhatsAppMessageResponse> sendQuotationWhatsApp(
+            @PathVariable Long id,
+            @RequestBody(required = false) com.sanitaryware.crm.dto.WhatsAppMessageRequest request) {
+        String phone = request != null ? request.getPhoneNumber() : null;
+        return ResponseEntity.ok(whatsAppService.sendQuotation(id, phone));
     }
 }

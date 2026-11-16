@@ -19,6 +19,7 @@ import java.util.List;
 public class QuotationDTO {
     private Long id;
     private String quotationNumber;
+    private String shareToken;
     
     @NotNull(message = "Customer ID is required")
     private Long customerId;

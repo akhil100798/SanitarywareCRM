@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, CreditCard, Calendar, User, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Filter, CreditCard, Calendar, User, ShoppingBag, MessageCircle } from 'lucide-react';
 import paymentService from '../../services/paymentService';
 import { filterPayments } from '../../utils/paymentSearch';
 import toast from 'react-hot-toast';
@@ -22,6 +22,22 @@ const PaymentListPage = () => {
             toast.error('Failed to fetch payments');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSendWhatsApp = async (id, paymentNumber) => {
+        const toastId = toast.loading(`Sending WhatsApp receipt for ${paymentNumber}...`);
+        try {
+            const response = await paymentService.sendWhatsApp(id, {});
+            if (response.data.status === 'SENT') {
+                toast.success('Payment receipt dispatched via WhatsApp!', { id: toastId });
+            } else if (response.data.status === 'SIMULATED') {
+                toast.success('Sandbox mode: Receipt notification simulated successfully!', { id: toastId });
+            } else {
+                toast.error(response.data.detail || 'WhatsApp transmission failed', { id: toastId });
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send WhatsApp receipt', { id: toastId });
         }
     };
 
@@ -60,16 +76,17 @@ const PaymentListPage = () => {
                                 <th className="px-6 py-4">Amount</th>
                                 <th className="px-6 py-4">Method</th>
                                 <th className="px-6 py-4">Received By</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">Loading...</td>
+                                    <td colSpan="7" className="px-6 py-10 text-center text-gray-500">Loading...</td>
                                 </tr>
                             ) : filteredPayments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">No payments found.</td>
+                                    <td colSpan="7" className="px-6 py-10 text-center text-gray-500">No payments found.</td>
                                 </tr>
                             ) : (
                                 filteredPayments.map((p) => (
@@ -103,6 +120,16 @@ const PaymentListPage = () => {
                                             <div className="flex items-center">
                                                 <User size={14} className="mr-1" /> {p.receivedByName}
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => handleSendWhatsApp(p.id, p.paymentNumber)}
+                                                title="Send WhatsApp Receipt"
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
+                                            >
+                                                <MessageCircle size={14} />
+                                                Receipt
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

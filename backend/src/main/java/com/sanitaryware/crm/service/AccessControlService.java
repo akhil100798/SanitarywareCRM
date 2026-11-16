@@ -38,6 +38,12 @@ public class AccessControlService {
         }
     }
 
+    public void requirePaymentAccess(com.sanitaryware.crm.entity.Payment payment) {
+        if (payment != null && payment.getOrder() != null) {
+            requireOrderAccess(payment.getOrder());
+        }
+    }
+
     public void requireQuotationAccess(Quotation quotation) {
         User currentUser = currentUser();
         if (isSales(currentUser) && !isOwner(quotation.getCreatedBy(), currentUser)) {

@@ -16,4 +16,7 @@ public interface QuotationService {
     List<QuotationDTO> getQuotationsByCustomer(Long customerId);
     String generateQuotationNumber();
     byte[] getQuotationPdf(Long id);
+    QuotationDTO getQuotationByShareToken(String shareToken);
+    byte[] getQuotationPdfByShareToken(String shareToken);
+    QuotationDTO acceptQuotationByShareToken(String shareToken);
 }

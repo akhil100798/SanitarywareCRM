@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, FileText, Download, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, FileText, Download, CheckCircle, XCircle, Share2, MessageCircle } from 'lucide-react';
 import quotationService from '../../services/quotationService';
 import toast from 'react-hot-toast';
 
@@ -41,6 +41,34 @@ const QuotationListPage = () => {
             toast.success('PDF downloaded successfully', { id: toastId });
         } catch (error) {
             toast.error('Failed to download PDF', { id: toastId });
+        }
+    };
+
+    const handleCopyShareLink = (shareToken) => {
+        if (!shareToken) {
+            toast.error('Quotation link is being prepared. Please refresh in a moment.');
+            return;
+        }
+        const url = `${window.location.origin}/portal/quotations/${shareToken}`;
+        navigator.clipboard.writeText(url).then(
+            () => toast.success('Customer portal link copied to clipboard!'),
+            () => toast.error('Failed to copy link')
+        );
+    };
+
+    const handleSendWhatsApp = async (id, customerName) => {
+        const toastId = toast.loading(`Sending WhatsApp notification to ${customerName || 'customer'}...`);
+        try {
+            const response = await quotationService.sendWhatsApp(id, {});
+            if (response.data.status === 'SENT') {
+                toast.success('Quotation dispatched via WhatsApp!', { id: toastId });
+            } else if (response.data.status === 'SIMULATED') {
+                toast.success('Sandbox mode: WhatsApp notification simulated successfully!', { id: toastId });
+            } else {
+                toast.error(response.data.detail || 'WhatsApp transmission failed', { id: toastId });
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send WhatsApp message', { id: toastId });
         }
     };
 
@@ -156,6 +184,20 @@ const QuotationListPage = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end space-x-1.5">
+                                                    <button
+                                                        onClick={() => handleCopyShareLink(q.shareToken)}
+                                                        title="Copy Customer Portal Link"
+                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                    >
+                                                        <Share2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSendWhatsApp(q.id, q.customerName)}
+                                                        title="Send via WhatsApp"
+                                                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                    >
+                                                        <MessageCircle size={16} />
+                                                    </button>
                                                     <button
                                                         onClick={() => handleDownloadPdf(q.id, q.quotationNumber)}
                                                         title="Download PDF"

@@ -30,6 +30,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         BigDecimal getTotalRevenue();
     }
 
+    interface ProductSalesVelocity {
+        Long getProductId();
+        Long getTotalSold();
+    }
+
     @Query("SELECT o.status AS status, COUNT(o) AS count FROM Order o GROUP BY o.status")
     List<StatusCount> countByStatus();
 
@@ -40,6 +45,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "SUM(i.lineTotal) AS totalRevenue FROM OrderItem i WHERE i.order.status <> :excludedStatus " +
            "GROUP BY i.product.name ORDER BY SUM(i.lineTotal) DESC, i.product.name ASC")
     List<ProductSales> findTopProductSales(@Param("excludedStatus") Order.OrderStatus excludedStatus, Pageable pageable);
+
+    @Query("SELECT i.product.id AS productId, SUM(i.quantity) AS totalSold " +
+           "FROM OrderItem i " +
+           "WHERE i.order.orderDate >= :sinceDate AND i.order.status <> :excludedStatus " +
+           "GROUP BY i.product.id")
+    List<ProductSalesVelocity> findSalesVelocitySince(@Param("sinceDate") LocalDate sinceDate,
+                                                      @Param("excludedStatus") Order.OrderStatus excludedStatus);
 
     Optional<Order> findByOrderNumber(String orderNumber);
     Optional<Order> findByBillPadImageUrl(String billPadImageUrl);

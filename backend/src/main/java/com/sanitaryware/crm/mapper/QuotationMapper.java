@@ -28,6 +28,7 @@ public class QuotationMapper {
         QuotationDTO dto = new QuotationDTO();
         dto.setId(quotation.getId());
         dto.setQuotationNumber(quotation.getQuotationNumber());
+        dto.setShareToken(quotation.getShareToken());
         dto.setCustomerId(quotation.getCustomer().getId());
         dto.setCustomerName(quotation.getCustomer().getName());
         dto.setCreatedById(quotation.getCreatedBy().getId());
@@ -85,6 +86,7 @@ public class QuotationMapper {
 
         quotation.setQuotationDate(dto.getQuotationDate());
         quotation.setValidUntil(dto.getValidUntil());
+        if (dto.getShareToken() != null && !dto.getShareToken().isBlank()) quotation.setShareToken(dto.getShareToken());
         if (dto.getTaxPercentage() != null) quotation.setTaxPercentage(dto.getTaxPercentage());
         if (dto.getDiscount() != null) quotation.setDiscount(dto.getDiscount());
         quotation.setNotes(dto.getNotes());

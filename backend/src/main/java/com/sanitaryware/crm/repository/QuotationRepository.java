@@ -19,6 +19,7 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
     Optional<Quotation> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Quotation> findByQuotationNumber(String quotationNumber);
+    Optional<Quotation> findByShareToken(String shareToken);
     Page<Quotation> findByCreatedByUsername(String username, Pageable pageable);
     Page<Quotation> findByCustomerId(Long customerId, Pageable pageable);
     List<Quotation> findByCustomerId(Long customerId);

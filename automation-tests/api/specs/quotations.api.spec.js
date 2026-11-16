@@ -140,4 +140,41 @@ test.describe('Quotations API Suite', () => {
     });
     expect(response.status()).toBe(400);
   });
+
+  test('EXP-001 Send Quotation via WhatsApp endpoint', async () => {
+    const client = await getClient(adminToken);
+    const response = await client.post(`/api/quotations/${quotationId}/send-whatsapp`, {
+      data: { phoneNumber: '+919876543210' }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(['SENT', 'SIMULATED']).toContain(body.status);
+    expect(body.recipient).toContain('9876543210');
+  });
+
+  test('EXP-002 Customer Portal - Retrieve & Accept Quotation via Share Token without auth', async () => {
+    const client = await getClient(adminToken);
+    const quoteRes = await client.get(`/api/quotations/${quotationId}`);
+    expect(quoteRes.status()).toBe(200);
+    const quoteData = await quoteRes.json();
+    expect(quoteData.shareToken).toBeTruthy();
+
+    // Anonymous public client (no auth headers)
+    const publicClient = await getClient(null);
+    const portalRes = await publicClient.get(`/api/portal/quotations/${quoteData.shareToken}`);
+    expect(portalRes.status()).toBe(200);
+    const portalData = await portalRes.json();
+    expect(portalData.quotationNumber).toBe(quoteData.quotationNumber);
+
+    // Accept via portal
+    const acceptRes = await publicClient.post(`/api/portal/quotations/${quoteData.shareToken}/accept`);
+    expect(acceptRes.status()).toBe(200);
+    const acceptedData = await acceptRes.json();
+    expect(acceptedData.status).toBe('ACCEPTED');
+
+    // Download PDF via portal
+    const pdfRes = await publicClient.get(`/api/portal/quotations/${quoteData.shareToken}/pdf`);
+    expect(pdfRes.status()).toBe(200);
+    expect(pdfRes.headers()['content-type']).toContain('application/pdf');
+  });
 });
