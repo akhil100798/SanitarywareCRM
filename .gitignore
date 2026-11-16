@@ -36,6 +36,11 @@ coverage/
 logs/
 *.log
 
+# Backups and database snapshots
+backups/
+*.sql.gz
+*.dump
+
 # Environment secrets
 .env
 .env.local
