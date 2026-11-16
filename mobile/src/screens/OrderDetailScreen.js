@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { getErrorMessage } from '../api/client';
 import { orderService, paymentService } from '../api/services';
 import DetailSection from '../components/DetailSection';
@@ -20,6 +29,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [sendingReceiptId, setSendingReceiptId] = useState(null);
   const [error, setError] = useState('');
 
   const loadOrder = useCallback(async () => {
@@ -42,6 +52,21 @@ const OrderDetailScreen = ({ route, navigation }) => {
   useEffect(() => {
     loadOrder();
   }, [loadOrder, refreshKey]);
+
+  const handleSendPaymentReceipt = async (paymentId) => {
+    try {
+      setSendingReceiptId(paymentId);
+      const res = await paymentService.sendWhatsApp(paymentId);
+      Alert.alert(
+        res.status === 'SENT' ? 'Receipt Sent' : 'WhatsApp Notification',
+        res.detail || 'Payment receipt dispatched to customer via WhatsApp.'
+      );
+    } catch (err) {
+      Alert.alert('WhatsApp Error', getErrorMessage(err));
+    } finally {
+      setSendingReceiptId(null);
+    }
+  };
 
   if (loading) return <LoadingView label="Loading order..." />;
   if (error) return <ErrorView message={error} onRetry={loadOrder} />;
@@ -93,13 +118,31 @@ const OrderDetailScreen = ({ route, navigation }) => {
           {payments.length ? (
             payments.map((payment) => (
               <View key={payment.id} style={styles.paymentRow}>
-                <View>
+                <View style={styles.paymentInfo}>
                   <Text style={styles.paymentTitle}>{payment.paymentNumber || `Payment #${payment.id}`}</Text>
                   <Text style={styles.paymentMeta}>
                     {formatDate(payment.paymentDate)} | {payment.paymentMethod}
                   </Text>
+                  {payment.referenceNumber ? (
+                    <Text style={styles.paymentRef}>Ref: {payment.referenceNumber}</Text>
+                  ) : null}
                 </View>
-                <Text style={styles.paymentAmount}>{formatMoney(payment.amount)}</Text>
+                <View style={styles.paymentRight}>
+                  <Text style={styles.paymentAmount}>{formatMoney(payment.amount)}</Text>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={`Send WhatsApp receipt for payment ${payment.paymentNumber || payment.id}`}
+                    style={[styles.receiptButton, sendingReceiptId === payment.id && styles.receiptButtonDisabled]}
+                    onPress={() => handleSendPaymentReceipt(payment.id)}
+                    disabled={sendingReceiptId === payment.id}
+                  >
+                    {sendingReceiptId === payment.id ? (
+                      <ActivityIndicator size="small" color="#16a34a" />
+                    ) : (
+                      <Text style={styles.receiptButtonText}>WhatsApp Receipt</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           ) : (
@@ -185,12 +228,16 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
   paymentRow: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10
+  },
+  paymentInfo: {
+    flex: 1,
+    marginRight: 8
   },
   paymentTitle: {
     color: colors.text,
@@ -199,11 +246,39 @@ const styles = StyleSheet.create({
   paymentMeta: {
     color: colors.muted,
     fontSize: 12,
-    marginTop: 4
+    marginTop: 2
+  },
+  paymentRef: {
+    color: colors.muted,
+    fontSize: 11,
+    marginTop: 2
+  },
+  paymentRight: {
+    alignItems: 'flex-end',
+    gap: 4
   },
   paymentAmount: {
     color: colors.success,
     fontWeight: '900'
+  },
+  receiptButton: {
+    alignItems: 'center',
+    borderColor: '#16a34a',
+    borderRadius: 6,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 28,
+    minWidth: 110,
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  receiptButtonDisabled: {
+    opacity: 0.6
+  },
+  receiptButtonText: {
+    color: '#16a34a',
+    fontSize: 11,
+    fontWeight: '700'
   }
 });
 

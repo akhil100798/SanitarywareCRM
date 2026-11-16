@@ -252,6 +252,11 @@ export const quotationService = {
   async create(payload) {
     const response = await api.post('/quotations', payload);
     return response.data;
+  },
+
+  async sendWhatsApp(quotationId, phoneNumber) {
+    const response = await api.post(`/quotations/${quotationId}/send-whatsapp`, phoneNumber ? { phoneNumber } : {});
+    return response.data;
   }
 };
 
@@ -276,5 +281,27 @@ export const paymentService = {
   async create(payload, key) {
     const response = await api.post('/payments', payload, key ? { headers: { 'Idempotency-Key': key } } : {});
     return response.data;
+  },
+
+  async sendWhatsApp(paymentId, phoneNumber) {
+    const response = await api.post(`/payments/${paymentId}/send-whatsapp`, phoneNumber ? { phoneNumber } : {});
+    return response.data;
+  }
+};
+
+export const inventoryAnalyticsService = {
+  async getSummary() {
+    const response = await api.get('/inventory-analytics/summary');
+    return response.data;
+  },
+
+  async getAlerts() {
+    const response = await api.get('/inventory-analytics/alerts');
+    return unwrapPage(response.data);
+  },
+
+  async getReorderSuggestions() {
+    const response = await api.get('/inventory-analytics/reorder-suggestions');
+    return unwrapPage(response.data);
   }
 };

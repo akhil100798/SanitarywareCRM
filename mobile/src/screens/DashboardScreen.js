@@ -10,7 +10,7 @@ import {
   Users
 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
-import { dashboardService } from '../api/services';
+import { dashboardService, inventoryAnalyticsService } from '../api/services';
 import Screen from '../components/Screen';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { useAuth } from '../context/AuthContext';
@@ -32,7 +32,9 @@ const DashboardScreen = () => {
   const { user, logout } = useAuth();
   const canViewCustomerData = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
   const canViewFinancials = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
+  const canViewInventory = ['ADMIN', 'MANAGER', 'WAREHOUSE'].includes(user?.role);
   const [stats, setStats] = useState(null);
+  const [inventoryHealth, setInventoryHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -40,15 +42,21 @@ const DashboardScreen = () => {
   const loadStats = useCallback(async () => {
     try {
       setError('');
-      const data = await dashboardService.getStats();
+      const [data, invSummary] = await Promise.all([
+        dashboardService.getStats(),
+        canViewInventory ? inventoryAnalyticsService.getSummary().catch(() => null) : Promise.resolve(null)
+      ]);
       setStats(data);
+      if (invSummary) {
+        setInventoryHealth(invSummary);
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [canViewInventory]);
 
   useEffect(() => {
     loadStats();
@@ -107,6 +115,63 @@ const DashboardScreen = () => {
           {canViewFinancials && <StatTile icon={CreditCard} label="Distributor Paid" value={formatMoney(stats?.distributorPaymentsTotal)} />}
           {canViewFinancials && <StatTile icon={IndianRupee} label="Receivables" value={formatMoney(stats?.totalReceivables)} tone={colors.success} />}
         </View>
+
+        {canViewInventory && inventoryHealth ? (
+          <View style={styles.inventoryCard}>
+            <View style={styles.inventoryHeader}>
+              <Text style={styles.inventoryTitle}>Inventory Health & Alerts</Text>
+              <Text style={styles.inventorySub}>
+                Reorder Est: {formatMoney(inventoryHealth.totalReorderEstimatedCost)}
+              </Text>
+            </View>
+            <View style={styles.healthStatsRow}>
+              <View style={styles.healthStat}>
+                <Text style={styles.healthStatValue}>{inventoryHealth.healthyStockCount ?? 0}</Text>
+                <Text style={styles.healthStatLabel}>Healthy</Text>
+              </View>
+              <View style={styles.healthStat}>
+                <Text style={[styles.healthStatValue, { color: colors.warning }]}>
+                  {inventoryHealth.lowStockCount ?? 0}
+                </Text>
+                <Text style={styles.healthStatLabel}>Low Stock</Text>
+              </View>
+              <View style={styles.healthStat}>
+                <Text style={[styles.healthStatValue, { color: colors.danger }]}>
+                  {inventoryHealth.outOfStockCount ?? 0}
+                </Text>
+                <Text style={styles.healthStatLabel}>Out of Stock</Text>
+              </View>
+            </View>
+            {inventoryHealth.lowStockAlerts?.length > 0 ? (
+              <View style={styles.alertsList}>
+                <Text style={styles.alertsSectionTitle}>Priority Restock Needed</Text>
+                {inventoryHealth.lowStockAlerts.slice(0, 3).map((alert) => (
+                  <View key={alert.productId} style={styles.alertRow}>
+                    <View style={styles.alertMain}>
+                      <Text style={styles.alertProduct}>{alert.productName}</Text>
+                      <Text style={styles.alertSku}>
+                        SKU: {alert.sku} | In Stock: {alert.stockQuantity} (Min: {alert.reorderLevel})
+                      </Text>
+                    </View>
+                    <View style={[
+                      styles.urgencyBadge,
+                      alert.urgency === 'OUT_OF_STOCK' ? styles.urgencyOut :
+                      alert.urgency === 'CRITICAL' ? styles.urgencyCritical : styles.urgencyLow
+                    ]}>
+                      <Text style={[
+                        styles.urgencyText,
+                        alert.urgency === 'OUT_OF_STOCK' ? styles.urgencyOutText :
+                        alert.urgency === 'CRITICAL' ? styles.urgencyCriticalText : styles.urgencyLowText
+                      ]}>
+                        Deficit: -{alert.deficit}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -193,6 +258,110 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     marginTop: 4
+  },
+  inventoryCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 16,
+    padding: 16
+  },
+  inventoryHeader: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+    paddingBottom: 10
+  },
+  inventoryTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800'
+  },
+  inventorySub: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2
+  },
+  healthStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 14,
+    paddingVertical: 6
+  },
+  healthStat: {
+    alignItems: 'center'
+  },
+  healthStatValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '900'
+  },
+  healthStatLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2
+  },
+  alertsList: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    paddingTop: 12
+  },
+  alertsSectionTitle: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 8,
+    textTransform: 'uppercase'
+  },
+  alertRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6
+  },
+  alertMain: {
+    flex: 1,
+    marginRight: 8
+  },
+  alertProduct: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  alertSku: {
+    color: colors.muted,
+    fontSize: 11,
+    marginTop: 2
+  },
+  urgencyBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  urgencyOut: {
+    backgroundColor: '#fee2e2'
+  },
+  urgencyCritical: {
+    backgroundColor: '#ffedd5'
+  },
+  urgencyLow: {
+    backgroundColor: '#fef9c3'
+  },
+  urgencyText: {
+    fontSize: 11,
+    fontWeight: '800'
+  },
+  urgencyOutText: {
+    color: '#b91c1c'
+  },
+  urgencyCriticalText: {
+    color: '#c2410c'
+  },
+  urgencyLowText: {
+    color: '#a16207'
   }
 });
 
