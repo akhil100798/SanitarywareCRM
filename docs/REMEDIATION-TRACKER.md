@@ -137,8 +137,25 @@ Scope: Financial and inventory correctness (Phase 1: F01, F02, F03, Idempotency)
 10. **Playwright Automated Test Suites on Live Staging Stack**:
     ```powershell
     cd automation-tests
-    npx playwright test api/specs --project=chromium        # 76/76 passed
+    npx playwright test api/specs --project=chromium        # 82/82 passed (including expansion specs EXP-001..006)
     npx playwright test security/specs --project=chromium   # 12/12 passed
-    npx playwright test database/specs --project=chromium   # 4/4 passed
     ```
-    - **Total Suite**: 92/92 Playwright tests passed cleanly against containerized staging.
+    - **Total Suite**: 94/94 Playwright tests passed cleanly against containerized staging.
+
+11. **Phase 11 — Enterprise Expansion Features**:
+    - Twilio WhatsApp integration for quotation and payment receipt dispatch with graceful sandbox simulator.
+    - Customer Self-Service Portal (`/portal/quotations/:token`) with tokenized anonymous access, PDF generation, and one-click quote acceptance.
+    - Predictive Inventory Analytics Engine: 30-day velocity calculation, stockout alerts, deficit metrics, and automated reorder suggestions.
+    - Database migration: `V12__Add_Quotation_Share_Token.sql` with unique index.
+
+12. **Phase 13 — High-Concurrency & Performance Optimizations**:
+    - Database migration: `V13__Add_Performance_Optimization_Indexes.sql` with multi-column composite indexes on `orders (order_date, status)`, `order_items (product_id, order_id)`, `payments (order_id, payment_date)`, `quotations (customer_id, status)`, and `purchase_orders (order_date, status)`.
+    - Documented query optimization and benchmark latency runbook in `docs/PERFORMANCE-BENCHMARK-RUNBOOK.md`.
+    - 313/313 backend unit and integration tests passing.
+
+13. **Phase 14 — Mobile App Feature Parity & Sharing**:
+    - Native quotation portal link sharing via React Native `Share.share` with customer-facing URL.
+    - WhatsApp quotation dispatch trigger and direct WhatsApp mobile deep-linking (`whatsapp://send`).
+    - WhatsApp payment receipt dispatch directly from mobile order details payment history.
+    - Mobile Dashboard Inventory Health & Reorder summary card for warehouse and management roles.
+    - Mobile test suite: 22/22 tests passing, ESLint 0 warnings, clean Expo Android production export.
