@@ -9,6 +9,8 @@
     "export:android": "expo export --platform android --output-dir dist-check-current --clear",
     "build:android:debug": "node scripts/android-build-env.mjs gradle assembleDebug",
     "build:android:release": "node scripts/android-build-env.mjs gradle assembleRelease",
+    "bundle:android:release": "node scripts/android-build-env.mjs gradle bundleRelease",
+    "clean:android": "node scripts/android-build-env.mjs gradle clean",
     "ui:smoke": "node scripts/ui-smoke-test.mjs",
     "web": "expo start --web --port 8082",
     "lint": "eslint .",
