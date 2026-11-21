@@ -62,7 +62,12 @@ jobs:
           cd frontend
           npm ci
 
-      - name: Build Frontend (Vite Production)
+      - name: Lint Frontend
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Test and Build Frontend (Vite Production)
         run: |
           cd frontend
           npm test
@@ -112,6 +117,9 @@ jobs:
           mvn package -DskipTests
           java -jar target/crm-backend-1.0.0.jar --spring.profiles.active=qa &
           curl --fail --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:8081/api/health
+        env:
+          DATABASE_PASSWORD: ""
+          JWT_SECRET: "qa-only-change-me-qa-only-change-me-256-bit-secret"
 
       - name: Start Frontend Server
         run: |

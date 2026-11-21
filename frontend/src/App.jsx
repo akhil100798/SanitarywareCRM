@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import CustomerListPage from './pages/customers/CustomerListPage';
 import CustomerFormPage from './pages/customers/CustomerFormPage';
 import QuotationListPage from './pages/quotations/QuotationListPage';
@@ -55,8 +56,9 @@ function App() {
     return (
         <>
             <Router>
-                <Suspense fallback={<div role="status" className="p-8 text-center text-slate-500">Loading page...</div>}>
-                <Routes>
+                <ErrorBoundary>
+                    <Suspense fallback={<div role="status" className="p-8 text-center text-slate-500">Loading page...</div>}>
+                        <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/portal/quotations/:token" element={<CustomerPortalPage />} />
@@ -232,8 +234,9 @@ function App() {
                     />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-                </Suspense>
+                    </Routes>
+                    </Suspense>
+                </ErrorBoundary>
             </Router>
             <ToastLimiter limit={3} />
             <Toaster

@@ -68,14 +68,14 @@ const QuotationFormPage = () => {
 
     useEffect(() => {
         const handleBeforeUnload = (e) => {
-            if (items.length > 0) {
+            if (formData.items.length > 0) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [items.length]);
+    }, [formData.items.length]);
 
     const filteredProducts = products.filter(p => {
         if (!productSearchQuery.trim()) return true;
