@@ -73,4 +73,22 @@ test.describe('Accessibility Smoke Checks (WCAG 2.1 AA)', () => {
 
         expect(criticalOrSerious).toEqual([]);
     });
+
+    test('Reports Page meets WCAG 2.1 AA accessibility standards', async ({ page }) => {
+        const loginPage = new LoginPage(page);
+        await loginPage.navigate();
+        await loginPage.login('qaadmin', 'Password@123');
+        await page.goto('/reports');
+        await page.waitForLoadState('networkidle');
+
+        const accessibilityScanResults = await new AxeBuilder({ page })
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+            .analyze();
+
+        const criticalOrSerious = accessibilityScanResults.violations.filter(
+            v => v.impact === 'critical' || v.impact === 'serious'
+        );
+
+        expect(criticalOrSerious).toEqual([]);
+    });
 });

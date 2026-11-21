@@ -99,4 +99,82 @@ class ReportControllerTest {
         mockMvc.perform(get("/api/reports/customer-outstanding"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(username = "adminUser", roles = {"ADMIN"})
+    void getGstSummary_AdminRole_Returns200() throws Exception {
+        when(reportService.getGstTaxSummary(any(), any()))
+                .thenReturn(ReportDTO.GstTaxSummaryReport.builder()
+                        .totalTaxableAmount(BigDecimal.ZERO)
+                        .totalTax(BigDecimal.ZERO)
+                        .hsnBreakdowns(Collections.emptyList())
+                        .invoices(Collections.emptyList())
+                        .build());
+
+        mockMvc.perform(get("/api/reports/gst-summary"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "salesUser", roles = {"SALES"})
+    void getGstSummary_SalesRole_Returns403() throws Exception {
+        mockMvc.perform(get("/api/reports/gst-summary"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "adminUser", roles = {"ADMIN"})
+    void exportGstSummary_ReturnsFileBytes() throws Exception {
+        when(reportService.exportGstTaxSummary(any(), any(), any()))
+                .thenReturn("Invoice No,Total\r\nINV-1,100\r\n".getBytes());
+
+        mockMvc.perform(get("/api/reports/gst-summary/export").param("format", "csv"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "managerUser", roles = {"MANAGER"})
+    void getPaymentAging_ManagerRole_Returns200() throws Exception {
+        when(reportService.getPaymentAgingReport(any()))
+                .thenReturn(ReportDTO.PaymentAgingReport.builder()
+                        .totalOutstanding(BigDecimal.ZERO)
+                        .items(Collections.emptyList())
+                        .build());
+
+        mockMvc.perform(get("/api/reports/payment-aging"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "managerUser", roles = {"MANAGER"})
+    void getDeadStock_Returns200() throws Exception {
+        when(reportService.getDeadStockReport(any()))
+                .thenReturn(ReportDTO.DeadStockReport.builder()
+                        .totalDormantProducts(0)
+                        .items(Collections.emptyList())
+                        .build());
+
+        mockMvc.perform(get("/api/reports/dead-stock"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "adminUser", roles = {"ADMIN"})
+    void getBrandMargins_Returns200() throws Exception {
+        when(reportService.getBrandMarginReport(any(), any()))
+                .thenReturn(ReportDTO.BrandMarginReport.builder()
+                        .totalRevenue(BigDecimal.ZERO)
+                        .items(Collections.emptyList())
+                        .build());
+
+        mockMvc.perform(get("/api/reports/brand-margins"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "salesUser", roles = {"SALES"})
+    void getBrandMargins_SalesRole_Returns403() throws Exception {
+        mockMvc.perform(get("/api/reports/brand-margins"))
+                .andExpect(status().isForbidden());
+    }
 }
