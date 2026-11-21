@@ -1,28 +1,35 @@
 package com.sanitaryware.crm.security;
 
+import com.sanitaryware.crm.security.ratelimit.InMemoryRateLimiterStore;
+import com.sanitaryware.crm.security.ratelimit.RateLimiterStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class PortalRateLimiter {
 
     private final int maxRequests;
     private final long windowMillis;
-    private final ConcurrentMap<String, RequestWindow> requests = new ConcurrentHashMap<>();
+    private final RateLimiterStore store;
 
+    @Autowired
     public PortalRateLimiter(
             @Value("${security.portal-rate-limit.max-requests:60}") int maxRequests,
-            @Value("${security.portal-rate-limit.window-ms:60000}") long windowMillis
+            @Value("${security.portal-rate-limit.window-ms:60000}") long windowMillis,
+            RateLimiterStore store
     ) {
         if (maxRequests < 1 || windowMillis < 1) {
             throw new IllegalArgumentException("Portal rate-limit configuration must be positive");
         }
         this.maxRequests = maxRequests;
         this.windowMillis = windowMillis;
+        this.store = store;
+    }
+
+    public PortalRateLimiter(int maxRequests, long windowMillis) {
+        this(maxRequests, windowMillis, new InMemoryRateLimiterStore());
     }
 
     public void checkAllowed(String clientIp) {
@@ -30,38 +37,27 @@ public class PortalRateLimiter {
             return;
         }
         evictExpired();
-        long now = System.currentTimeMillis();
-        requests.compute(clientIp, (key, existing) -> {
-            if (existing == null || now - existing.startedAt() >= windowMillis) {
-                return new RequestWindow(1, now);
-            }
-            if (existing.count() >= maxRequests) {
-                throw new TooManyRequestsException();
-            }
-            return new RequestWindow(existing.count() + 1, existing.startedAt());
-        });
+        if (!store.tryAcquire(clientIp, maxRequests, windowMillis)) {
+            throw new TooManyRequestsException();
+        }
     }
 
     @Scheduled(fixedDelayString = "${security.portal-rate-limit.cleanup-interval-ms:60000}")
     public void evictExpired() {
-        long now = System.currentTimeMillis();
-        requests.entrySet().removeIf(entry -> now - entry.getValue().startedAt() >= windowMillis);
+        store.evictExpired();
     }
 
     public int getTrackedIpCount() {
-        return requests.size();
+        return store.getTrackedKeyCount();
     }
 
     public void reset(String clientIp) {
         if (clientIp != null) {
-            requests.remove(clientIp);
+            store.reset(clientIp);
         }
     }
 
     public void clear() {
-        requests.clear();
-    }
-
-    private record RequestWindow(int count, long startedAt) {
+        store.clear();
     }
 }

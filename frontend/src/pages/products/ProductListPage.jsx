@@ -323,7 +323,7 @@ const ProductListPage = () => {
                             {user?.role === 'ADMIN' && products.length > 0 && (
                                 <button
                                     onClick={handleClearAllProducts}
-                                    className="btn-secondary text-sm text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                                    className="btn-secondary text-sm text-rose-700 hover:text-rose-800 hover:bg-rose-50 border-rose-200"
                                     aria-label="Clear All Products"
                                     title="Delete all products in catalogue"
                                 >
@@ -394,7 +394,7 @@ const ProductListPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-2 border-t border-slate-100 text-xs">
                     {/* Category Filter */}
                     <div>
-                        <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                        <label className="block text-xxs font-bold text-slate-600 uppercase tracking-wider mb-1">Category</label>
                         <select
                             className="input-field text-xs py-2"
                             aria-label="Filter by Category"
@@ -412,7 +412,7 @@ const ProductListPage = () => {
 
                     {/* Brand Filter */}
                     <div>
-                        <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-1">Brand</label>
+                        <label className="block text-xxs font-bold text-slate-600 uppercase tracking-wider mb-1">Brand</label>
                         <select
                             className="input-field text-xs py-2"
                             aria-label="Filter by Brand"
@@ -428,7 +428,7 @@ const ProductListPage = () => {
 
                     {/* Stock Status Filter */}
                     <div>
-                        <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-1">Stock Status</label>
+                        <label className="block text-xxs font-bold text-slate-600 uppercase tracking-wider mb-1">Stock Status</label>
                         <select
                             className="input-field text-xs py-2"
                             aria-label="Filter by Stock Status"
@@ -444,7 +444,7 @@ const ProductListPage = () => {
 
                     {/* Active Status Filter */}
                     <div>
-                        <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</label>
+                        <label className="block text-xxs font-bold text-slate-600 uppercase tracking-wider mb-1">Status</label>
                         <select
                             className="input-field text-xs py-2"
                             aria-label="Filter by Status"
@@ -459,7 +459,7 @@ const ProductListPage = () => {
 
                     {/* Price Range: Min & Max */}
                     <div>
-                        <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-1">Min Price (₹)</label>
+                        <label className="block text-xxs font-bold text-slate-600 uppercase tracking-wider mb-1">Min Price (₹)</label>
                         <input
                             type="number"
                             min="0"
@@ -473,7 +473,7 @@ const ProductListPage = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xxs font-bold text-slate-400 uppercase tracking-wider mb-1">Max Price (₹)</label>
+                        <label className="block text-xxs font-bold text-slate-600 uppercase tracking-wider mb-1">Max Price (₹)</label>
                         <input
                             type="number"
                             min="0"
@@ -518,14 +518,14 @@ const ProductListPage = () => {
 
             {/* View Mode Toggle & Total Count */}
             <div className="flex items-center justify-between px-1">
-                <div className="text-xs text-slate-500 font-medium">
+                <div className="text-xs text-slate-700 font-medium">
                     Showing <strong>{totalElements}</strong> products ({groupedProductFamilies.length} product families)
                 </div>
                 <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/60 shadow-2xs">
                     <button
                         type="button"
                         onClick={() => setViewMode('TABLE')}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-700 hover:text-slate-900'
                             }`}
                     >
                         <List size={14} />
@@ -534,7 +534,7 @@ const ProductListPage = () => {
                     <button
                         type="button"
                         onClick={() => setViewMode('MATRIX')}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${viewMode === 'MATRIX' ? 'bg-white text-blue-600 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900'
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${viewMode === 'MATRIX' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-700 hover:text-slate-900'
                             }`}
                     >
                         <LayoutGrid size={14} />
@@ -614,14 +614,14 @@ const ProductListPage = () => {
                                                     <h3 className="font-bold text-slate-900 text-sm line-clamp-2" title={family.baseName || activeProduct.name}>
                                                         {family.baseName}
                                                     </h3>
-                                                    <p className="text-[11px] font-mono text-slate-400 mt-0.5" title={activeProduct.sku}>
-                                                        SKU: <strong className="text-slate-600">{activeProduct.sku}</strong>
+                                                    <p className="text-[11px] font-mono text-slate-600 mt-0.5" title={activeProduct.sku}>
+                                                        SKU: <strong className="text-slate-700">{activeProduct.sku}</strong>
                                                     </p>
                                                 </div>
 
                                                 {/* Variant Chips (Sizes & Finishes) */}
                                                 <div>
-                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
                                                         <span>Select Variant ({family.variants.length})</span>
                                                         {activeProduct.size && activeProduct.size !== '--' && (
                                                             <span className="text-blue-600 font-bold font-sans">{activeProduct.size}</span>
@@ -656,7 +656,7 @@ const ProductListPage = () => {
                                                         <div className="text-base font-black text-slate-900">
                                                             ₹{formatPrice(activeProduct.sellingPrice || activeProduct.mrp)}
                                                         </div>
-                                                        <div className="text-[10px] text-slate-400">
+                                                        <div className="text-[10px] text-slate-600">
                                                             MRP: ₹{formatPrice(activeProduct.mrp)}
                                                         </div>
                                                     </div>
@@ -773,11 +773,11 @@ const ProductListPage = () => {
                                                             >
                                                                 {product.name}
                                                             </button>
-                                                            <div className={`text-xxs font-mono tracking-wider mt-0.5 ${product.isAvailable === false ? 'text-gray-300' : 'text-slate-400'}`}>
+                                                            <div className={`text-xxs font-mono tracking-wider mt-0.5 ${product.isAvailable === false ? 'text-gray-300' : 'text-slate-600'}`}>
                                                                 SKU: {product.sku}
                                                             </div>
                                                             {product.description && product.description !== '--' && product.description !== 'null' && (
-                                                                <div className={`text-[11px] truncate max-w-xs mt-0.5 ${product.isAvailable === false ? 'text-gray-200' : 'text-slate-500'}`} title={product.description}>
+                                                                <div className={`text-[11px] truncate max-w-xs mt-0.5 ${product.isAvailable === false ? 'text-gray-200' : 'text-slate-600'}`} title={product.description}>
                                                                     {product.description}
                                                                 </div>
                                                             )}
@@ -790,46 +790,46 @@ const ProductListPage = () => {
                                                             {product.size}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-slate-400 text-xs">—</span>
+                                                        <span className="text-slate-600 text-xs">—</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-semibold text-slate-700">{product.brandName || '—'}</div>
-                                                    <div className="text-xs text-slate-400 mt-0.5">{product.categoryName || '—'}</div>
+                                                    <div className="text-xs text-slate-600 mt-0.5">{product.categoryName || '—'}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-bold text-slate-900">₹{formatPrice(product.sellingPrice)}</div>
-                                                    <div className="text-xxs text-slate-400 mt-0.5">MRP: ₹{formatPrice(product.mrp)}</div>
+                                                    <div className="text-xxs text-slate-600 mt-0.5">MRP: ₹{formatPrice(product.mrp)}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {stockQty <= 0 ? (
-                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                                                             Out of Stock
                                                         </span>
                                                     ) : stockQty <= reorder ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                                                             <AlertCircle size={13} className="shrink-0" />
                                                             Low Stock ({stockQty} {product.unit || 'pcs'})
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                             In Stock ({stockQty} {product.unit || 'pcs'})
                                                         </span>
                                                     )}
-                                                    <div className="text-xxs text-slate-400 mt-1">Alert: {product.reorderLevel ?? 0}</div>
+                                                    <div className="text-xxs text-slate-600 mt-1">Alert: {product.reorderLevel ?? 0}</div>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs font-mono">
                                                     {product.barcode && (
                                                         <div className="text-slate-700 font-medium">BAR: {product.barcode}</div>
                                                     )}
                                                     {product.hsnCode && (
-                                                        <div className="text-slate-400 text-xxs">HSN: {product.hsnCode}</div>
+                                                        <div className="text-slate-600 text-xxs">HSN: {product.hsnCode}</div>
                                                     )}
                                                     {product.materialCode && (
-                                                        <div className="text-slate-400 text-xxs">Material: {product.materialCode}</div>
+                                                        <div className="text-slate-600 text-xxs">Material: {product.materialCode}</div>
                                                     )}
                                                     {product.itemCode && (
-                                                        <div className="text-slate-400 text-xxs">Item: {product.itemCode}</div>
+                                                        <div className="text-slate-600 text-xxs">Item: {product.itemCode}</div>
                                                     )}
                                                     {product.gstRate !== null && product.gstRate !== undefined && (
                                                         <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-xxs font-sans font-semibold">
@@ -837,7 +837,7 @@ const ProductListPage = () => {
                                                         </span>
                                                     )}
                                                     {!product.barcode && !product.hsnCode && product.gstRate === null && (
-                                                        <span className="text-slate-400 font-sans">—</span>
+                                                        <span className="text-slate-600 font-sans">—</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">

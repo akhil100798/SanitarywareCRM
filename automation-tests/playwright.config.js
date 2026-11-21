@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const bugHuntRequested = process.argv.some((argument) => argument.includes('bug-hunt'));
 const matrixRequested = process.argv.some((argument) => argument.includes('matrix'));
-const releaseSpecMatch = /(?:api|frontend|security|database)[\\/]specs[\\/].*\.spec\.js/;
+const releaseSpecMatch = /(?:api|frontend|security|database|accessibility)[\\/]specs[\\/].*\.spec\.js/;
 const bugHuntSpecMatch = /(?:api|frontend|security)[\\/]bug-hunt[\\/].*\.spec\.js/;
 const frontendMatrixSpecMatch = /frontend[\\/]matrix[\\/].*\.spec\.js/;
 const mobileMatrixSpecMatch = /mobile[\\/]matrix[\\/].*\.spec\.js/;

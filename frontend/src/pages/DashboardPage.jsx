@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-    Users, 
-    Package, 
-    ShoppingCart, 
-    TrendingUp, 
-    AlertCircle, 
-    ArrowRight, 
-    FileText, 
+import {
+    Users,
+    Package,
+    ShoppingCart,
+    TrendingUp,
+    AlertCircle,
+    ArrowRight,
+    FileText,
     CreditCard,
     DollarSign,
     Percent,
@@ -91,7 +91,7 @@ const DashboardPage = () => {
         return (
             <div className="flex flex-col justify-center items-center h-96 space-y-4">
                 <div className="w-10 h-10 border-4 border-teal border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-500 font-semibold text-sm animate-pulse">Assembling business analytics...</p>
+                <p className="text-slate-700 font-semibold text-sm animate-pulse">Assembling business analytics...</p>
             </div>
         );
     }
@@ -107,12 +107,11 @@ const DashboardPage = () => {
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                     <div className="space-y-2">
                         <div className="flex items-center gap-3">
-                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
-                                dbHealthy 
-                                    ? 'bg-slate-800/80 text-teal border-slate-700' 
-                                    : 'bg-red-950/80 text-red-400 border-red-800'
+                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${dbHealthy
+                                        ? 'bg-slate-800/80 text-teal-400 border-slate-700'
+                                        : 'bg-red-950/80 text-red-400 border-red-800'
                             }`}>
-                                <span className={`w-2 h-2 rounded-full ${dbHealthy ? 'bg-teal animate-pulse' : 'bg-red-500'}`} />
+                                <span className={`w-2 h-2 rounded-full ${dbHealthy ? 'bg-teal-400 animate-pulse' : 'bg-red-500'}`} />
                                 <span>{dbHealthy ? 'Database Connected: Healthy' : 'Database Disconnected / Offline'}</span>
                             </div>
                             <button
@@ -121,7 +120,7 @@ const DashboardPage = () => {
                                 title="Refresh Analytics"
                                 className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 hover:bg-slate-700 rounded-full text-xs font-bold text-slate-300 border border-slate-700 transition-all cursor-pointer disabled:opacity-50"
                             >
-                                <RefreshCw size={12} className={refreshing ? 'animate-spin text-teal' : ''} />
+                                <RefreshCw size={12} className={refreshing ? 'animate-spin text-teal-400' : ''} />
                                 <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
                             </button>
                         </div>
@@ -152,7 +151,7 @@ const DashboardPage = () => {
                 {canViewCustomerData && <DashboardLink allowed={canManageSales} to="/customers" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
-                            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Customers</span>
+                            <span className="text-slate-600 text-xs font-bold uppercase tracking-wider">Total Customers</span>
                             <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{(stats?.totalCustomers || 0).toLocaleString()}</h3>
                         </div>
                         <div className="bg-blue-50 text-blue-600 p-3 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
@@ -169,7 +168,7 @@ const DashboardPage = () => {
                 <Link to="/orders" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
-                            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Orders</span>
+                            <span className="text-slate-600 text-xs font-bold uppercase tracking-wider">Total Orders</span>
                             <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{(stats?.totalOrders || 0).toLocaleString()}</h3>
                         </div>
                         <div className="bg-purple-50 text-purple-600 p-3 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
@@ -185,7 +184,7 @@ const DashboardPage = () => {
                 {canViewFinancials && <DashboardLink allowed={canManageSales} to="/payments" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
-                            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Gross Revenue</span>
+                            <span className="text-slate-600 text-xs font-bold uppercase tracking-wider">Gross Revenue</span>
                             {loading || !stats ? (
                                 <div className="h-9 w-32 bg-slate-200 animate-pulse rounded-lg mt-1" />
                             ) : (
@@ -196,26 +195,26 @@ const DashboardPage = () => {
                             <TrendingUp size={20} />
                         </div>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-50 flex items-center gap-1 text-xs text-emerald-600 font-semibold">
-                        <span>Recorded Payments</span>
-                        <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                    </div>
+                        <div className="mt-4 pt-3 border-t border-slate-50 flex items-center gap-1 text-xs text-emerald-700 font-semibold">
+                            <span>Recorded Payments</span>
+                            <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                        </div>
                 </DashboardLink>}
 
                 {/* Payables */}
                 {canViewFinancials && <DashboardLink allowed={canManageSuppliers} to="/distributor-payments" className="card-container flex flex-col justify-between group">
                     <div className="flex justify-between items-start">
                         <div>
-                            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Supplier Payments</span>
+                            <span className="text-slate-600 text-xs font-bold uppercase tracking-wider">Supplier Payments</span>
                             <h3 className="text-3xl font-extrabold text-slate-900 mt-1">₹{(stats?.distributorPaymentsTotal || 0).toLocaleString('en-IN')}</h3>
                         </div>
                         <div className="bg-amber-50 text-amber-600 p-3 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
                             <CreditCard size={20} />
                         </div>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-50 text-slate-500 text-xs font-medium">
-                        To pay: <span className="text-amber-600 font-bold">₹{(stats?.totalPayables || 0).toLocaleString('en-IN')}</span>
-                    </div>
+                        <div className="mt-4 pt-3 border-t border-slate-50 text-slate-600 text-xs font-medium">
+                            To pay: <span className="text-amber-700 font-bold">₹{(stats?.totalPayables || 0).toLocaleString('en-IN')}</span>
+                        </div>
                 </DashboardLink>}
             </div>
 
@@ -225,7 +224,7 @@ const DashboardPage = () => {
                 <div className="card-container flex flex-col justify-between space-y-6">
                     <div>
                         <h3 className="text-lg font-bold text-slate-900">Financial Ledger</h3>
-                        <p className="text-slate-400 text-xs">Outstanding credit summary</p>
+                        <p className="text-slate-600 text-xs">Outstanding credit summary</p>
                     </div>
                     <div className="space-y-4">
                         <div>
@@ -234,8 +233,8 @@ const DashboardPage = () => {
                                 <span className="text-slate-900 font-extrabold">₹{(stats?.totalReceivables || 0).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                                <div 
-                                    className="bg-emerald-500 h-full rounded-full transition-all duration-1000" 
+                                <div
+                                    className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
                                     style={{ width: `${(stats?.totalReceivables || 0) + (stats?.totalPayables || 0) > 0 ? ((stats?.totalReceivables || 0) / ((stats?.totalReceivables || 0) + (stats?.totalPayables || 0))) * 100 : 50}%` }}
                                 ></div>
                             </div>
@@ -246,18 +245,18 @@ const DashboardPage = () => {
                                 <span className="text-slate-900 font-extrabold">₹{(stats?.totalPayables || 0).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                                <div 
-                                    className="bg-rose-500 h-full rounded-full transition-all duration-1000" 
+                                <div
+                                    className="bg-rose-500 h-full rounded-full transition-all duration-1000"
                                     style={{ width: `${(stats?.totalReceivables || 0) + (stats?.totalPayables || 0) > 0 ? ((stats?.totalPayables || 0) / ((stats?.totalReceivables || 0) + (stats?.totalPayables || 0))) * 100 : 50}%` }}
                                 ></div>
                             </div>
                         </div>
                     </div>
                     <div className="pt-4 border-t border-slate-50 flex items-center justify-between text-xs">
-                        <span className="text-slate-400 font-medium">Net Working Bal.</span>
-                        <span className={`font-bold ${((stats?.totalReceivables || 0) - (stats?.totalPayables || 0)) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            ₹{((stats?.totalReceivables || 0) - (stats?.totalPayables || 0)).toLocaleString('en-IN')}
-                        </span>
+                            <span className="text-slate-600 font-medium">Net Working Bal.</span>
+                            <span className={`font-bold ${((stats?.totalReceivables || 0) - (stats?.totalPayables || 0)) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                ₹{((stats?.totalReceivables || 0) - (stats?.totalPayables || 0)).toLocaleString('en-IN')}
+                            </span>
                     </div>
                 </div>
 
@@ -266,11 +265,11 @@ const DashboardPage = () => {
                     <div className="flex justify-between items-center">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">Revenue Analytics</h3>
-                            <p className="text-slate-400 text-xs">Monthly recorded turnover comparison</p>
+                            <p className="text-slate-600 text-xs">Monthly recorded turnover comparison</p>
                         </div>
                         <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-600 font-semibold rounded-lg">Turnover</span>
                     </div>
-                    
+
                     {/* Visual Bar Chart */}
                     <div className="flex items-end justify-between h-40 pt-4 border-b border-slate-100 px-4">
                         {!stats?.monthlyRevenue || Object.keys(stats.monthlyRevenue).length === 0 ? (
@@ -286,19 +285,18 @@ const DashboardPage = () => {
                                     return (
                                         <div key={month} className="flex flex-col items-center flex-1 group relative">
                                             <div className={`absolute bottom-full mb-2 bg-slate-900 text-white text-xxs font-bold px-2.5 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20 ${isNegative ? 'border border-rose-500 text-rose-200' : ''}`}>
-                                                {isNegative 
-                                                    ? `-₹${Math.abs(numVal).toLocaleString('en-IN')} (Net Return Adjustment)` 
+                                                {isNegative
+                                                    ? `-₹${Math.abs(numVal).toLocaleString('en-IN')} (Net Return Adjustment)`
                                                     : `₹${numVal.toLocaleString('en-IN')}`}
                                             </div>
-                                            <div 
-                                                className={`w-8 rounded-t-lg transition-all duration-1000 cursor-pointer ${
-                                                    isNegative
+                                            <div
+                                                className={`w-8 rounded-t-lg transition-all duration-1000 cursor-pointer ${isNegative
                                                         ? 'bg-gradient-to-t from-rose-500/70 to-rose-500 hover:from-rose-500 hover:to-rose-400'
                                                         : 'bg-gradient-to-t from-teal/60 to-teal rounded-t-lg hover:from-teal hover:to-teal-400'
-                                                }`}
+                                                    }`}
                                                 style={{ height: `${Math.max(pct, 5)}%` }}
                                             ></div>
-                                            <span className={`text-[10px] font-bold uppercase mt-2 ${isNegative ? 'text-rose-400' : 'text-slate-400'}`}>{month.slice(0, 3)}</span>
+                                            <span className={`text-[10px] font-bold uppercase mt-2 ${isNegative ? 'text-rose-600' : 'text-slate-600'}`}>{month.slice(0, 3)}</span>
                                         </div>
                                     );
                                 });
@@ -314,11 +312,11 @@ const DashboardPage = () => {
                 <div className="card-container flex flex-col justify-between space-y-6">
                     <div>
                         <h3 className="text-lg font-bold text-slate-900">Quick Actions</h3>
-                        <p className="text-slate-400 text-xs">Instantly initialize CRM transactions</p>
+                        <p className="text-slate-600 text-xs">Instantly initialize CRM transactions</p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 flex-1">
                         {canManageSales && (<button
-                            onClick={() => navigate('/customers/new')} 
+                            onClick={() => navigate('/customers/new')}
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
                             <div className="flex items-center gap-3">
@@ -327,10 +325,10 @@ const DashboardPage = () => {
                                 </div>
                                 <span className="font-semibold text-slate-700 text-sm">Add New Customer</span>
                             </div>
-                            <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
+                            <ArrowRight size={16} className="text-slate-600 group-hover:text-teal transition-colors" />
                         </button>)}
                         {canManageSales && (<button
-                            onClick={() => navigate('/quotations/new')} 
+                            onClick={() => navigate('/quotations/new')}
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
                             <div className="flex items-center gap-3">
@@ -339,10 +337,10 @@ const DashboardPage = () => {
                                 </div>
                                 <span className="font-semibold text-slate-700 text-sm">Create Quotation</span>
                             </div>
-                            <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
+                            <ArrowRight size={16} className="text-slate-600 group-hover:text-teal transition-colors" />
                         </button>)}
                         {canManageSales && (<button
-                            onClick={() => navigate('/orders/new')} 
+                            onClick={() => navigate('/orders/new')}
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
                             <div className="flex items-center gap-3">
@@ -351,10 +349,10 @@ const DashboardPage = () => {
                                 </div>
                                 <span className="font-semibold text-slate-700 text-sm">Create Customer Order</span>
                             </div>
-                            <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
+                            <ArrowRight size={16} className="text-slate-600 group-hover:text-teal transition-colors" />
                         </button>)}
                         {canManageSuppliers && (<button
-                            onClick={() => navigate('/purchase-orders/new')} 
+                            onClick={() => navigate('/purchase-orders/new')}
                             className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/50 rounded-xl transition-all group text-left"
                         >
                             <div className="flex items-center gap-3">
@@ -363,7 +361,7 @@ const DashboardPage = () => {
                                 </div>
                                 <span className="font-semibold text-slate-700 text-sm">Create Purchase Order</span>
                             </div>
-                            <ArrowRight size={16} className="text-slate-400 group-hover:text-teal transition-colors" />
+                            <ArrowRight size={16} className="text-slate-600 group-hover:text-teal transition-colors" />
                         </button>)}
                     </div>
                 </div>
@@ -373,7 +371,7 @@ const DashboardPage = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">Recent Customer Orders</h3>
-                            <p className="text-slate-400 text-xs">Latest transactions pipeline status</p>
+                            <p className="text-slate-600 text-xs">Latest transactions pipeline status</p>
                         </div>
                         <Link to="/orders" className="text-teal hover:text-teal-800 text-xs font-bold flex items-center gap-1">
                             <span>View All</span>
@@ -388,8 +386,8 @@ const DashboardPage = () => {
                             </div>
                         ) : (
                             stats.recentOrders.slice(0, 4).map((order) => (
-                                <div 
-                                    key={order.id} 
+                                <div
+                                    key={order.id}
                                     className="flex items-center justify-between p-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50/50 transition-colors cursor-pointer"
                                     onClick={() => navigate(canManageSales ? `/orders/edit/${order.id}` : '/orders')}
                                 >
@@ -399,18 +397,17 @@ const DashboardPage = () => {
                                         </div>
                                         <div className="overflow-hidden">
                                             <p className="font-bold text-slate-900 text-sm">{order.orderNumber}</p>
-                                            <p className="text-xs text-slate-400 truncate max-w-[120px]">{order.customerName}</p>
+                                            <p className="text-xs text-slate-600 truncate max-w-[120px]">{order.customerName}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-extrabold text-slate-900 text-sm">₹{order.total.toLocaleString()}</p>
-                                        <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                                            order.status === 'DELIVERED' 
-                                                ? 'bg-emerald-50 text-emerald-700' 
+                                        <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${order.status === 'DELIVERED'
+                                                ? 'bg-emerald-50 text-emerald-700'
                                                 : order.status === 'CONFIRMED'
-                                                ? 'bg-blue-50 text-blue-700'
-                                                : 'bg-amber-50 text-amber-700'
-                                        }`}>
+                                                    ? 'bg-blue-50 text-blue-700'
+                                                    : 'bg-amber-50 text-amber-700'
+                                            }`}>
                                             {order.status}
                                         </span>
                                     </div>
@@ -426,16 +423,16 @@ const DashboardPage = () => {
                 <div className="card-container space-y-6">
                     <div>
                         <h3 className="text-lg font-bold text-slate-900">Product Sales Leaderboard</h3>
-                        <p className="text-slate-400 text-xs">Top performing products by revenue</p>
+                        <p className="text-slate-600 text-xs">Top performing products by revenue</p>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-slate-100 text-slate-400 text-xxs font-bold uppercase tracking-wider">
-                                    <th className="py-3 font-semibold">Product Name</th>
-                                    <th className="py-3 font-semibold text-right">Units Sold</th>
-                                    <th className="py-3 font-semibold text-right">Total Revenue</th>
-                                </tr>
+                                    <tr className="border-b border-slate-100 text-slate-600 text-xxs font-bold uppercase tracking-wider">
+                                        <th className="py-3 font-semibold">Product Name</th>
+                                        <th className="py-3 font-semibold text-right">Units Sold</th>
+                                        <th className="py-3 font-semibold text-right">Total Revenue</th>
+                                    </tr>
                             </thead>
                             <tbody>
                                 {stats.topProducts.map((prod, index) => (

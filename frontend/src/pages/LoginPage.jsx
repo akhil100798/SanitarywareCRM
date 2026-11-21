@@ -123,7 +123,7 @@ const LoginPage = () => {
 
                 <p className="mt-8 text-center text-xs text-slate-400 font-medium">
                     Don't have an account?{' '}
-                    <Link to="/register" className="text-teal font-bold hover:text-teal-400 transition-colors">
+                    <Link to="/register" className="text-teal-400 font-bold hover:text-teal-300 transition-colors">
                         Register
                     </Link>
                 </p>

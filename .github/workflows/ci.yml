@@ -153,6 +153,11 @@ jobs:
           cd automation-tests
           npm run test:frontend
 
+      - name: Run Accessibility Smoke Tests
+        run: |
+          cd automation-tests
+          npm run test:a11y
+
       - name: Archive Playwright Reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -198,3 +203,57 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
           CI: "true"
+
+  security-and-vulnerability-scan:
+    name: Security & Vulnerability Scanning (Trivy & Audits)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: NPM Security Audits
+        run: |
+          echo "Auditing frontend dependencies..."
+          cd frontend && npm audit --audit-level=high || true
+          echo "Auditing mobile dependencies..."
+          cd ../mobile && npm audit --audit-level=high || true
+          echo "Auditing automation-tests dependencies..."
+          cd ../automation-tests && npm audit --audit-level=high || true
+
+      - name: Run Trivy Filesystem Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+
+      - name: Build Docker Images for Scanning
+        run: |
+          docker compose -f docker-compose.prod.yml build
+
+      - name: Run Trivy Docker Image Scanner (Backend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'sanitarywarecrm-backend:latest'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+
+      - name: Run Trivy Docker Image Scanner (Frontend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'sanitarywarecrm-frontend:latest'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
