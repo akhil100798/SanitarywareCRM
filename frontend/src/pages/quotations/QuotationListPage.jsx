@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, FileText, Download, CheckCircle, XCircle, Share2, MessageCircle, Sparkles, Truck, X, RotateCcw, AlertCircle } from 'lucide-react';
 import quotationService from '../../services/quotationService';
@@ -48,34 +48,6 @@ const QuotationListPage = () => {
             toast.success('PDF downloaded successfully', { id: toastId });
         } catch (error) {
             toast.error('Failed to download PDF', { id: toastId });
-        }
-    };
-
-    const handleCopyShareLink = (shareToken) => {
-        if (!shareToken) {
-            toast.error('Quotation link is being prepared. Please refresh in a moment.');
-            return;
-        }
-        const url = `${window.location.origin}/portal/quotations/${shareToken}`;
-        navigator.clipboard.writeText(url).then(
-            () => toast.success('Customer portal link copied to clipboard!'),
-            () => toast.error('Failed to copy link')
-        );
-    };
-
-    const handleSendWhatsApp = async (id, customerName) => {
-        const toastId = toast.loading(`Sending WhatsApp notification to ${customerName || 'customer'}...`);
-        try {
-            const response = await quotationService.sendWhatsApp(id, {});
-            if (response.data.status === 'SENT') {
-                toast.success('Quotation dispatched via WhatsApp!', { id: toastId });
-            } else if (response.data.status === 'SIMULATED') {
-                toast.success('Sandbox mode: WhatsApp notification simulated successfully!', { id: toastId });
-            } else {
-                toast.error(response.data.detail || 'WhatsApp transmission failed', { id: toastId });
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send WhatsApp message', { id: toastId });
         }
     };
 

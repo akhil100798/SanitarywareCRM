@@ -85,12 +85,14 @@ SanitarywareCRM/
 
 ## 5. Database & Flyway Rules
 
-1. **Database engine**: MySQL 8.0+ / 8.4 in staging & production.
-2. **Flyway Schema Versioning**:
-   - Location: `backend/src/main/resources/db/migration/`
-   - Migrations follow standard SQL naming conventions (`V1__Initial_Schema.sql`, `V2__Normalize_And_Unique_Customer_Phone.sql`).
+1. **Database engine**: MySQL 8.0+ / 8.4 in staging & production, H2 in-memory in dev/qa profiles.
+2. **Flyway Schema Versioning & Dual-Dialect Parity**:
+   - MySQL migrations: `backend/src/main/resources/db/migration/` (e.g., `V20__Add_Notification_Dispatch_Logs.sql`).
+   - H2 dialect parity: `backend/src/main/resources/db/h2/` (e.g., `V20__Add_Notification_Dispatch_Logs.sql`).
+   - Dual-dialect rule: Any new migration MUST be added in both locations. The H2 script must avoid MySQL-specific syntax (`ENGINE=InnoDB`, `ON UPDATE CURRENT_TIMESTAMP`, inline foreign key definitions not supported by H2).
+   - Parity verification: Run `mvn test -Dtest=FlywayMigrationValidationTest` after adding any migration.
 3. **CRITICAL DIRECTIVE**: **Never modify an existing applied Flyway migration script**.
-   - Always create a new sequential versioned file (e.g., `V3__<description>.sql`) for schema alterations, new tables, or index additions.
+   - Always create a new sequential versioned file (e.g., `V21__<description>.sql`) for schema alterations, new tables, or index additions.
 4. **Integrity & Constraints**:
    - Enforce foreign keys, unique constraints, and check constraints explicitly in SQL migrations.
    - Maintain `spring.jpa.hibernate.ddl-auto=validate` in production environments.
@@ -111,15 +113,22 @@ SanitarywareCRM/
 
 ---
 
-## 7. Authorization Rules
+## 7. Authorization Rules & RBAC Matrix
 
-1. **Roles & Privileges**:
-   - `ADMIN`: Full access to system configuration, user management, distributors, and financial reports.
-   - `MANAGER`: Product, customer, quotation, order, and distributor management.
-   - `SALES`: Customer creation, quotation generation, and order entry.
-   - `WAREHOUSE`: Inventory tracking and order status updates.
+1. **Role Responsibilities & Access Matrix**:
+   | Module / Resource | ADMIN | MANAGER | SALES | WAREHOUSE |
+   | :--- | :---: | :---: | :---: | :---: |
+   | **System Config & User Management** | Full | Read-Only | Denied | Denied |
+   | **Product Catalog Management** (POST/PUT/DELETE) | Full | Full | Read-Only | Denied (`403`) |
+   | **Product Stock Updates** (`PATCH /api/products/{id}/stock`) | Full | Full | Denied | Allowed (`200`) |
+   | **Customer & Contractor Management** | Full | Full | Full | Read-Only |
+   | **Quotations & Margin Override** | Full | Full | Full | Denied |
+   | **Order Status & Fulfillment Tracking** | Full | Full | Create/View | Status Update |
+   | **Payment Entries & Aging Reports** | Full | Full | Create/View | Denied |
+   | **Financial & GST Analytics Reports** | Full | Full | Denied | Denied |
+   | **System Actuator Prometheus Metrics** | Allowed | Denied | Denied | Denied |
 2. **Method Security**:
-   - Annotate controller endpoints with Spring Security `@PreAuthorize` (e.g., `@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")`).
+   - Annotate controller endpoints with Spring Security `@PreAuthorize` (e.g., `@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")` or `@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')")`).
 3. **User Bootstrap & Registration**:
    - Public self-registration (`/api/auth/register`) is permitted only during initial setup for bootstrapping the primary `ADMIN`.
    - Subsequent user accounts must be created by authenticated `ADMIN` or `MANAGER` users.
@@ -192,12 +201,16 @@ SanitarywareCRM/
 
 ---
 
-## 12. Git Rules
+## 12. Git & Branching Rules
 
-1. **Ignored Files (`.gitignore`)**:
+1. **Branching Strategy & PR-Only Main Policy**:
+   - **CRITICAL DIRECTIVE**: **Never commit or push directly to `main`**.
+   - All changes must originate from dedicated branches (`feat/...`, `fix/...`, `chore/...`).
+   - Merges into `main` must occur exclusively via Pull Requests after all automated CI jobs pass (100% pass on backend unit/integration tests, frontend tests/lint/build, mobile tests/lint, and security/accessibility suites).
+2. **Ignored Files (`.gitignore`)**:
    - **CRITICAL DIRECTIVE**: **Never commit `node_modules`, `target`, build outputs (`dist/`, `build/`), `.expo`, generated test artifacts (`reports/`, `test-results/`), or temporary logs**.
    - Keep `.env.example`, `.env.staging.example`, and `.env.production.example` as clean, non-sensitive templates.
-2. **Instruction Compliance**:
+3. **Instruction Compliance**:
    - **CRITICAL DIRECTIVE**: **Do not commit or push unless explicitly instructed by the user**.
 
 ---
@@ -207,10 +220,10 @@ SanitarywareCRM/
 1. **Clean Code Principles**: Keep components small, functions modular, and adhere to DRY (Don't Repeat Yourself).
 2. **Dependency Management**:
    - **CRITICAL DIRECTIVE**: **Never use `npm audit --force` without explicit user approval**.
-3. **Static Checking & Linting**:
-   - Mobile: `npm run lint` (ESLint)
-   - Frontend: Clean Vite build without unresolved imports or broken references.
-   - Backend: Clean Maven compile without syntax or annotation errors.
+3. **Static Checking & Zero-Warning Enforcement**:
+   - Frontend: `npm run lint` enforced with `--max-warnings=0`. Clean Vite build without unresolved imports or broken references.
+   - Mobile: `npm run lint` enforced with `--max-warnings=0`. Clean test suite passing under `node --test`.
+   - Backend: Clean Maven compile without syntax, deprecation, or annotation errors.
 
 ---
 
@@ -218,19 +231,26 @@ SanitarywareCRM/
 
 1. **Design System**: Modern, responsive admin UI with TailwindCSS styling.
 2. **Consistent Layouts**: Uniform table views, filter headers, modal forms, and metrics cards across entities.
-3. **Feedback Mechanisms**:
+3. **Accessibility**: Maintain WCAG 2.1 AA compliance (contrast, form labels, screen-reader landmarks) verified by automated a11y tests.
+4. **Feedback Mechanisms**:
    - Immediate button loading spinners during async actions.
    - Toast notifications for success/error events.
    - Responsive sidebar and navigation adapted for desktop and mobile viewports.
 
 ---
 
-## 15. Production-Release Rules
+## 15. Production-Release & Pre-Commit Rules
 
 1. **CRITICAL DIRECTIVE**: **Never hardcode production data** or development credentials in code files.
 2. **Environment Validation**: Verify all required environment variables (`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGIN_PATTERNS`) are present and non-default before launching in production.
-3. **Pre-release Verification Checklist**:
-   - Backend tests pass cleanly (`cd backend && mvn test`).
-   - Frontend web builds without error (`cd frontend && npm run build`).
-   - Mobile app bundle exports cleanly (`cd mobile && npm run export:android`).
-   - Database migrations execute cleanly without manual schema edits.
+3. **Mandatory Pre-Commit Verification Checklist**:
+   Before staging, committing, or pushing any branch, verify the entire local test matrix:
+   - **Backend**: `cd backend && mvn test` (must pass 100% with zero failing or skipped assertions).
+   - **Frontend**:
+     - `cd frontend && npm run lint` (0 errors, 0 warnings).
+     - `cd frontend && npm test` (all Vitest unit tests pass).
+     - `cd frontend && npm run build` (clean Vite production bundle).
+   - **Mobile**:
+     - `cd mobile && npm run lint` (0 errors, 0 warnings).
+     - `cd mobile && npm test` (all unit/logic tests pass under `node --test`).
+   - **Flyway Parity**: `cd backend && mvn test -Dtest=FlywayMigrationValidationTest` (when modifying or adding DB migrations).

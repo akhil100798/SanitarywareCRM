@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, CreditCard, Calendar, User, ShoppingBag, MessageCircle, X, Download, Printer } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, CreditCard, Calendar, User, ShoppingBag, MessageCircle, X, Download, Printer } from 'lucide-react';
 import paymentService from '../../services/paymentService';
 import { filterPayments } from '../../utils/paymentSearch';
 import toast from 'react-hot-toast';

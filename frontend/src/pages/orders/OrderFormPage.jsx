@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Truck, CreditCard, Search, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Truck, CreditCard, Search, X } from 'lucide-react';
 import orderService from '../../services/orderService';
 import quotationService from '../../services/quotationService';
 import customerService from '../../services/customerService';
@@ -8,7 +8,6 @@ import { productService } from '../../services/productService';
 import fileUploadService from '../../services/fileUploadService';
 import { useFilePreview } from '../../hooks/useFilePreview';
 import toast from 'react-hot-toast';
-import { calculateDocumentTotals } from '../../utils/documentTotals';
 import ProductSearchSelect from '../../components/ProductSearchSelect';
 
 const OrderFormPage = () => {
@@ -76,17 +75,6 @@ const OrderFormPage = () => {
         }, 300);
         return () => clearTimeout(timer);
     }, [productSearchQuery]);
-
-    const filteredProducts = products.filter(p => {
-        if (!productSearchQuery.trim()) return true;
-        const q = productSearchQuery.toLowerCase();
-        return (
-            p.name?.toLowerCase().includes(q) ||
-            p.sku?.toLowerCase().includes(q) ||
-            p.barcode?.toLowerCase().includes(q) ||
-            p.hsnCode?.toLowerCase().includes(q)
-        );
-    });
 
     const handleProductsUpdate = (newProds) => {
         setProducts(prev => {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Package, AlertCircle, Sparkles, Image as ImageIcon, CheckCircle, HelpCircle, Printer, Sliders } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Package, AlertCircle, Sparkles, Image as ImageIcon, Printer, Sliders } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { productService } from '../../services/productService';
 import toast from 'react-hot-toast';

@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     MessageCircle, 
-    Share2, 
     Send, 
     Copy, 
     Check, 
     ExternalLink, 
-    FileText, 
     Download, 
     QrCode, 
     Phone, 
     User, 
-    Calendar, 
     X,
     ShieldCheck,
     CheckCircle2

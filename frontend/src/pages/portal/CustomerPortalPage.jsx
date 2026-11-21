@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, CheckCircle, Clock, AlertTriangle, FileText, Printer, Building2, Phone, Mail, ShieldCheck } from 'lucide-react';
+import { Download, CheckCircle, Clock, AlertTriangle, Printer, Building2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import quotationService from '../../services/quotationService';
 

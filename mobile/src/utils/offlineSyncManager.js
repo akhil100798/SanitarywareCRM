@@ -140,6 +140,19 @@ export const createOfflineSyncManager = (storage = AsyncStorage) => {
       return filtered;
     },
 
+    async resetQueueItem(localId) {
+      const queue = await this.getQueue();
+      const item = queue.find((i) => i.localId === localId);
+      if (item) {
+        item.syncStatus = 'PENDING_SYNC';
+        item.retryCount = 0;
+        item.syncError = null;
+        await storage.setItem(OFFLINE_STORAGE_KEYS.QUEUE, JSON.stringify(queue));
+        notify();
+      }
+      return item;
+    },
+
     async clearSyncedItems() {
       const queue = await this.getQueue();
       const pendingOnly = queue.filter((item) => item.syncStatus !== 'SYNCED');
@@ -215,11 +228,18 @@ export const createOfflineSyncManager = (storage = AsyncStorage) => {
           results.push({ localId: item.localId, success: true, remoteId: created.id });
         } catch (err) {
           const message = err?.response?.data?.message || err?.message || 'Sync failed due to network or server error';
-          item.syncStatus = 'SYNC_ERROR';
-          item.syncError = message;
+          const isConflict = err?.response?.status === 409;
           item.retryCount = (item.retryCount || 0) + 1;
+          if (isConflict) {
+            item.syncStatus = 'CONFLICT';
+          } else if (item.retryCount >= 5) {
+            item.syncStatus = 'MAX_RETRIES_EXCEEDED';
+          } else {
+            item.syncStatus = 'SYNC_ERROR';
+          }
+          item.syncError = message;
           failedCount++;
-          results.push({ localId: item.localId, success: false, error: message });
+          results.push({ localId: item.localId, success: false, error: message, status: item.syncStatus });
         }
       }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Search, Sparkles, Truck, ChevronUp, ChevronDown, Package } from 'lucide-react';
 import quotationService from '../../services/quotationService';
@@ -76,17 +76,6 @@ const QuotationFormPage = () => {
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [formData.items.length]);
-
-    const filteredProducts = products.filter(p => {
-        if (!productSearchQuery.trim()) return true;
-        const q = productSearchQuery.toLowerCase();
-        return (
-            p.name?.toLowerCase().includes(q) ||
-            p.sku?.toLowerCase().includes(q) ||
-            p.barcode?.toLowerCase().includes(q) ||
-            p.hsnCode?.toLowerCase().includes(q)
-        );
-    });
 
     const handleProductsUpdate = (newProds) => {
         setProducts(prev => {

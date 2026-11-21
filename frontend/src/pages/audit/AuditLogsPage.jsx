@@ -1,19 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import auditLogService from '../../services/auditLogService';
 import {
   ShieldCheck,
-  Search,
   Filter,
   RefreshCw,
   Clock,
   User,
-  Activity,
-  Layers,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
   XCircle,
-  FileText,
   Tag
 } from 'lucide-react';
 import toast from 'react-hot-toast';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Upload, FileText, CheckCircle, AlertTriangle, Loader2, Package, TrendingUp, TrendingDown, Minus, Sparkles } from 'lucide-react';
 import { brandService, productService } from '../../services/productService';
 import toast from 'react-hot-toast';
@@ -19,7 +19,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
 
     // Async job tracking
     const [jobProgress, setJobProgress] = useState(null);
-    const [uploadProgressPercent, setUploadProgressPercent] = useState(0);
+    const [_uploadProgressPercent, setUploadProgressPercent] = useState(0);
     const [uploadTimeoutError, setUploadTimeoutError] = useState(false);
     const pollIntervalRef = useRef(null);
 

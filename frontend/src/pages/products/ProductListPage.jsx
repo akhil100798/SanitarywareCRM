@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
     Plus, Search, Edit, Trash2, Package, Tag, Layers,
     AlertCircle, FileUp, RotateCcw, Eye, ChevronLeft, ChevronRight,
-    Barcode, Hash, LayoutGrid, List, Sparkles, X
+    Barcode, Hash, LayoutGrid, List, X
 } from 'lucide-react';
 import { productService, brandService, categoryService } from '../../services/productService';
 import toast from 'react-hot-toast';
@@ -34,7 +34,7 @@ const ProductListPage = () => {
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(0);
-    const [pageSize, setPageSize] = useState(20);
+    const [pageSize] = useState(20);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const latestRequestId = useRef(0);
@@ -225,23 +225,11 @@ const ProductListPage = () => {
             setProducts(res.data.content || []);
             setTotalPages(res.data.totalPages || 0);
             setTotalElements(res.data.totalElements || 0);
-        }).catch(err => {
+        }).catch(() => {
             toast.error('Failed to reset catalogue list');
         }).finally(() => {
             setLoading(false);
         });
-    };
-
-    const handleDeleteProduct = async (id) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            try {
-                await productService.delete(id);
-                toast.success('Product deleted successfully');
-                fetchProducts(currentPage);
-            } catch (error) {
-                toast.error(error.response?.data?.message || 'Failed to delete product');
-            }
-        }
     };
 
     const handleClearAllProducts = async () => {

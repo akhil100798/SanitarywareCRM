@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, History, RotateCcw, Download, Calendar, FileText, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, History, RotateCcw, Download, Calendar, FileText, AlertTriangle, Loader2 } from 'lucide-react';
 import { catalogVersionService } from '../../services/productService';
 import toast from 'react-hot-toast';
 

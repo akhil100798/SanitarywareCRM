@@ -197,3 +197,81 @@ test('forced offline mode toggles and persists state', async () => {
   await manager.setForcedOffline(false);
   assert.equal(await manager.isForcedOffline(), false);
 });
+
+test('syncQueue flags HTTP 409 error as CONFLICT status without infinite loop', async () => {
+  const storage = createMockStorage();
+  const manager = createOfflineSyncManager(storage);
+
+  const enqueued = await manager.enqueueQuotation({
+    customerId: 44,
+    customerName: 'Conflict Customer',
+    items: [{ productId: 501, quantity: 2, unitPrice: 3000 }]
+  });
+
+  const conflictService = {
+    create: async () => {
+      const err = new Error('Quotation version conflict');
+      err.response = { status: 409, data: { message: 'Customer already has an active quotation with duplicate SKU' } };
+      throw err;
+    }
+  };
+
+  const syncResult = await manager.syncQueue(conflictService);
+  assert.equal(syncResult.failed, 1);
+  assert.equal(syncResult.results[0].status, 'CONFLICT');
+
+  const queue = await manager.getQueue();
+  assert.equal(queue[0].syncStatus, 'CONFLICT');
+  assert.equal(queue[0].syncError, 'Customer already has an active quotation with duplicate SKU');
+  assert.equal(queue[0].retryCount, 1);
+
+  // Subsequent syncQueue should skip CONFLICT items to avoid spamming server
+  const secondSync = await manager.syncQueue(conflictService);
+  assert.equal(secondSync.total, 0);
+
+  // Resetting the item allows it to be retried
+  await manager.resetQueueItem(enqueued.localId);
+  const resetQueue = await manager.getQueue();
+  assert.equal(resetQueue[0].syncStatus, 'PENDING_SYNC');
+  assert.equal(resetQueue[0].retryCount, 0);
+  assert.equal(resetQueue[0].syncError, null);
+});
+
+test('syncQueue marks items reaching max retry threshold as MAX_RETRIES_EXCEEDED', async () => {
+  const storage = createMockStorage();
+  const manager = createOfflineSyncManager(storage);
+
+  await manager.enqueueQuotation({
+    customerId: 55,
+    customerName: 'Persistent Failing Item',
+    items: [{ productId: 502, quantity: 1, unitPrice: 1000 }]
+  });
+
+  const failingService = {
+    create: async () => {
+      throw new Error('Continuous network failure');
+    }
+  };
+
+  // Perform 4 retries (1..4 should remain SYNC_ERROR)
+  for (let r = 1; r <= 4; r++) {
+    const res = await manager.syncQueue(failingService);
+    assert.equal(res.failed, 1);
+    const q = await manager.getQueue();
+    assert.equal(q[0].syncStatus, 'SYNC_ERROR');
+    assert.equal(q[0].retryCount, r);
+  }
+
+  // 5th retry hits MAX_RETRIES_EXCEEDED
+  const finalRes = await manager.syncQueue(failingService);
+  assert.equal(finalRes.failed, 1);
+  assert.equal(finalRes.results[0].status, 'MAX_RETRIES_EXCEEDED');
+
+  const finalQueue = await manager.getQueue();
+  assert.equal(finalQueue[0].syncStatus, 'MAX_RETRIES_EXCEEDED');
+  assert.equal(finalQueue[0].retryCount, 5);
+
+  // Subsequent syncQueue should skip items that exceeded max retries
+  const subsequentSync = await manager.syncQueue(failingService);
+  assert.equal(subsequentSync.total, 0);
+});

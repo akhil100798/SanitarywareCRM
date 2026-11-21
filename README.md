@@ -289,6 +289,33 @@ cd backend && mvn test
 cd frontend && npm run build
 ```
 
+## Load & Performance Testing (k6)
+
+Sanitaryware CRM includes a repeatable load and stress testing script (`scripts/load-test/crm-smoke-load.js`) measuring API throughput, p95 latency (< 250ms), zero 5xx server errors, and rate-limiting resilience under 50 RPS bursts.
+
+### Prerequisites
+Install [k6](https://k6.io/docs/get-started/installation/):
+```bash
+# Windows
+winget install k6 --source winget
+
+# macOS
+brew install k6
+
+# Linux (Debian/Ubuntu)
+sudo apt-get install k6
+```
+
+### Running against Local QA Backend (`http://localhost:8081`)
+```bash
+k6 run scripts/load-test/crm-smoke-load.js
+```
+
+### Running against Staging or Custom Host
+```bash
+k6 run -e BASE_URL="https://staging.crm.example.com" -e ADMIN_USER="admin" -e ADMIN_PASSWORD="your-staging-password" scripts/load-test/crm-smoke-load.js
+```
+
 ## License
 
 Proprietary - All Rights Reserved

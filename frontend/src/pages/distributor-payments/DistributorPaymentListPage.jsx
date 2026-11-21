@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Edit, Trash2, ArrowUpRight } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ArrowUpRight } from 'lucide-react';
 import distributorPaymentService from '../../services/distributorPaymentService';
 import toast from 'react-hot-toast';
 

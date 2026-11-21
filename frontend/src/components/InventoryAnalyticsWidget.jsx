@@ -1,26 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
     AlertCircle, 
     AlertTriangle, 
     CheckCircle2, 
-    TrendingUp, 
     RefreshCw, 
     ShoppingCart, 
-    PackageX, 
     Sparkles, 
-    Building2,
     Clock,
     Flame,
     DollarSign,
     Send,
     MessageCircle,
-    Calendar,
-    ChevronRight,
-    HelpCircle,
-    Zap,
-    ShieldAlert,
-    ExternalLink
+    Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import inventoryAnalyticsService from '../services/inventoryAnalyticsService';
@@ -98,10 +90,6 @@ export default function InventoryAnalyticsWidget() {
     if (!summary) return null;
 
     const {
-        totalProducts = 0,
-        healthyStockCount = 0,
-        lowStockCount = 0,
-        outOfStockCount = 0,
         totalReorderEstimatedCost = 0,
         lowStockAlerts = [],
         reorderSuggestions = []

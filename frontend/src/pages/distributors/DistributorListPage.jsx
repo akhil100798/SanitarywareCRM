@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Mail, Phone, MapPin, X } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Mail, Phone, MapPin, X } from 'lucide-react';
 import distributorService from '../../services/distributorService';
 import toast from 'react-hot-toast';
 

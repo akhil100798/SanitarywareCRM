@@ -17,7 +17,6 @@ let ImagePicker = {
   launchImageLibraryAsync: async () => ({ canceled: true })
 };
 try {
-  // eslint-disable-next-line global-require
   const picker = require('expo-image-picker');
   if (picker) ImagePicker = picker;
 } catch {

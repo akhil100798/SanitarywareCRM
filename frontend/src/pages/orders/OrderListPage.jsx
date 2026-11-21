@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, ShoppingBag, Truck, CreditCard, ChevronRight, Download, X, RotateCcw, AlertCircle, Printer } from 'lucide-react';
 import orderService from '../../services/orderService';
@@ -58,7 +58,7 @@ const OrderListPage = () => {
     };
 
     // BUG-119: Distinct Print Invoice handler triggering native browser print preview
-    const handlePrintInvoice = async (id, orderNumber) => {
+    const handlePrintInvoice = async (id, _orderNumber) => {
         const toastId = toast.loading('Opening invoice print preview...');
         try {
             const response = await orderService.downloadInvoicePdf(id);
