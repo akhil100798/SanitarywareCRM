@@ -119,15 +119,21 @@ test.describe('Product and settings role authorization', () => {
     expect(searchResponse.status()).toBe(200);
   });
 
-  test('WAREHOUSE can view inventory but cannot mutate products', async () => {
+  test('WAREHOUSE can view inventory and adjust stock but cannot mutate products', async () => {
     const listResponse = await warehouseClient.get('/api/products');
     expect(listResponse.status()).toBe(200);
     const lowStockResponse = await warehouseClient.get('/api/products/low-stock');
     expect(lowStockResponse.status()).toBe(200);
-    const updateResponse = await warehouseClient.patch(`/api/products/${protectedProductId}/stock`, {
+    const stockResponse = await warehouseClient.patch(`/api/products/${protectedProductId}/stock`, {
       params: { quantity: 10 },
     });
-    expect(updateResponse.status()).toBe(403);
+    expect(stockResponse.status()).toBe(200);
+    const mutateResponse = await warehouseClient.put(`/api/products/${protectedProductId}`, {
+      data: productPayload('WAREHOUSE-MUTATE', categoryId, brandId),
+    });
+    expect(mutateResponse.status()).toBe(403);
+    const deleteResponse = await warehouseClient.delete(`/api/products/${protectedProductId}`);
+    expect(deleteResponse.status()).toBe(403);
   });
 
   test('only ADMIN can update settings; MANAGER retains read-only access', async () => {
