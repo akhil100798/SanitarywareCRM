@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class DistributorServiceImpl implements DistributorService {
 
     private final DistributorRepository distributorRepository;
+    private final com.sanitaryware.crm.repository.PurchaseOrderRepository purchaseOrderRepository;
     private final DistributorMapper distributorMapper;
     private final AuditService auditService;
     private final jakarta.persistence.EntityManager entityManager;
@@ -81,6 +82,11 @@ public class DistributorServiceImpl implements DistributorService {
     public void deleteDistributor(Long id) {
         Distributor distributor = lockedDistributor(id);
         
+        long poCount = purchaseOrderRepository.countByDistributorId(id);
+        if (poCount > 0) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Cannot delete distributor with active purchase orders. Archive instead.");
+        }
+
         // Soft delete by setting inactive
         distributor.setIsActive(false);
         distributorRepository.save(distributor);

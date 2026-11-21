@@ -89,4 +89,16 @@ body {
   .badge-neutral {
     @apply bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider;
   }
+
+  /* Prevent modal scroll chaining to window body (BUG-178) */
+  dialog, [role="dialog"], .overflow-y-auto {
+    overscroll-behavior: contain;
+  }
+
+  /* Textarea vertical resize limit (BUG-186) */
+  textarea {
+    resize: vertical;
+    max-height: 16rem; /* 256px / max-h-64 */
+    min-height: 4.5rem;
+  }
 }

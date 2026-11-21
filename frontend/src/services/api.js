@@ -4,6 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -26,7 +27,16 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        // Parse Blob error responses into structured JSON
+        if (error.response?.data instanceof Blob) {
+            try {
+                const text = await error.response.data.text();
+                error.response.data = JSON.parse(text);
+            } catch (e) {
+                // Keep original blob data if not valid JSON
+            }
+        }
         const url = error.config?.url || '';
         if (error.response?.status === 401 && !url.includes('/auth/login') && !url.includes('/portal/')) {
             sessionStorage.removeItem('token');

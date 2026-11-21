@@ -16,7 +16,13 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-status-bar"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to import contractor estimates and receipts.",
+          "cameraPermission": "The app accesses your camera to photograph contractor notes and plumbing estimates."
+        }
+      ]
     ]
   }
 }

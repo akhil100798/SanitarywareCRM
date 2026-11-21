@@ -10,6 +10,7 @@ import com.sanitaryware.crm.entity.Category;
 import com.sanitaryware.crm.entity.Product;
 import com.sanitaryware.crm.entity.ProductImage;
 import com.sanitaryware.crm.entity.User;
+import com.sanitaryware.crm.exception.BusinessValidationException;
 import com.sanitaryware.crm.exception.ConflictException;
 import com.sanitaryware.crm.exception.ResourceNotFoundException;
 import com.sanitaryware.crm.mapper.ProductMapper;
@@ -43,9 +44,11 @@ public class ProductServiceImpl implements ProductService {
     private final AuditService auditService;
     private final CatalogPdfImportService catalogPdfImportService;
     private final AccessControlService accessControlService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Override
     public ProductDTO createProduct(ProductDTO productDTO) {
+        validatePricing(productDTO);
         if (productDTO.getSku() != null && !productDTO.getSku().isBlank()) {
             productRepository.findBySku(productDTO.getSku().trim()).ifPresent(existing -> {
                 throw new ConflictException("Product with SKU " + productDTO.getSku() + " already exists");
@@ -74,6 +77,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
+        validatePricing(productDTO);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
@@ -98,8 +102,15 @@ public class ProductServiceImpl implements ProductService {
         Brand brand = brandRepository.findById(productDTO.getBrandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + productDTO.getBrandId()));
 
+        String oldBin = product.getBinLocation();
+        String newBin = productDTO.getBinLocation();
         ProductMapper.updateEntity(product, productDTO, category, brand);
         Product updatedProduct = productRepository.save(product);
+
+        if (newBin != null && !java.util.Objects.equals(oldBin, newBin)) {
+            auditService.logEvent("BIN_RELOCATED", "PRODUCT", updatedProduct.getId(),
+                    "Product " + updatedProduct.getSku() + " bin relocated: " + (oldBin != null ? oldBin : "None") + " -> " + newBin);
+        }
 
         auditService.logEvent("UPDATE", "PRODUCT", updatedProduct.getId(),
                 "Updated product " + updatedProduct.getName() + " (SKU: " + updatedProduct.getSku() + ")");
@@ -208,14 +219,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void updateStock(Long id, Integer quantity) {
-        Product product = productRepository.findById(id)
+        updateStock(id, quantity, "MANUAL_ADJUSTMENT", null);
+    }
+
+    @Override
+    @Transactional
+    public void updateStock(Long id, Integer quantity, String reason, String rmaCode) {
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new BusinessValidationException("Reason for adjustment is mandatory");
+        }
+        Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        product.setStockQuantity(product.getStockQuantity() + quantity);
+        entityManager.refresh(product, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        int currentStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        int delta = quantity != null ? quantity : 0;
+        if (currentStock + delta < 0) {
+            throw new BusinessValidationException("Adjustment cannot reduce inventory below zero (Max reduction: " + currentStock + ")");
+        }
+        product.setStockQuantity(currentStock + delta);
         productRepository.save(product);
 
-        auditService.logEvent("ADJUST_STOCK", "PRODUCT", id,
-                "Adjusted stock of product " + product.getName() + " by " + quantity + " (new stock: " + product.getStockQuantity() + ")");
+        String auditMsg = "Adjusted stock of product " + product.getName() + " by " + quantity + " (new stock: " + product.getStockQuantity() + "). Reason: " + reason.trim();
+        if (rmaCode != null && !rmaCode.trim().isEmpty()) {
+            auditMsg += " [RMA: " + rmaCode.trim() + "]";
+        }
+
+        auditService.logEvent("ADJUST_STOCK", "PRODUCT", id, auditMsg);
     }
 
     @Override
@@ -380,5 +411,18 @@ public class ProductServiceImpl implements ProductService {
         productImageRepository.deleteAll();
         productRepository.deleteAll();
         auditService.logEvent("DELETE_ALL", "PRODUCT", 0L, "Deleted all products from catalogue");
+    }
+
+    private void validatePricing(ProductDTO productDTO) {
+        if (productDTO.getMrp() != null && productDTO.getMrp().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessValidationException("MRP must be greater than zero");
+        }
+        if (productDTO.getSellingPrice() != null && productDTO.getSellingPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessValidationException("Selling price must be greater than zero");
+        }
+        if (productDTO.getSellingPrice() != null && productDTO.getMrp() != null
+                && productDTO.getSellingPrice().compareTo(productDTO.getMrp()) > 0) {
+            throw new BusinessValidationException("Selling price cannot exceed MRP");
+        }
     }
 }

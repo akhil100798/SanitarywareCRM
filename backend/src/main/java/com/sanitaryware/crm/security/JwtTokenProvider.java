@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -54,12 +55,19 @@ public class JwtTokenProvider {
                 .subject(subject)
                 .issuedAt(now)
                 .expiration(expiryDate)
-                .signWith(getSigningKey())
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("JWT token cannot be null or empty");
+        }
+        String username = extractClaim(token, Claims::getSubject);
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("JWT subject cannot be null or empty");
+        }
+        return username.trim();
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -68,16 +76,30 @@ public class JwtTokenProvider {
     }
 
     private Claims extractAllClaims(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("JWT token cannot be null or empty");
+        }
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(token.trim())
                 .getPayload();
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        Claims claims = extractAllClaims(token);
-        return userDetails.getUsername().equals(claims.getSubject())
-                && claims.getExpiration() != null && claims.getExpiration().after(new Date());
+        if (token == null || token.trim().isEmpty() || userDetails == null) {
+            return false;
+        }
+        try {
+            Claims claims = extractAllClaims(token);
+            String subject = claims.getSubject();
+            if (subject == null || subject.trim().isEmpty()) {
+                return false;
+            }
+            return userDetails.getUsername().equals(subject.trim())
+                    && claims.getExpiration() != null && claims.getExpiration().after(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 }

@@ -45,6 +45,14 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PurchaseOrderDTO createPurchaseOrder(PurchaseOrderDTO dto) {
+        if (dto.getItems() == null || dto.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Purchase order must contain at least one item line");
+        }
+        if (dto.getExpectedDeliveryDate() != null && dto.getOrderDate() != null) {
+            if (dto.getExpectedDeliveryDate().isBefore(dto.getOrderDate())) {
+                throw new IllegalArgumentException("Expected delivery date cannot precede order date");
+            }
+        }
         Distributor distributor = resolveDistributor(dto.getDistributorId());
         PurchaseOrder po = purchaseOrderMapper.toEntity(dto);
         po.setDistributor(distributor);
@@ -104,6 +112,11 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
         if (existingPo.getStatus() == PurchaseOrder.POStatus.CANCELLED) {
             throw new com.sanitaryware.crm.exception.ConflictException("Cannot update a cancelled Purchase Order");
+        }
+        if (dto.getExpectedDeliveryDate() != null && dto.getOrderDate() != null) {
+            if (dto.getExpectedDeliveryDate().isBefore(dto.getOrderDate())) {
+                throw new IllegalArgumentException("Expected delivery date cannot precede order date");
+            }
         }
 
         Distributor distributor = dto.getDistributorId() == null

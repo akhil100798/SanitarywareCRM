@@ -27,6 +27,7 @@ public interface ProductService {
     List<ProductDTO> getFeaturedProducts();
     void deleteProduct(Long id);
     void updateStock(Long id, Integer quantity);
+    void updateStock(Long id, Integer quantity, String reason, String rmaCode);
     CatalogImportPreviewResponse previewCatalogUpload(Long brandId, MultipartFile file);
     BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String reviewedSha256);
     BulkUploadResponse bulkCatalogUpload(Long brandId, MultipartFile file, String reviewedSha256,

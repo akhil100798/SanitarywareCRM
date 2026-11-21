@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/authService';
 import toast from 'react-hot-toast';
-import { User, Mail, Phone, Lock, Save } from 'lucide-react';
+import { User, Mail, Phone, Lock, Save, Eye, EyeOff } from 'lucide-react';
 
 const ProfilePage = () => {
     const { user, setUser } = useAuthStore();
     const [loading, setLoading] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -152,39 +155,69 @@ const ProfilePage = () => {
                             <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                 <Lock size={16} /> Current Password
                             </label>
-                            <input
-                                type="password"
-                                name="currentPassword"
-                                autoComplete="current-password"
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={formData.currentPassword}
-                                onChange={handleChange}
-                                placeholder="Required only if changing password"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showCurrentPassword ? "text" : "password"}
+                                    name="currentPassword"
+                                    autoComplete="current-password"
+                                    className="w-full px-4 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    value={formData.currentPassword}
+                                    onChange={handleChange}
+                                    placeholder="Required only if changing password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                    aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">New Password</label>
-                                <input
-                                    type="password"
-                                    name="newPassword"
-                                    autoComplete="new-password"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.newPassword}
-                                    onChange={handleChange}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showNewPassword ? "text" : "password"}
+                                        name="newPassword"
+                                        autoComplete="new-password"
+                                        className="w-full px-4 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={formData.newPassword}
+                                        onChange={handleChange}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                        aria-label={showNewPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    autoComplete="new-password"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        autoComplete="new-password"
+                                        className="w-full px-4 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

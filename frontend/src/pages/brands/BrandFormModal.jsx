@@ -35,6 +35,12 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
         if (isOpen && firstInputRef.current) {
             setTimeout(() => firstInputRef.current.focus(), 50);
         }
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            return () => {
+                document.body.style.overflow = 'unset';
+            };
+        }
     }, [initialData, isOpen]);
 
     const handleChange = (e) => {
@@ -67,6 +73,10 @@ const BrandFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (formData.logoUrl && !/^(https?:\/\/|data:image\/)/i.test(formData.logoUrl.trim())) {
+            toast.error('Logo URL must start with http://, https://, or data:image/');
+            return;
+        }
         try {
             setLoading(true);
             let savedBrand;

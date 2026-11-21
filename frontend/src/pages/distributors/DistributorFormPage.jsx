@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
 import distributorService from '../../services/distributorService';
 import toast from 'react-hot-toast';
 
@@ -8,6 +8,7 @@ const DistributorFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditMode = !!id;
+    const [showAccount, setShowAccount] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -59,6 +60,10 @@ const DistributorFormPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (formData.pincode && !/^[1-9][0-9]{5}$/.test(formData.pincode.trim())) {
+            toast.error('Indian pincodes must be 6 digits');
+            return;
+        }
         try {
             setLoading(true);
             if (isEditMode) {
@@ -209,6 +214,8 @@ const DistributorFormPage = () => {
                                 <input
                                     type="text"
                                     name="pincode"
+                                    maxLength={6}
+                                    placeholder="6-digit PIN code (e.g. 560001)"
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.pincode}
                                     onChange={handleChange}
@@ -232,14 +239,27 @@ const DistributorFormPage = () => {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Account Number</label>
-                                <input
-                                    type="text"
-                                    name="bankAccountNumber"
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.bankAccountNumber}
-                                    onChange={handleChange}
-                                />
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-gray-700">Account Number</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAccount(!showAccount)}
+                                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                    >
+                                        {showAccount ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        <span>{showAccount ? 'Mask' : 'Reveal'}</span>
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type={showAccount ? "text" : "password"}
+                                        name="bankAccountNumber"
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm tracking-wider"
+                                        value={formData.bankAccountNumber}
+                                        onChange={handleChange}
+                                        placeholder="•••• •••• •••• ••••"
+                                    />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">IFSC Code</label>

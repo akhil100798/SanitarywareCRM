@@ -14,6 +14,7 @@ public class PaymentMapper {
                 .id(payment.getId())
                 .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)
                 .orderNumber(payment.getOrder() != null ? payment.getOrder().getOrderNumber() : null)
+                .customerName(payment.getOrder() != null && payment.getOrder().getCustomer() != null ? payment.getOrder().getCustomer().getName() : null)
                 .paymentNumber(payment.getPaymentNumber())
                 .paymentDate(payment.getPaymentDate())
                 .amount(payment.getAmount())

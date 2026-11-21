@@ -41,6 +41,9 @@ public class Category {
     @Column(nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "lead_time_days")
+    private Integer leadTimeDays = 14;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

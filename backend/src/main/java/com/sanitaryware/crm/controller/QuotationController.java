@@ -1,6 +1,12 @@
 package com.sanitaryware.crm.controller;
 
+import com.sanitaryware.crm.dto.BackToBackPoPreviewDTO;
+import com.sanitaryware.crm.dto.BoqImportResponseDTO;
+import com.sanitaryware.crm.dto.GenerateBackToBackPoRequestDTO;
+import com.sanitaryware.crm.dto.PurchaseOrderDTO;
 import com.sanitaryware.crm.dto.QuotationDTO;
+import com.sanitaryware.crm.service.BackToBackPoService;
+import com.sanitaryware.crm.service.BoqImportService;
 import com.sanitaryware.crm.service.QuotationService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import jakarta.validation.Valid;
@@ -10,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -25,6 +32,33 @@ public class QuotationController {
 
     @Autowired
     private com.sanitaryware.crm.service.WhatsAppService whatsAppService;
+
+    @Autowired
+    private BoqImportService boqImportService;
+
+    @Autowired
+    private BackToBackPoService backToBackPoService;
+
+    @GetMapping("/{id}/back-to-back-preview")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<BackToBackPoPreviewDTO> getBackToBackPreview(@PathVariable Long id) {
+        return ResponseEntity.ok(backToBackPoService.getBackToBackPreview(id));
+    }
+
+    @PostMapping("/{id}/generate-purchase-orders")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<List<PurchaseOrderDTO>> generatePurchaseOrders(
+            @PathVariable Long id,
+            @RequestBody @Valid GenerateBackToBackPoRequestDTO request) {
+        return ResponseEntity.ok(backToBackPoService.generatePurchaseOrders(id, request));
+    }
+
+    @PostMapping("/import-boq")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
+    public ResponseEntity<BoqImportResponseDTO> importBoq(
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(boqImportService.parseAndMatchBoq(file));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
@@ -63,7 +97,13 @@ public class QuotationController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
-    public ResponseEntity<QuotationDTO> updateStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<QuotationDTO> updateStatus(
+            @PathVariable Long id,
+            @RequestParam String status,
+            @RequestParam(required = false) String reason) {
+        if (reason != null && !reason.isBlank()) {
+            return ResponseEntity.ok(quotationService.updateStatus(id, status, reason));
+        }
         return ResponseEntity.ok(quotationService.updateStatus(id, status));
     }
 

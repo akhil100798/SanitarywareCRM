@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Truck, CreditCard, Search } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Truck, CreditCard, Search, X } from 'lucide-react';
 import orderService from '../../services/orderService';
 import quotationService from '../../services/quotationService';
 import customerService from '../../services/customerService';
@@ -24,6 +24,7 @@ const OrderFormPage = () => {
     const [productSearchQuery, setProductSearchQuery] = useState('');
     const [uploadingFile, setUploadingFile] = useState(false);
     const [localBillPadFile, setLocalBillPadFile] = useState(null);
+    const [lightboxImage, setLightboxImage] = useState(null);
     const [formData, setFormData] = useState({
         customerId: '',
         orderDate: new Date().toISOString().split('T')[0],
@@ -260,6 +261,11 @@ const OrderFormPage = () => {
             return;
         }
 
+        if (formData.deliveryDate && formData.orderDate && formData.deliveryDate < formData.orderDate) {
+            toast.error('Expected delivery date cannot precede order date');
+            return;
+        }
+
         for (const item of formData.items) {
             if (!item.productId) {
                 toast.error('All line items must have a selected product');
@@ -389,6 +395,7 @@ const OrderFormPage = () => {
                                 type="date"
                                 className="input-field text-sm"
                                 value={formData.deliveryDate}
+                                min={formData.orderDate || undefined}
                                 onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
                             />
                         </div>
@@ -583,10 +590,14 @@ const OrderFormPage = () => {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500">Order Internal Notes</label>
+                            <div className="flex justify-between items-center">
+                                <label className="text-xs font-semibold text-slate-500">Order Internal Notes</label>
+                                <span className="text-[10px] text-slate-400">{(formData.notes || '').length}/255</span>
+                            </div>
                             <textarea
                                 className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal h-24 text-sm resize-none"
-                                value={formData.notes}
+                                maxLength={255}
+                                value={formData.notes || ''}
                                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             />
                         </div>
@@ -617,17 +628,18 @@ const OrderFormPage = () => {
                                     <img
                                         src={billPadPreview.url}
                                         alt="Bill Pad"
-                                        className="h-16 w-16 rounded-xl border border-slate-200 object-cover"
+                                        className="h-16 w-16 rounded-xl border border-slate-200 object-cover cursor-pointer hover:opacity-80 transition-opacity shadow-xs"
+                                        onClick={() => setLightboxImage(billPadPreview.url)}
+                                        title="Click to enlarge"
                                     />
                                     <div>
-                                        <a
-                                            href={billPadPreview.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-teal hover:underline font-extrabold"
+                                        <button
+                                            type="button"
+                                            onClick={() => setLightboxImage(billPadPreview.url)}
+                                            className="text-xs text-teal hover:underline font-extrabold text-left block"
                                         >
                                             View uploaded reference pad
-                                        </a>
+                                        </button>
                                         <div className="text-[10px] text-slate-400 mt-0.5 font-mono">{formData.billPadImageUrl}</div>
                                     </div>
                                 </div>
@@ -687,6 +699,29 @@ const OrderFormPage = () => {
                     </div>
                 </div>
             </form>
+
+            {/* Lightbox Modal (BUG-096) */}
+            {lightboxImage && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+                    onClick={() => setLightboxImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] bg-white p-2 rounded-2xl overflow-hidden shadow-2xl">
+                        <button
+                            type="button"
+                            onClick={() => setLightboxImage(null)}
+                            className="absolute top-3 right-3 bg-slate-900/60 hover:bg-slate-900 text-white p-1.5 rounded-full z-10 transition-colors"
+                        >
+                            <X size={18} />
+                        </button>
+                        <img
+                            src={lightboxImage}
+                            alt="Enlarged Reference Pad"
+                            className="max-h-[85vh] w-auto object-contain rounded-xl"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

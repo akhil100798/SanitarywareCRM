@@ -10,6 +10,7 @@ import com.sanitaryware.crm.security.JwtAuthenticationFilter;
 import com.sanitaryware.crm.security.JwtTokenProvider;
 import com.sanitaryware.crm.security.TokenRevocationService;
 import com.sanitaryware.crm.service.ProductService;
+import com.sanitaryware.crm.service.CatalogJobService;
 import com.sanitaryware.crm.web.PaginationFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,9 @@ class GlobalExceptionHandlerTest {
 
     @MockBean
     private ProductService productService;
+
+    @MockBean
+    private CatalogJobService catalogJobService;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;

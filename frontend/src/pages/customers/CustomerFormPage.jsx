@@ -4,6 +4,15 @@ import { ArrowLeft, Save } from 'lucide-react';
 import customerService from '../../services/customerService';
 import toast from 'react-hot-toast';
 
+const INDIAN_STATES = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+    'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+    'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+    'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry',
+    'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Andaman and Nicobar Islands', 'Lakshadweep'
+];
+
 const CustomerFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -28,6 +37,14 @@ const CustomerFormPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [emailError, setEmailError] = useState('');
+    const [sameAsBilling, setSameAsBilling] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+
+    useEffect(() => {
+        if (sameAsBilling) {
+            setFormData(prev => ({ ...prev, shippingAddress: prev.billingAddress }));
+        }
+    }, [formData.billingAddress, sameAsBilling]);
 
     useEffect(() => {
         if (isEditMode) {
@@ -48,7 +65,15 @@ const CustomerFormPage = () => {
         }
     };
 
+    const handleBack = () => {
+        if (isDirty && !window.confirm('You have unsaved changes. Discard?')) {
+            return;
+        }
+        navigate('/customers');
+    };
+
     const handleChange = (e) => {
+        setIsDirty(true);
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -95,7 +120,7 @@ const CustomerFormPage = () => {
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex items-center">
                 <button
-                    onClick={() => navigate('/customers')}
+                    onClick={handleBack}
                     className="flex items-center text-slate-500 hover:text-slate-900 transition-colors font-semibold text-sm group"
                 >
                     <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-0.5 transition-transform" />
@@ -232,7 +257,23 @@ const CustomerFormPage = () => {
                                 ></textarea>
                             </div>
                             <div className="md:col-span-2 space-y-1.5">
-                                <label htmlFor="customer-shipping-address" className="text-xs font-semibold text-slate-500">Shipping Address</label>
+                                <div className="flex items-center justify-between">
+                                    <label htmlFor="customer-shipping-address" className="text-xs font-semibold text-slate-500">Shipping Address</label>
+                                    <label className="flex items-center space-x-1.5 cursor-pointer text-xs text-teal font-medium">
+                                        <input
+                                            type="checkbox"
+                                            checked={sameAsBilling}
+                                            onChange={(e) => {
+                                                setSameAsBilling(e.target.checked);
+                                                if (e.target.checked) {
+                                                    setFormData(prev => ({ ...prev, shippingAddress: prev.billingAddress }));
+                                                }
+                                            }}
+                                            className="w-3.5 h-3.5 text-teal border-slate-300 rounded focus:ring-teal"
+                                        />
+                                        <span>Same as Billing Address</span>
+                                    </label>
+                                </div>
                                 <textarea
                                     id="customer-shipping-address"
                                     name="shippingAddress"
@@ -259,10 +300,17 @@ const CustomerFormPage = () => {
                                     id="customer-state"
                                     type="text"
                                     name="state"
+                                    list="indian-states-list"
                                     className="input-field text-sm"
                                     value={formData.state}
                                     onChange={handleChange}
+                                    placeholder="Select or enter Indian State"
                                 />
+                                <datalist id="indian-states-list">
+                                    {INDIAN_STATES.map((stateName) => (
+                                        <option key={stateName} value={stateName} />
+                                    ))}
+                                </datalist>
                             </div>
                             <div className="space-y-1.5">
                                 <label htmlFor="customer-pincode" className="text-xs font-semibold text-slate-500">Pincode</label>
@@ -296,7 +344,7 @@ const CustomerFormPage = () => {
                     <div className="flex justify-end space-x-3 pt-6 border-t border-slate-100">
                         <button
                             type="button"
-                            onClick={() => navigate('/customers')}
+                            onClick={handleBack}
                             className="btn-secondary text-sm px-6"
                         >
                             Cancel

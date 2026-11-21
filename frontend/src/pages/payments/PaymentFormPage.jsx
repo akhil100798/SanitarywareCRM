@@ -19,6 +19,7 @@ const PaymentFormPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [order, setOrder] = useState(null);
+    const [availableOrders, setAvailableOrders] = useState([]);
     const [formData, setFormData] = useState({
         orderId: orderId || '',
         paymentDate: new Date().toISOString().split('T')[0],
@@ -29,7 +30,18 @@ const PaymentFormPage = () => {
     });
 
     useEffect(() => {
-        if (orderId) fetchOrder();
+        if (orderId) {
+            fetchOrder();
+        } else {
+            // Standalone payment form: fetch pending orders for picker (BUG-126)
+            orderService.getAll({ size: 100 }).then(res => {
+                const list = res.data?.content || res.data || [];
+                const pendingOrders = list.filter(o => o.status !== 'CANCELLED' && Number(o.balanceAmount || 0) > 0);
+                setAvailableOrders(pendingOrders);
+            }).catch(err => {
+                console.error('Failed to load pending orders for payment selector', err);
+            });
+        }
     }, [orderId]);
 
     const fetchOrder = async () => {
@@ -49,6 +61,14 @@ const PaymentFormPage = () => {
         if (submitting.current) return;
         if (formData.amount <= 0) {
             toast.error('Amount must be greater than 0');
+            return;
+        }
+        if (formData.paymentDate && formData.paymentDate > new Date().toISOString().split('T')[0]) {
+            toast.error('Payment date cannot be in the future');
+            return;
+        }
+        if (formData.paymentMethod === 'CHEQUE' && (!formData.referenceNumber || !formData.referenceNumber.trim())) {
+            toast.error('Cheque/Instrument reference number is mandatory for cheque payments');
             return;
         }
 
@@ -120,6 +140,47 @@ const PaymentFormPage = () => {
                 )}
 
                 <div className="space-y-4">
+                    {!orderId && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Select Order to Pay *</label>
+                            <select
+                                required
+                                aria-label="Select Order"
+                                className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                                value={formData.orderId}
+                                onChange={(e) => {
+                                    const selectedId = e.target.value;
+                                    setFormData(prev => ({ ...prev, orderId: selectedId }));
+                                    if (selectedId) {
+                                        const matched = availableOrders.find(o => String(o.id) === String(selectedId));
+                                        if (matched) {
+                                            setOrder(matched);
+                                            setFormData(prev => ({ ...prev, amount: matched.balanceAmount || 0 }));
+                                        } else {
+                                            orderService.getById(selectedId)
+                                                .then(res => {
+                                                    setOrder(res.data);
+                                                    setFormData(prev => ({ ...prev, amount: res.data.balanceAmount || 0 }));
+                                                })
+                                                .catch(() => setOrder(null));
+                                        }
+                                    } else {
+                                        setOrder(null);
+                                    }
+                                }}
+                            >
+                                <option value="">-- Choose an Order ({availableOrders.length} with pending balance) --</option>
+                                {availableOrders.map(o => (
+                                    <option key={o.id} value={o.id}>
+                                        {o.orderNumber} — {o.customerName || 'Customer'} (Balance: ₹{Number(o.balanceAmount || 0).toLocaleString()})
+                                    </option>
+                                ))}
+                            </select>
+                            {availableOrders.length === 0 && !loading && (
+                                <p className="text-xs text-gray-500">No pending balance orders found in system.</p>
+                            )}
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Payment Amount *</label>
                         <div className="relative">
@@ -127,6 +188,7 @@ const PaymentFormPage = () => {
                             <input
                                 type="number" step="0.01" required
                                 name="amount"
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 value={formData.amount}
                                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
@@ -139,6 +201,7 @@ const PaymentFormPage = () => {
                             <label className="text-sm font-medium">Payment Date</label>
                             <input
                                 type="date" required
+                                max={new Date().toISOString().split('T')[0]}
                                 className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 value={formData.paymentDate}
                                 onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
@@ -162,11 +225,14 @@ const PaymentFormPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Reference # (Check #, Transaction ID)</label>
+                        <label className="text-sm font-medium">
+                            Reference # (Check #, Transaction ID) {formData.paymentMethod === 'CHEQUE' && <span className="text-red-500">*</span>}
+                        </label>
                         <input
                             type="text"
+                            required={formData.paymentMethod === 'CHEQUE'}
                             className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="e.g. TXN123456"
+                            placeholder={formData.paymentMethod === 'CHEQUE' ? "Cheque number (Required)" : "e.g. TXN123456"}
                             value={formData.referenceNumber}
                             onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
                         />

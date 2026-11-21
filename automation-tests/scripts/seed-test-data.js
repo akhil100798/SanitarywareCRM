@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config();
 
 const BASE_URL = process.env.BACKEND_BASE_URL || 'http://localhost:8081';

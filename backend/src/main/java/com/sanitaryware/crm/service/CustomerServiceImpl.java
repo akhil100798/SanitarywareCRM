@@ -70,7 +70,10 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional(readOnly = true)
     public Page<CustomerDTO> searchCustomers(String search, Pageable pageable) {
-        return customerRepository.searchCustomers(search, pageable)
+        String sanitized = search != null ? search.trim() : "";
+        if (sanitized.length() > 50) sanitized = sanitized.substring(0, 50);
+        sanitized = sanitized.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return customerRepository.searchCustomers(sanitized, pageable)
                 .map(CustomerMapper::toDTO);
     }
 
@@ -101,6 +104,10 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private void normalizeAndValidate(CustomerDTO customerDTO, Long customerId) {
+        if (customerDTO.getName() == null || customerDTO.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Customer name cannot be blank");
+        }
+        customerDTO.setName(customerDTO.getName().trim());
         String phoneNumber = PhoneUtil.normalizeAndValidate(customerDTO.getPhoneNumber());
 
         String email = normalizeEmail(customerDTO.getEmail());
@@ -120,6 +127,13 @@ public class CustomerServiceImpl implements CustomerService {
 
         customerDTO.setPhoneNumber(phoneNumber);
         customerDTO.setEmail(email);
+        if (customerDTO.getGstNumber() != null && !customerDTO.getGstNumber().isBlank()) {
+            String gst = customerDTO.getGstNumber().trim().toUpperCase();
+            if (!gst.matches("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")) {
+                throw new IllegalArgumentException("Invalid GSTIN format: " + gst + ". Must be 15 characters (e.g. 29ABCDE1234F1Z5)");
+            }
+            customerDTO.setGstNumber(gst);
+        }
         if (customerDTO.getCustomerType() == null) {
             customerDTO.setCustomerType(CustomerType.RETAIL);
         }

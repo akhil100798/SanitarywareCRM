@@ -22,6 +22,8 @@ class DistributorServiceImplTest {
 
     @Mock
     private DistributorRepository distributorRepository;
+    @Mock
+    private com.sanitaryware.crm.repository.PurchaseOrderRepository purchaseOrderRepository;
 
     @Mock
     private DistributorMapper distributorMapper;
@@ -34,7 +36,7 @@ class DistributorServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        distributorService = new DistributorServiceImpl(distributorRepository, distributorMapper, auditService, entityManager);
+        distributorService = new DistributorServiceImpl(distributorRepository, purchaseOrderRepository, distributorMapper, auditService, entityManager);
     }
 
     @Test
@@ -74,12 +76,27 @@ class DistributorServiceImplTest {
         entity.setIsActive(true);
 
         when(distributorRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(entity));
+        when(purchaseOrderRepository.countByDistributorId(5L)).thenReturn(0L);
 
         distributorService.deleteDistributor(5L);
 
         assertFalse(entity.getIsActive());
         verify(distributorRepository).save(entity);
         verify(auditService).logEvent(eq("DEACTIVATE"), eq("DISTRIBUTOR"), eq(5L), contains("Ceramic Hub"));
+    }
+
+    @Test
+    void deleteDistributor_WithActivePurchaseOrders_ThrowsBusinessValidationException() {
+        Distributor entity = new Distributor();
+        entity.setId(5L);
+        entity.setName("Ceramic Hub");
+        entity.setIsActive(true);
+
+        when(distributorRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(entity));
+        when(purchaseOrderRepository.countByDistributorId(5L)).thenReturn(3L);
+
+        assertThrows(com.sanitaryware.crm.exception.BusinessValidationException.class,
+                () -> distributorService.deleteDistributor(5L));
     }
 
     @Test

@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ArrowLeft, Tag } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ArrowLeft, Tag, History, FileText, X } from 'lucide-react';
 import { brandService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import BrandFormModal from './BrandFormModal';
+import BrandCatalogHistoryModal from './BrandCatalogHistoryModal';
 import { useAuthStore } from '../../store/authStore';
+
+const getSafeImageUrl = (url) => {
+    if (!url) return null;
+    const trimmed = String(url).trim();
+    return /^(https?:\/\/|data:image\/)/i.test(trimmed) ? trimmed : null;
+};
 
 const BrandListPage = () => {
     const navigate = useNavigate();
@@ -15,6 +22,7 @@ const BrandListPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBrand, setSelectedBrand] = useState(null);
+    const [historyBrand, setHistoryBrand] = useState(null);
 
     useEffect(() => {
         fetchBrands();
@@ -92,10 +100,21 @@ const BrandListPage = () => {
                         <input
                             type="text"
                             placeholder="Search brands..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && searchQuery.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -129,8 +148,8 @@ const BrandListPage = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
                                                 <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 mr-3 overflow-hidden">
-                                                    {brand.logoUrl ? (
-                                                        <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-cover" />
+                                                    {getSafeImageUrl(brand.logoUrl) ? (
+                                                        <img src={getSafeImageUrl(brand.logoUrl)} alt={brand.name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <Tag size={20} />
                                                     )}
@@ -142,7 +161,17 @@ const BrandListPage = () => {
                                             {brand.description || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
-                                            {brand.catalogFileName || 'No catalog attached'}
+                                            <div className="flex flex-col gap-1 items-start">
+                                                <span className="truncate max-w-[180px]">{brand.catalogFileName || 'No catalog attached'}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHistoryBrand(brand)}
+                                                    className="inline-flex items-center space-x-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    <History size={12} />
+                                                    <span>Versions & Rollback</span>
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {brand.isActive ? (
@@ -158,6 +187,13 @@ const BrandListPage = () => {
                                         <td className="px-6 py-4 text-right">
                                             {canManageBrands && (
                                                 <div className="flex items-center justify-end space-x-2">
+                                                    <button
+                                                        onClick={() => setHistoryBrand(brand)}
+                                                        className="p-1 text-slate-500 hover:text-indigo-600 transition-colors rounded"
+                                                        title="Catalog Version History"
+                                                    >
+                                                        <History size={18} />
+                                                    </button>
                                                     <button
                                                         onClick={() => handleEdit(brand)}
                                                         className="p-1 hover:text-blue-600 transition-colors rounded"
@@ -191,6 +227,12 @@ const BrandListPage = () => {
                     initialData={selectedBrand}
                 />
             )}
+
+            <BrandCatalogHistoryModal
+                isOpen={!!historyBrand}
+                onClose={() => setHistoryBrand(null)}
+                brand={historyBrand}
+            />
         </div>
     );
 };

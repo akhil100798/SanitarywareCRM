@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
     Plus, Search, Edit, Trash2, Package, Tag, Layers,
     AlertCircle, FileUp, RotateCcw, Eye, ChevronLeft, ChevronRight,
-    Barcode, Hash
+    Barcode, Hash, LayoutGrid, List, Sparkles, X
 } from 'lucide-react';
 import { productService, brandService, categoryService } from '../../services/productService';
 import toast from 'react-hot-toast';
@@ -43,6 +43,32 @@ const ProductListPage = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedProductForDetail, setSelectedProductForDetail] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    // Option B: Multi-variant matrix view
+    const [viewMode, setViewMode] = useState('TABLE'); // 'TABLE' | 'MATRIX'
+    const [activeVariants, setActiveVariants] = useState({});
+
+    const formatPrice = (val) => Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const groupedProductFamilies = React.useMemo(() => {
+        const map = new Map();
+        products.forEach((prod) => {
+            const brandName = prod.brand?.name || 'Generic';
+            const cleanName = (prod.name || 'Unnamed').trim();
+            const groupKey = `${brandName}:::${cleanName.toLowerCase()}`;
+            if (!map.has(groupKey)) {
+                map.set(groupKey, {
+                    groupKey,
+                    brand: prod.brand,
+                    category: prod.category,
+                    baseName: cleanName,
+                    variants: []
+                });
+            }
+            map.get(groupKey).variants.push(prod);
+        });
+        return Array.from(map.values());
+    }, [products]);
 
     useEffect(() => {
         fetchMetadata();
@@ -151,6 +177,19 @@ const ProductListPage = () => {
     }, [
         selectedCategory, selectedBrand, stockFilter, activeFilter, pageSize
     ]);
+
+    const isFirstSearchMount = useRef(true);
+    useEffect(() => {
+        if (isFirstSearchMount.current) {
+            isFirstSearchMount.current = false;
+            return;
+        }
+        const timer = setTimeout(() => {
+            setCurrentPage(0);
+            fetchProducts(0, searchQuery);
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
@@ -311,10 +350,24 @@ const ProductListPage = () => {
                             type="text"
                             placeholder="Search by name, SKU, size, brand, barcode..."
                             aria-label="Search by name, SKU, size, brand, barcode"
-                            className="input-field pl-10 py-2.5 text-sm w-full"
+                            className="input-field pl-10 pr-9 py-2.5 text-sm w-full"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && searchQuery.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    fetchProducts(0, '');
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                     <button
                         type="submit"
@@ -463,202 +516,390 @@ const ProductListPage = () => {
                 </div>
             </div>
 
+            {/* View Mode Toggle & Total Count */}
+            <div className="flex items-center justify-between px-1">
+                <div className="text-xs text-slate-500 font-medium">
+                    Showing <strong>{totalElements}</strong> products ({groupedProductFamilies.length} product families)
+                </div>
+                <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/60 shadow-2xs">
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('TABLE')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                    >
+                        <List size={14} />
+                        <span>Table View</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('MATRIX')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${viewMode === 'MATRIX' ? 'bg-white text-blue-600 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                    >
+                        <LayoutGrid size={14} />
+                        <span>Variant Matrix View</span>
+                    </button>
+                </div>
+            </div>
+
             {/* List Table Container */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
-                                <th className="px-6 py-4">Product details</th>
-                                <th className="px-6 py-4">Size</th>
-                                <th className="px-6 py-4">Brand / Category</th>
-                                <th className="px-6 py-4">Pricing</th>
-                                <th className="px-6 py-4">Stock level</th>
-                                <th className="px-6 py-4">Tax / Codes</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
-                                        <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
-                                        <span>Fetching catalog list...</span>
-                                    </td>
-                                </tr>
-                            ) : products.length === 0 ? (
-                                <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
-                                        <div className="max-w-xs mx-auto space-y-2">
-                                            <p className="font-semibold text-slate-700">No products found</p>
-                                            <p className="text-xs text-slate-400">No catalogue items match your current filters or query parameters.</p>
-                                            {hasActiveFilters && (
-                                                <button
-                                                    onClick={handleResetFilters}
-                                                    className="btn-secondary text-xs px-3 py-1.5 mt-2 inline-flex items-center gap-1.5"
-                                                    aria-label="Clear all filters"
-                                                >
-                                                    <RotateCcw size={14} />
-                                                    <span>Clear all filters</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                products.map((product) => {
-                                    const lowStock = Number(product.stockQuantity || 0) <= Number(product.reorderLevel || 0);
-                                    const primaryImg = product.images?.find(img => img.isPrimary)?.imageUrl ||
-                                        product.images?.[0]?.imageUrl ||
-                                        product.imageUrls?.[0];
-                                    const isBroken = !!brokenImageIds[product.id];
+                {viewMode === 'MATRIX' ? (
+                    <div className="p-6">
+                        {loading ? (
+                            <div className="py-16 text-center text-slate-400">
+                                <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
+                                <span>Fetching catalog list...</span>
+                            </div>
+                        ) : groupedProductFamilies.length === 0 ? (
+                            <div className="py-16 text-center text-slate-400">
+                                <div className="max-w-xs mx-auto space-y-2">
+                                    <Package size={40} className="mx-auto text-slate-300 mb-2" />
+                                    <p className="font-semibold text-slate-700">No products found</p>
+                                    <p className="text-xs text-slate-400">No catalogue items match your current filters or query parameters.</p>
+                                    {hasActiveFilters && (
+                                        <button
+                                            onClick={handleResetFilters}
+                                            className="btn-secondary text-xs px-3 py-1.5 mt-2 inline-flex items-center gap-1.5"
+                                            aria-label="Clear all filters"
+                                        >
+                                            <RotateCcw size={14} />
+                                            <span>Clear all filters</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {groupedProductFamilies.map((family) => {
+                                    const selectedId = activeVariants[family.groupKey] || family.variants[0]?.id;
+                                    const activeProduct = family.variants.find(v => v.id === selectedId) || family.variants[0];
+                                    const primaryImg = activeProduct.images?.find(img => img.isPrimary)?.imageUrl ||
+                                        activeProduct.images?.[0]?.imageUrl || activeProduct.imageUrls?.[0];
+                                    const isBroken = !!brokenImageIds[activeProduct.id];
 
                                     return (
-                                        <tr key={product.id} className="hover:bg-slate-50/50 transition-colors text-sm">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center space-x-3.5">
-                                                    <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 overflow-hidden shrink-0">
-                                                        {primaryImg && !isBroken ? (
-                                                            <img
-                                                                src={primaryImg}
-                                                                alt={product.name || 'Product thumbnail'}
-                                                                className="w-full h-full object-contain p-1"
-                                                                onError={() => {
-                                                                    setBrokenImageIds(prev => ({ ...prev, [product.id]: true }));
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <Package size={18} />
+                                        <div key={family.groupKey} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all overflow-hidden flex flex-col">
+                                            {/* Card Image Area */}
+                                            <div className="relative h-48 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-4">
+                                                {primaryImg && !isBroken ? (
+                                                    <img
+                                                        src={primaryImg}
+                                                        alt={activeProduct.name}
+                                                        onError={() => setBrokenImageIds(prev => ({ ...prev, [activeProduct.id]: true }))}
+                                                        className="h-full w-full object-contain"
+                                                    />
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-slate-300">
+                                                        <Package size={40} />
+                                                        <span className="text-[10px] mt-1 text-slate-400 font-medium">No Image</span>
+                                                    </div>
+                                                )}
+                                                <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/90 text-slate-700 shadow-2xs border border-slate-200/60">
+                                                        {family.brand?.name || 'Brand'}
+                                                    </span>
+                                                </div>
+                                                <div className="absolute top-3 right-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeProduct.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
+                                                        {activeProduct.isActive ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Card Body */}
+                                            <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                                                <div>
+                                                    <h3 className="font-bold text-slate-900 text-sm line-clamp-2" title={family.baseName || activeProduct.name}>
+                                                        {family.baseName}
+                                                    </h3>
+                                                    <p className="text-[11px] font-mono text-slate-400 mt-0.5" title={activeProduct.sku}>
+                                                        SKU: <strong className="text-slate-600">{activeProduct.sku}</strong>
+                                                    </p>
+                                                </div>
+
+                                                {/* Variant Chips (Sizes & Finishes) */}
+                                                <div>
+                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+                                                        <span>Select Variant ({family.variants.length})</span>
+                                                        {activeProduct.size && activeProduct.size !== '--' && (
+                                                            <span className="text-blue-600 font-bold font-sans">{activeProduct.size}</span>
                                                         )}
                                                     </div>
-                                                    <div className={`min-w-0 rounded-md px-2 py-1 ${product.isAvailable === false ? 'bg-black text-white' : ''}`}>
-                                                        {product.isAvailable === false && (
-                                                            <span className="mb-1 inline-block rounded bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
-                                                                Unavailable
-                                                            </span>
-                                                        )}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openProductDetail(product)}
-                                                            className={`font-bold text-left transition-colors truncate max-w-xs block ${product.isAvailable === false ? 'text-white line-through hover:text-gray-200' : 'text-slate-900 hover:text-teal'}`}
-                                                            title={product.name}
-                                                        >
-                                                            {product.name}
-                                                        </button>
-                                                        <div className={`text-xxs font-mono tracking-wider mt-0.5 ${product.isAvailable === false ? 'text-gray-300' : 'text-slate-400'}`}>
-                                                            SKU: {product.sku}
+                                                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                                                        {family.variants.map((v) => {
+                                                            const isSelected = v.id === activeProduct.id;
+                                                            const chipLabel = (v.size && v.size !== '--' ? v.size : '') ||
+                                                                (v.color && v.color !== '--' ? v.color : '') ||
+                                                                v.sku;
+                                                            return (
+                                                                <button
+                                                                    key={v.id}
+                                                                    type="button"
+                                                                    onClick={() => setActiveVariants(prev => ({ ...prev, [family.groupKey]: v.id }))}
+                                                                    className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition-all border ${isSelected
+                                                                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
+                                                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                        }`}
+                                                                >
+                                                                    {chipLabel} · ₹{formatPrice(v.sellingPrice || v.mrp)}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Price & Actions */}
+                                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-base font-black text-slate-900">
+                                                            ₹{formatPrice(activeProduct.sellingPrice || activeProduct.mrp)}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400">
+                                                            MRP: ₹{formatPrice(activeProduct.mrp)}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {product.size ? (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200/60">
-                                                        {product.size}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-slate-400 text-xs">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-semibold text-slate-700">{product.brandName || '—'}</div>
-                                                <div className="text-xs text-slate-400 mt-0.5">{product.categoryName || '—'}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-slate-900">₹{Number(product.sellingPrice || 0).toLocaleString()}</div>
-                                                <div className="text-xxs text-slate-400 mt-0.5">MRP: ₹{Number(product.mrp || 0).toLocaleString()}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className={`font-semibold flex items-center gap-1 ${lowStock ? 'text-red-600' : 'text-slate-700'}`}>
-                                                    <span>{product.stockQuantity} {product.unit || 'pcs'}</span>
-                                                    {lowStock && (
-                                                        <AlertCircle size={14} className="text-red-500 shrink-0" title="Low Stock Warning" />
-                                                    )}
-                                                </div>
-                                                <div className="text-xxs text-slate-400 mt-0.5">Alert: {product.reorderLevel}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-mono">
-                                                {product.barcode && (
-                                                    <div className="text-slate-700 font-medium">BAR: {product.barcode}</div>
-                                                )}
-                                                {product.hsnCode && (
-                                                    <div className="text-slate-400 text-xxs">HSN: {product.hsnCode}</div>
-                                                )}
-                                                {product.materialCode && (
-                                                    <div className="text-slate-400 text-xxs">Material: {product.materialCode}</div>
-                                                )}
-                                                {product.itemCode && (
-                                                    <div className="text-slate-400 text-xxs">Item: {product.itemCode}</div>
-                                                )}
-                                                {product.gstRate !== null && product.gstRate !== undefined && (
-                                                    <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-xxs font-sans font-semibold">
-                                                        GST: {product.gstRate}%
-                                                    </span>
-                                                )}
-                                                {!product.barcode && !product.hsnCode && product.gstRate === null && (
-                                                    <span className="text-slate-400 font-sans">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={product.isActive ? 'badge-paid' : 'badge-unpaid'}>
-                                                    {product.isActive ? 'Active' : 'Inactive'}
-                                                </span>
-                                                {product.isAvailable === false && (
-                                                    <span className="ml-1 inline-flex rounded bg-black px-2 py-1 text-xs font-semibold text-white">
-                                                        Unavailable
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end space-x-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openProductDetail(product)}
-                                                        className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
-                                                        title="View Details"
-                                                        aria-label={`View details for ${product.name}`}
-                                                    >
-                                                        <Eye size={16} />
-                                                    </button>
-                                                    {canManageProducts && (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleAvailabilityChange(product)}
-                                                                className="rounded-xl px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                                                                aria-label={`${product.isAvailable === false ? 'Mark available' : 'Mark unavailable'}: ${product.name}`}
-                                                            >
-                                                                {product.isAvailable === false ? 'Mark available' : 'Mark unavailable'}
-                                                            </button>
+
+                                                    <div className="flex items-center space-x-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openProductDetail(activeProduct)}
+                                                            className="p-1.5 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-lg transition-colors"
+                                                            title="View Details"
+                                                        >
+                                                            <Eye size={16} />
+                                                        </button>
+                                                        {canManageProducts && (
                                                             <Link
-                                                                to={`/products/edit/${product.id}`}
-                                                                className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
-                                                                title="Edit Product"
-                                                                aria-label={`Edit ${product.name}`}
+                                                                to={`/products/edit/${activeProduct.id}`}
+                                                                className="p-1.5 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-lg transition-colors"
+                                                                title="Edit"
                                                             >
                                                                 <Edit size={16} />
                                                             </Link>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
+                                    <th className="px-6 py-4">Product details</th>
+                                    <th className="px-6 py-4">Size</th>
+                                    <th className="px-6 py-4">Brand / Category</th>
+                                    <th className="px-6 py-4">Pricing</th>
+                                    <th className="px-6 py-4">Stock level</th>
+                                    <th className="px-6 py-4">Tax / Codes</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
+                                            <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
+                                            <span>Fetching catalog list...</span>
+                                        </td>
+                                    </tr>
+                                ) : products.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
+                                            <div className="max-w-xs mx-auto space-y-2">
+                                                <Package size={40} className="mx-auto text-slate-300 mb-2" />
+                                                <p className="font-semibold text-slate-700">No products found</p>
+                                                <p className="text-xs text-slate-400">No catalogue items match your current filters or query parameters.</p>
+                                                {hasActiveFilters && (
+                                                    <button
+                                                        onClick={handleResetFilters}
+                                                        className="btn-secondary text-xs px-3 py-1.5 mt-2 inline-flex items-center gap-1.5"
+                                                        aria-label="Clear all filters"
+                                                    >
+                                                        <RotateCcw size={14} />
+                                                        <span>Clear all filters</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    products.map((product) => {
+                                        const primaryImg = product.images?.find(img => img.isPrimary)?.imageUrl ||
+                                            product.images?.[0]?.imageUrl ||
+                                            product.imageUrls?.[0];
+                                        const isBroken = !!brokenImageIds[product.id];
+                                        const stockQty = Number(product.stockQuantity || 0);
+                                        const reorder = Number(product.reorderLevel || 0);
+
+                                        return (
+                                            <tr key={product.id} className="hover:bg-slate-50/50 transition-colors text-sm">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center space-x-3.5">
+                                                        <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 overflow-hidden shrink-0">
+                                                            {primaryImg && !isBroken ? (
+                                                                <img
+                                                                    src={primaryImg}
+                                                                    alt={product.name || 'Product thumbnail'}
+                                                                    loading="lazy"
+                                                                    className="w-full h-full object-contain p-1"
+                                                                    onError={() => {
+                                                                        setBrokenImageIds(prev => ({ ...prev, [product.id]: true }));
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <Package size={18} />
+                                                            )}
+                                                        </div>
+                                                        <div className={`min-w-0 rounded-md px-2 py-1 ${product.isAvailable === false ? 'bg-black text-white' : ''}`}>
+                                                            {product.isAvailable === false && (
+                                                                <span className="mb-1 inline-block rounded bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
+                                                                    Unavailable
+                                                                </span>
+                                                            )}
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleDelete(product.id)}
-                                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
-                                                                title="Deactivate Product"
-                                                                aria-label={`Deactivate ${product.name}`}
+                                                                onClick={() => openProductDetail(product)}
+                                                                className={`font-bold text-left transition-colors truncate max-w-xs block ${product.isAvailable === false ? 'text-white line-through hover:text-gray-200' : 'text-slate-900 hover:text-teal'}`}
+                                                                title={product.name}
                                                             >
-                                                                <Trash2 size={16} />
+                                                                {product.name}
                                                             </button>
-                                                        </>
+                                                            <div className={`text-xxs font-mono tracking-wider mt-0.5 ${product.isAvailable === false ? 'text-gray-300' : 'text-slate-400'}`}>
+                                                                SKU: {product.sku}
+                                                            </div>
+                                                            {product.description && product.description !== '--' && product.description !== 'null' && (
+                                                                <div className={`text-[11px] truncate max-w-xs mt-0.5 ${product.isAvailable === false ? 'text-gray-200' : 'text-slate-500'}`} title={product.description}>
+                                                                    {product.description}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {product.size ? (
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200/60">
+                                                            {product.size}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-400 text-xs">—</span>
                                                     )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-semibold text-slate-700">{product.brandName || '—'}</div>
+                                                    <div className="text-xs text-slate-400 mt-0.5">{product.categoryName || '—'}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-slate-900">₹{formatPrice(product.sellingPrice)}</div>
+                                                    <div className="text-xxs text-slate-400 mt-0.5">MRP: ₹{formatPrice(product.mrp)}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {stockQty <= 0 ? (
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
+                                                            Out of Stock
+                                                        </span>
+                                                    ) : stockQty <= reorder ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+                                                            <AlertCircle size={13} className="shrink-0" />
+                                                            Low Stock ({stockQty} {product.unit || 'pcs'})
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                                            In Stock ({stockQty} {product.unit || 'pcs'})
+                                                        </span>
+                                                    )}
+                                                    <div className="text-xxs text-slate-400 mt-1">Alert: {product.reorderLevel ?? 0}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs font-mono">
+                                                    {product.barcode && (
+                                                        <div className="text-slate-700 font-medium">BAR: {product.barcode}</div>
+                                                    )}
+                                                    {product.hsnCode && (
+                                                        <div className="text-slate-400 text-xxs">HSN: {product.hsnCode}</div>
+                                                    )}
+                                                    {product.materialCode && (
+                                                        <div className="text-slate-400 text-xxs">Material: {product.materialCode}</div>
+                                                    )}
+                                                    {product.itemCode && (
+                                                        <div className="text-slate-400 text-xxs">Item: {product.itemCode}</div>
+                                                    )}
+                                                    {product.gstRate !== null && product.gstRate !== undefined && (
+                                                        <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-xxs font-sans font-semibold">
+                                                            GST: {product.gstRate}%
+                                                        </span>
+                                                    )}
+                                                    {!product.barcode && !product.hsnCode && product.gstRate === null && (
+                                                        <span className="text-slate-400 font-sans">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={product.isActive ? 'badge-paid' : 'badge-unpaid'}>
+                                                        {product.isActive ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                    {product.isAvailable === false && (
+                                                        <span className="ml-1 inline-flex rounded bg-black px-2 py-1 text-xs font-semibold text-white">
+                                                            Unavailable
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end space-x-1.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openProductDetail(product)}
+                                                            className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
+                                                            title="View Details"
+                                                            aria-label={`View details for ${product.name}`}
+                                                        >
+                                                            <Eye size={16} />
+                                                        </button>
+                                                        {canManageProducts && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleAvailabilityChange(product)}
+                                                                    className="rounded-xl px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                                                    aria-label={`${product.isAvailable === false ? 'Mark available' : 'Mark unavailable'}: ${product.name}`}
+                                                                >
+                                                                    {product.isAvailable === false ? 'Mark available' : 'Mark unavailable'}
+                                                                </button>
+                                                                <Link
+                                                                    to={`/products/edit/${product.id}`}
+                                                                    className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
+                                                                    title="Edit Product"
+                                                                    aria-label={`Edit ${product.name}`}
+                                                                >
+                                                                    <Edit size={16} />
+                                                                </Link>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDelete(product.id)}
+                                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                                    title="Deactivate Product"
+                                                                    aria-label={`Deactivate ${product.name}`}
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {/* Pagination Footer */}
                 {totalPages > 1 && (
@@ -697,6 +938,7 @@ const ProductListPage = () => {
             <ProductDetailModal
                 product={selectedProductForDetail}
                 isOpen={isDetailModalOpen}
+                onRefresh={fetchProducts}
                 onClose={() => {
                     setIsDetailModalOpen(false);
                     setSelectedProductForDetail(null);

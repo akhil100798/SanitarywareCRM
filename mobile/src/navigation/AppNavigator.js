@@ -11,15 +11,18 @@ import {
   Users
 } from 'lucide-react-native';
 import CustomerDetailScreen from '../screens/CustomerDetailScreen';
+import BrandDetailScreen from '../screens/BrandDetailScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ListScreen from '../screens/ListScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ModuleMenuScreen from '../screens/ModuleMenuScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
 import PaymentFormScreen from '../screens/PaymentFormScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProductPickerScreen from '../screens/ProductPickerScreen';
 import QuotationDetailScreen from '../screens/QuotationDetailScreen';
 import QuotationFormScreen from '../screens/QuotationFormScreen';
+import OfflineSyncScreen from '../screens/OfflineSyncScreen';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 
@@ -93,6 +96,7 @@ const MoreNavigator = () => (
   >
     <MoreStack.Screen name="MoreMenu" component={ModuleMenuScreen} options={{ headerShown: false }} />
     <MoreStack.Screen name="ModuleList" component={ListScreen} options={{ title: '' }} />
+    <MoreStack.Screen name="OfflineSync" component={OfflineSyncScreen} options={{ title: 'Offline Outbox & Sync' }} />
   </MoreStack.Navigator>
 );
 
@@ -113,11 +117,14 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
+          <Stack.Screen name="BrandDetail" component={BrandDetailScreen} />
           <Stack.Screen name="QuotationForm" component={QuotationFormScreen} />
           <Stack.Screen name="ProductPicker" component={ProductPickerScreen} />
           <Stack.Screen name="QuotationDetail" component={QuotationDetailScreen} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
           <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
           <Stack.Screen name="PaymentForm" component={PaymentFormScreen} />
+          <Stack.Screen name="OfflineSync" component={OfflineSyncScreen} />
         </>
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, ShoppingBag, Truck, CreditCard, ChevronRight, Download } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Truck, CreditCard, ChevronRight, Download, X, RotateCcw, AlertCircle, Printer } from 'lucide-react';
 import orderService from '../../services/orderService';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
@@ -11,22 +11,30 @@ const OrderListPage = () => {
     const canUpdateFulfillment = ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'].includes(user?.role);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedStatusTab, setSelectedStatusTab] = useState('ALL');
     const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
+    // BUG-100: Normalize historical order numbers (ORD#12 -> ORD-12)
+    const formatOrderNumber = (num) => (num ? num.replace(/^ORD#/, 'ORD-') : 'ORD-UNKNOWN');
+
     useEffect(() => {
-        fetchOrders();
+        fetchOrders(false);
     }, []);
 
-    const fetchOrders = async () => {
+    // BUG-105: Background polling preserves scroll position without resetting table container
+    const fetchOrders = async (isBackground = false) => {
         try {
-            setLoading(true);
+            if (!isBackground) setLoading(true);
+            setError(null);
             const response = await orderService.getAll({ size: 100 });
-            setOrders(response.data.content);
-        } catch (error) {
-            toast.error('Failed to fetch orders');
+            setOrders(response.data.content || response.data || []);
+        } catch (err) {
+            setError(err);
+            toast.error(!navigator.onLine ? 'Network disconnected' : 'Failed to fetch orders');
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
@@ -49,7 +57,31 @@ const OrderListPage = () => {
         }
     };
 
+    // BUG-119: Distinct Print Invoice handler triggering native browser print preview
+    const handlePrintInvoice = async (id, orderNumber) => {
+        const toastId = toast.loading('Opening invoice print preview...');
+        try {
+            const response = await orderService.downloadInvoicePdf(id);
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const printWindow = window.open(url, '_blank');
+            if (printWindow) {
+                printWindow.focus();
+                printWindow.onload = () => {
+                    printWindow.print();
+                };
+            }
+            toast.success('Print dialog ready', { id: toastId });
+        } catch (error) {
+            toast.error('Failed to open print preview', { id: toastId });
+        }
+    };
+
     const handleStatusChange = async (id, status) => {
+        if (status === 'CANCELLED') {
+            const confirmed = window.confirm('Are you sure you want to cancel this order? This will cancel the order, release reserved stock, and cannot be undone.');
+            if (!confirmed) return;
+        }
         try {
             setUpdatingStatusId(id);
             await orderService.updateStatus(id, status);
@@ -63,6 +95,23 @@ const OrderListPage = () => {
             setUpdatingStatusId(null);
         }
     };
+
+    const statusTabs = [
+        { id: 'ALL', label: 'All Orders', count: orders.length },
+        { id: 'PENDING', label: 'Pending', count: orders.filter(o => o.status === 'PENDING').length },
+        { id: 'CONFIRMED', label: 'Confirmed', count: orders.filter(o => o.status === 'CONFIRMED').length },
+        { id: 'PROCESSING', label: 'Processing', count: orders.filter(o => o.status === 'PROCESSING').length },
+        { id: 'DELIVERED', label: 'Delivered', count: orders.filter(o => o.status === 'DELIVERED').length },
+        { id: 'CANCELLED', label: 'Cancelled', count: orders.filter(o => o.status === 'CANCELLED').length },
+    ];
+
+    const filteredOrders = orders
+        .filter(o => selectedStatusTab === 'ALL' || o.status === selectedStatusTab)
+        .filter(o => {
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.toLowerCase();
+            return (o.orderNumber || '').toLowerCase().includes(q) || (o.customerName || '').toLowerCase().includes(q);
+        });
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -99,6 +148,29 @@ const OrderListPage = () => {
                 </Link>}
             </div>
 
+            {/* Status Filter Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {statusTabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSelectedStatusTab(tab.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                            selectedStatusTab === tab.id
+                                ? 'bg-teal text-white shadow-sm'
+                                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                        }`}
+                    >
+                        <span>{tab.label}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            selectedStatusTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                            {tab.count}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
             {/* List Table Container */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 {/* Search Bar */}
@@ -108,10 +180,21 @@ const OrderListPage = () => {
                         <input
                             type="text"
                             placeholder="Search by order # or customer name..."
-                            className="input-field pl-10 py-2.5 text-sm"
+                            className="input-field pl-10 pr-9 py-2.5 text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && searchQuery.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </form>
                 </div>
 
@@ -135,16 +218,32 @@ const OrderListPage = () => {
                                         <span>Fetching order directory...</span>
                                     </td>
                                 </tr>
-                            ) : orders.length === 0 ? (
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-12 text-center">
+                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                            <AlertCircle className="w-8 h-8 text-amber-500" />
+                                            <div className="text-sm font-semibold text-slate-700">
+                                                {!navigator.onLine ? 'Network disconnected. Please check your internet connection.' : 'Failed to fetch order directory.'}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={fetchOrders}
+                                                className="btn-primary text-xs px-4 py-2"
+                                            >
+                                                <RotateCcw size={14} /> Retry
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredOrders.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-sm">
                                         No order files matching filters.
                                     </td>
                                 </tr>
                             ) : (
-                                orders
-                                    .filter(o => o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) || o.customerName.toLowerCase().includes(searchQuery.toLowerCase()))
-                                    .map((o) => (
+                                filteredOrders.map((o) => (
                                         <tr key={o.id} className="hover:bg-slate-50/50 transition-colors text-sm">
                                             <td className="px-6 py-4 font-bold text-slate-900">
                                                 <div className="flex items-center space-x-3.5">
@@ -153,9 +252,9 @@ const OrderListPage = () => {
                                                     </div>
                                                     <div>
                                                         {canManageOrders ? (
-                                                            <Link to={`/orders/edit/${o.id}`} className="text-teal hover:underline font-extrabold">{o.orderNumber}</Link>
+                                                            <Link to={`/orders/edit/${o.id}`} className="text-teal hover:underline font-extrabold">{formatOrderNumber(o.orderNumber)}</Link>
                                                         ) : (
-                                                            <span className="font-extrabold">{o.orderNumber}</span>
+                                                            <span className="font-extrabold">{formatOrderNumber(o.orderNumber)}</span>
                                                         )}
                                                         {o.quotationNumber && (
                                                             <div className="text-xxs text-slate-400 font-mono tracking-wider mt-0.5">Ref: {o.quotationNumber}</div>
@@ -205,13 +304,26 @@ const OrderListPage = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end space-x-1.5">
-                                                    {canManageOrders && <button
-                                                        onClick={() => handleDownloadInvoice(o.id, o.orderNumber)}
-                                                        title="Download Invoice PDF"
-                                                        className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
-                                                    >
-                                                        <Download size={16} />
-                                                    </button>}
+                                                    {canManageOrders && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handlePrintInvoice(o.id, o.orderNumber)}
+                                                                title="Print Invoice"
+                                                                className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
+                                                            >
+                                                                <Printer size={16} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDownloadInvoice(o.id, o.orderNumber)}
+                                                                title="Download Invoice PDF"
+                                                                className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
+                                                            >
+                                                                <Download size={16} />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                     {canManageOrders && <Link
                                                         to={`/orders/edit/${o.id}`}
                                                         className="btn-secondary text-xs px-3.5 py-1.5 hover:text-teal rounded-xl transition-all font-semibold"

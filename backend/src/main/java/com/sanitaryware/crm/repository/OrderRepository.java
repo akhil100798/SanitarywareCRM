@@ -35,6 +35,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         Long getTotalSold();
     }
 
+    interface ProductLastSold {
+        Long getProductId();
+        LocalDate getLastSoldDate();
+    }
+
     @Query("SELECT o.status AS status, COUNT(o) AS count FROM Order o GROUP BY o.status")
     List<StatusCount> countByStatus();
 
@@ -52,6 +57,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "GROUP BY i.product.id")
     List<ProductSalesVelocity> findSalesVelocitySince(@Param("sinceDate") LocalDate sinceDate,
                                                       @Param("excludedStatus") Order.OrderStatus excludedStatus);
+
+    @Query("SELECT i.product.id AS productId, MAX(i.order.orderDate) AS lastSoldDate " +
+           "FROM OrderItem i " +
+           "WHERE i.order.status <> :excludedStatus " +
+           "GROUP BY i.product.id")
+    List<ProductLastSold> findLastSoldDates(@Param("excludedStatus") Order.OrderStatus excludedStatus);
+
+    @Query("SELECT o FROM Order o WHERE o.balanceAmount > 0 AND o.status <> 'CANCELLED' ORDER BY o.orderDate ASC")
+    List<Order> findPendingBalanceOrders();
 
     Optional<Order> findByOrderNumber(String orderNumber);
     Optional<Order> findByBillPadImageUrl(String billPadImageUrl);

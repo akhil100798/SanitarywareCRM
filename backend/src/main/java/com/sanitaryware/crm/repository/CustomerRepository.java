@@ -23,7 +23,9 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
            "LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(c.company) LIKE LOWER(CONCAT('%', :search, '%'))")
+           "LOWER(COALESCE(c.alternatePhone, '')) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(COALESCE(c.city, '')) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(COALESCE(c.company, '')) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<Customer> searchCustomers(@Param("search") String search, Pageable pageable);
     
     List<Customer> findByIsActiveTrue();

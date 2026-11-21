@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -57,6 +58,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO createOrder(OrderDTO orderDTO) {
+        validateOrderDTO(orderDTO);
         Order order = orderMapper.toEntity(orderDTO);
         
         if (order.getOrderNumber() == null || order.getOrderNumber().isEmpty()) {
@@ -107,6 +109,9 @@ public class OrderServiceImpl implements OrderService {
         }
         if (quotation.getStatus() == Quotation.QuotationStatus.REJECTED) {
             throw new IllegalArgumentException("Cannot convert a rejected quotation");
+        }
+        if (quotation.getStatus() == Quotation.QuotationStatus.EXPIRED || (quotation.getValidUntil() != null && quotation.getValidUntil().isBefore(LocalDate.now()))) {
+            throw new IllegalArgumentException("Cannot convert an expired quotation to an order");
         }
 
         Order order = new Order();
@@ -168,6 +173,7 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Cannot update a delivered order");
         }
 
+        validateOrderDTO(orderDTO);
         Map<Long, Integer> previousReservation = reservation(existingOrder);
 
         orderMapper.updateEntity(existingOrder, orderDTO);
@@ -326,5 +332,30 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         accessControlService.requireOrderAccess(order);
         return pdfGeneratorService.generateOrderInvoicePdf(order);
+    }
+
+    private void validateOrderDTO(OrderDTO orderDTO) {
+        if (orderDTO.getDeliveryDate() != null && orderDTO.getOrderDate() != null) {
+            if (orderDTO.getDeliveryDate().isBefore(orderDTO.getOrderDate())) {
+                throw new IllegalArgumentException("Expected delivery date cannot precede order date");
+            }
+        }
+        if (orderDTO.getItems() == null || orderDTO.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Order must have at least one line item");
+        }
+        if (orderDTO.getDiscount() != null && orderDTO.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Order discount cannot be negative");
+        }
+        for (OrderDTO.OrderItemDTO item : orderDTO.getItems()) {
+            if (item.getQuantity() != null && item.getQuantity() < 1) {
+                throw new IllegalArgumentException("Quantity must be at least 1");
+            }
+            if (item.getDiscountPercentage() != null) {
+                if (item.getDiscountPercentage().compareTo(BigDecimal.ZERO) < 0
+                        || item.getDiscountPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
+                    throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
+                }
+            }
+        }
     }
 }

@@ -43,8 +43,19 @@ public class CategoryServiceImpl implements CategoryService {
         
         Category parent = null;
         if (categoryDTO.getParentId() != null) {
+            if (categoryDTO.getParentId().equals(id)) {
+                throw new IllegalArgumentException("Category cannot be its own parent");
+            }
             parent = categoryRepository.findById(categoryDTO.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Parent category not found with id: " + categoryDTO.getParentId()));
+
+            Category current = parent;
+            while (current != null) {
+                if (current.getId().equals(id)) {
+                    throw new IllegalArgumentException("Circular category hierarchy detected");
+                }
+                current = current.getParent();
+            }
         }
         
         CategoryMapper.updateEntity(category, categoryDTO, parent);

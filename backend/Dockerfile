@@ -9,7 +9,7 @@ RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:17-jre-jammy AS runtime
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl \
+    && apt-get install --no-install-recommends -y curl tesseract-ocr tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system crm \

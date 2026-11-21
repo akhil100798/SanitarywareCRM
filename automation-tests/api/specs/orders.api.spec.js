@@ -78,7 +78,7 @@ test.describe('Orders API Suite', () => {
       data: {
         customerId: customerId,
         quotationDate: new Date().toISOString().split('T')[0],
-        validUntil: '2026-08-30',
+        validUntil: '2027-12-31',
         status: 'DRAFT',
         items: [
           {

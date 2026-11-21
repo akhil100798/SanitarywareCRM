@@ -301,7 +301,9 @@ public class ReportServiceImpl implements ReportService {
             if (qty <= 0) outOfStockCount++;
             else if (qty < 10) lowStockCount++;
 
-            BigDecimal unitPrice = p.getPurchasePrice() != null ? p.getPurchasePrice() : (p.getSellingPrice() != null ? p.getSellingPrice() : BigDecimal.ZERO);
+            BigDecimal unitPrice = (p.getPurchasePrice() != null && p.getPurchasePrice().compareTo(BigDecimal.ZERO) >= 0)
+                    ? p.getPurchasePrice()
+                    : BigDecimal.ZERO;
             BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
             totalValue = totalValue.add(itemTotal);
 

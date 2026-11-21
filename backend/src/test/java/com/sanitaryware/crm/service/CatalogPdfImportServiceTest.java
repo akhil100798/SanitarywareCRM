@@ -29,6 +29,24 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class CatalogPdfImportServiceTest {
 
     @Test
+    void dumpPage9() throws Exception {
+        java.io.File file = new java.io.File("/app/uploads/brand-catalogs/59/5fd0b788-cd1d-41d2-a49e-9b759ac2c5ed.pdf");
+        if (!file.exists()) {
+            System.out.println("FILE DOES NOT EXIST");
+            return;
+        }
+        try (PDDocument doc = org.apache.pdfbox.Loader.loadPDF(file)) {
+            org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper();
+            stripper.setStartPage(9);
+            stripper.setEndPage(9);
+            stripper.setSortByPosition(true);
+            System.out.println("=== RAW TEXT OF PAGE 9 ===");
+            System.out.println(stripper.getText(doc));
+            System.out.println("=== END RAW TEXT ===");
+        }
+    }
+
+    @Test
     void genericCatalogParser_ParsesLeadingSkuAndCurrencyPrice() {
         CatalogPdfImportService.CatalogParseResult result =
                 CatalogPdfImportService.CatalogLineParser.parse(List.of(
@@ -750,5 +768,24 @@ class CatalogPdfImportServiceTest {
     void extractSizeIgnoreQuantity_SizeWithoutQuantities() {
         String result = CatalogPdfImportService.extractSizeIgnoreQuantity("1.5 ½");
         assertEquals("½\" (1.5 cm)", result);
+    }
+
+    @Test
+    void testParrywareCatalog() {
+        java.io.File file = new java.io.File("target/parryware.pdf");
+        if (!file.exists()) return;
+        try (org.apache.pdfbox.pdmodel.PDDocument document = org.apache.pdfbox.Loader.loadPDF(file)) {
+            System.out.println("PARRYWARE PAGES: " + document.getNumberOfPages());
+            ProductRepository products = mock(ProductRepository.class);
+            CategoryRepository categories = mock(CategoryRepository.class);
+            CatalogPdfImportService service = new CatalogPdfImportService(products, categories);
+            var result = service.parseGenericCatalogRows(document);
+            System.out.println("PARRYWARE ROWS: " + result.rows().size());
+            System.out.println("PARRYWARE SKIPPED: " + result.skippedRows());
+        } catch (Throwable t) {
+            System.err.println("PARRYWARE FAILED WITH: " + t.getClass().getName() + " -> " + t.getMessage());
+            t.printStackTrace();
+            org.junit.jupiter.api.Assertions.fail(t.getMessage());
+        }
     }
 }

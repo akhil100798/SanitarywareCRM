@@ -159,8 +159,14 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (ArithmeticException ex) {
             throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amounts must have at most two decimal places");
         }
+        if (dto.getPaymentDate() != null && dto.getPaymentDate().isAfter(LocalDate.now())) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment date cannot be in the future");
+        }
         if (dto.getPaymentMethod() == null) {
             throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment method is required");
+        }
+        if (dto.getPaymentMethod() == Payment.PaymentMethod.CHEQUE && (dto.getReferenceNumber() == null || dto.getReferenceNumber().trim().isEmpty())) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Cheque number is required for cheque payments");
         }
         if (order.getBalanceAmount().compareTo(dto.getAmount()) < 0) {
             throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amount INR " + dto.getAmount()

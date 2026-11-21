@@ -38,7 +38,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Page<Product> findByBrandId(Long brandId, Pageable pageable);
     Page<Product> findByHsnCode(String hsnCode, Pageable pageable);
     
-    @Query("SELECT p FROM Product p WHERE p.stockQuantity <= p.reorderLevel")
+    @Query("SELECT p FROM Product p WHERE p.isActive = true AND p.stockQuantity <= p.reorderLevel")
     List<Product> findLowStockProducts();
     
     List<Product> findByIsActiveTrueAndIsFeaturedTrue();

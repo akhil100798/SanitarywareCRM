@@ -35,6 +35,7 @@ public class ProductMapper {
                 .material(product.getMaterial())
                 .materialCode(product.getMaterialCode())
                 .itemCode(product.getItemCode())
+                .binLocation(product.getBinLocation())
                 .size(product.getSize())
                 .specifications(product.getSpecifications())
                 .isActive(product.getIsActive())
@@ -79,6 +80,7 @@ public class ProductMapper {
         product.setMaterial(dto.getMaterial());
         product.setMaterialCode(dto.getMaterialCode());
         product.setItemCode(dto.getItemCode());
+        product.setBinLocation(dto.getBinLocation());
         product.setSize(dto.getSize());
         product.setSpecifications(dto.getSpecifications());
         product.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
@@ -109,6 +111,7 @@ public class ProductMapper {
         product.setMaterial(dto.getMaterial());
         product.setMaterialCode(dto.getMaterialCode());
         product.setItemCode(dto.getItemCode());
+        product.setBinLocation(dto.getBinLocation());
         product.setSize(dto.getSize());
         product.setSpecifications(dto.getSpecifications());
         if (dto.getIsActive() != null) {

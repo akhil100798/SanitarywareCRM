@@ -43,6 +43,23 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                "script-src 'self'; " +
+                                "style-src 'self' 'unsafe-inline'; " +
+                                "img-src 'self' data: blob: https:; " +
+                                "font-src 'self' data:; " +
+                                "connect-src 'self'; " +
+                                "object-src 'none'; " +
+                                "frame-ancestors 'none'; " +
+                                "base-uri 'self'; " +
+                                "form-action 'self';"
+                        ))
+                        .contentTypeOptions(org.springframework.security.config.Customizer.withDefaults())
+                        .xssProtection(org.springframework.security.config.Customizer.withDefaults())
+                        .frameOptions(frame -> frame.deny())
+                )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
                                 writeError(response, HttpStatus.UNAUTHORIZED, "Authentication is required"))

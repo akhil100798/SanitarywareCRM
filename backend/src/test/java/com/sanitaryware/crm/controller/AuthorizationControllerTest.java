@@ -7,6 +7,7 @@ import com.sanitaryware.crm.exception.GlobalExceptionHandler;
 import com.sanitaryware.crm.security.CustomUserDetailsService;
 import com.sanitaryware.crm.security.JwtTokenProvider;
 import com.sanitaryware.crm.security.TokenRevocationService;
+import com.sanitaryware.crm.service.CatalogJobService;
 import com.sanitaryware.crm.service.ProductService;
 import com.sanitaryware.crm.service.PurchaseOrderService;
 import com.sanitaryware.crm.service.SystemSettingsService;
@@ -71,6 +72,9 @@ class AuthorizationControllerTest {
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockBean
+    private CatalogJobService catalogJobService;
 
     @Test
     @WithMockUser(roles = "ADMIN")

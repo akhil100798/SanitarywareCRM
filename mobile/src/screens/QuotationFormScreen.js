@@ -1,16 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Camera, Plus, Trash2 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { quotationService } from '../api/services';
 import AppTextInput from '../components/AppTextInput';
+import ContractorNoteScannerModal from '../components/ContractorNoteScannerModal';
 import DetailSection from '../components/DetailSection';
 import FormErrorBanner from '../components/FormErrorBanner';
+import OfflineSyncBanner from '../components/OfflineSyncBanner';
 import PrimaryActionBar from '../components/PrimaryActionBar';
 import Screen from '../components/Screen';
 import { colors } from '../theme/colors';
 import { buildQuotationPayload, calculateLineTotal, calculateQuotationTotals } from '../utils/quotationTotals';
 import { addDaysIso, formatMoney, todayIso } from '../utils/formatters';
+import { offlineSyncManager } from '../utils/offlineSyncManager';
 
 const defaultTerms = '1. Quotation valid for 7 days.\n2. 50% advance for orders.\n3. Delivery within 3-5 days of order confirmation.';
 
@@ -38,6 +41,7 @@ const QuotationFormScreen = ({ route, navigation }) => {
   const { customerId, customerName, selectedProduct } = route.params || {};
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showScannerModal, setShowScannerModal] = useState(false);
   const [form, setForm] = useState({
     customerId,
     customerName,
@@ -93,10 +97,46 @@ const QuotationFormScreen = ({ route, navigation }) => {
     }));
   };
 
+  const handleApplyOcrItems = (scannedItems, replaceMode) => {
+    const formattedItems = scannedItems.map((item) => ({
+      productId: item.matchedProductId,
+      productName: item.matchedProductName,
+      productSku: item.matchedProductSku || '',
+      quantity: String(item.requestedQuantity || 1),
+      unitPrice: String(item.unitPrice ?? 0),
+      discountPercentage: '0',
+      lineTotal: Number(item.unitPrice ?? 0) * (item.requestedQuantity || 1),
+      notes: item.rawText ? `OCR: ${item.rawText}` : ''
+    }));
+
+    setForm((curr) => ({
+      ...curr,
+      items: replaceMode ? formattedItems : [...curr.items, ...formattedItems]
+    }));
+  };
+
   const handleSubmit = async () => {
     const validationError = validateForm(form);
     if (validationError) {
       setError(validationError);
+      return;
+    }
+
+    const isForced = await offlineSyncManager.isForcedOffline();
+    if (isForced) {
+      setSaving(true);
+      setError('');
+      try {
+        const enqueued = await offlineSyncManager.enqueueQuotation(
+          { ...form, ...totals },
+          { customerName: form.customerName || customerName }
+        );
+        navigation.replace('OfflineSync', { highlightId: enqueued.localId });
+      } catch (err) {
+        setError(getErrorMessage(err));
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -106,7 +146,28 @@ const QuotationFormScreen = ({ route, navigation }) => {
       const saved = await quotationService.create(buildQuotationPayload(form));
       navigation.replace('QuotationDetail', { id: saved.id });
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errMsg = getErrorMessage(err);
+      const isNetworkIssue =
+        !err.response ||
+        err.code === 'ERR_NETWORK' ||
+        err.code === 'ECONNABORTED' ||
+        errMsg.toLowerCase().includes('network') ||
+        errMsg.toLowerCase().includes('timeout') ||
+        errMsg.toLowerCase().includes('connect');
+
+      if (isNetworkIssue) {
+        try {
+          const enqueued = await offlineSyncManager.enqueueQuotation(
+            { ...form, ...totals },
+            { customerName: form.customerName || customerName }
+          );
+          navigation.replace('OfflineSync', { highlightId: enqueued.localId });
+        } catch (enqueueErr) {
+          setError(getErrorMessage(enqueueErr));
+        }
+      } else {
+        setError(errMsg);
+      }
     } finally {
       setSaving(false);
     }
@@ -114,6 +175,7 @@ const QuotationFormScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
+      <OfflineSyncBanner navigation={navigation} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>New Quotation</Text>
         <Text style={styles.subtitle}>{customerName}</Text>
@@ -135,10 +197,16 @@ const QuotationFormScreen = ({ route, navigation }) => {
         <DetailSection
           title="Line Items"
           action={
-            <Pressable style={styles.addButton} onPress={() => navigation.navigate('ProductPicker')}>
-              <Plus color={colors.primary} size={16} />
-              <Text style={styles.addText}>Product</Text>
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable style={styles.scanButton} onPress={() => setShowScannerModal(true)}>
+                <Camera color="#fff" size={14} />
+                <Text style={styles.scanText}>Scan Note (OCR)</Text>
+              </Pressable>
+              <Pressable style={styles.addButton} onPress={() => navigation.navigate('ProductPicker')}>
+                <Plus color={colors.primary} size={15} />
+                <Text style={styles.addText}>Product</Text>
+              </Pressable>
+            </View>
           }
         >
           {form.items.length ? (
@@ -224,6 +292,11 @@ const QuotationFormScreen = ({ route, navigation }) => {
         </DetailSection>
       </ScrollView>
       <PrimaryActionBar label="Save Quotation" onPress={handleSubmit} loading={saving} disabled={saving} />
+      <ContractorNoteScannerModal
+        visible={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onApplyItems={handleApplyOcrItems}
+      />
     </Screen>
   );
 };
@@ -242,6 +315,25 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginBottom: 14,
     marginTop: 4
+  },
+  headerActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8
+  },
+  scanButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 6,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5
+  },
+  scanText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800'
   },
   addButton: {
     alignItems: 'center',

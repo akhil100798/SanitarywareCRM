@@ -1,0 +1,1009 @@
+{
+  "timestamp": "2026-11-16T14:48:58.902Z",
+  "totalCases": 100,
+  "passedCount": 100,
+  "failedCount": 0,
+  "passRate": "100.0%",
+  "results": [
+    {
+      "id": "TC-QT-01",
+      "suite": "Quotations",
+      "name": "Create valid quotation with line item & discount",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": "Quote ID: 30"
+    },
+    {
+      "id": "TC-QT-02",
+      "suite": "Quotations",
+      "name": "Verify mathematical line item discount calculation",
+      "type": "POSITIVE",
+      "expected": "10800.00",
+      "actual": "10800",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-03",
+      "suite": "Quotations",
+      "name": "Verify 18% GST tax calculation",
+      "type": "POSITIVE",
+      "expected": "1944.00",
+      "actual": "1944",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-04",
+      "suite": "Quotations",
+      "name": "Verify Grand Total precision calculation",
+      "type": "POSITIVE",
+      "expected": "12744.00",
+      "actual": "12744",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-05",
+      "suite": "Quotations",
+      "name": "Retrieve quotation by ID",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-06",
+      "suite": "Quotations",
+      "name": "Public unauthenticated customer portal access",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-07",
+      "suite": "Quotations",
+      "name": "Customer 1-click self-service approval via portal",
+      "type": "POSITIVE",
+      "expected": "200 OK (Status ACCEPTED)",
+      "actual": "ACCEPTED",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-08",
+      "suite": "Quotations",
+      "name": "Quotation status synchronization in CRM",
+      "type": "POSITIVE",
+      "expected": "ACCEPTED",
+      "actual": "ACCEPTED",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-09",
+      "suite": "Quotations",
+      "name": "Query quotations by customer ID",
+      "type": "POSITIVE",
+      "expected": "200 OK with results",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-10",
+      "suite": "Quotations",
+      "name": "Quotation PDF generation endpoint",
+      "type": "POSITIVE",
+      "expected": "200 OK with PDF bytes",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-11",
+      "suite": "Quotations",
+      "name": "Missing customer ID rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-12",
+      "suite": "Quotations",
+      "name": "Empty items list rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-13",
+      "suite": "Quotations",
+      "name": "Zero item quantity rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-14",
+      "suite": "Quotations",
+      "name": "Negative item quantity rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-15",
+      "suite": "Quotations",
+      "name": "Negative unit price rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-16",
+      "suite": "Quotations",
+      "name": "Negative discount percentage rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-17",
+      "suite": "Quotations",
+      "name": "Non-existent product ID rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-18",
+      "suite": "Quotations",
+      "name": "Non-existent customer ID rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-19",
+      "suite": "Quotations",
+      "name": "Get non-existent quotation ID",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-QT-20",
+      "suite": "Quotations",
+      "name": "Invalid portal token access",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-01",
+      "suite": "Orders",
+      "name": "Convert accepted quotation into official Order",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": "Order ID: 25"
+    },
+    {
+      "id": "TC-ORD-02",
+      "suite": "Orders",
+      "name": "Order initial state is PENDING and preserves stock",
+      "type": "POSITIVE",
+      "expected": "PENDING with Stock 100",
+      "actual": "PENDING with Stock 100",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-03",
+      "suite": "Orders",
+      "name": "Get order by ID",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-04",
+      "suite": "Orders",
+      "name": "Advance to CONFIRMED triggers atomic stock reservation (-2)",
+      "type": "POSITIVE",
+      "expected": "98",
+      "actual": "98",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-05",
+      "suite": "Orders",
+      "name": "Advance order status to PROCESSING",
+      "type": "POSITIVE",
+      "expected": "PROCESSING",
+      "actual": "PROCESSING",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-06",
+      "suite": "Orders",
+      "name": "Advance order status to SHIPPED",
+      "type": "POSITIVE",
+      "expected": "SHIPPED",
+      "actual": "SHIPPED",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-07",
+      "suite": "Orders",
+      "name": "Direct CONFIRMED order entry reserves stock (-3)",
+      "type": "POSITIVE",
+      "expected": "95",
+      "actual": "95",
+      "passed": true,
+      "details": "Direct Order ID: 26"
+    },
+    {
+      "id": "TC-ORD-08",
+      "suite": "Orders",
+      "name": "Order cancellation atomically restores inventory stock",
+      "type": "POSITIVE",
+      "expected": "98",
+      "actual": "98",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-09",
+      "suite": "Orders",
+      "name": "List orders directory with pagination",
+      "type": "POSITIVE",
+      "expected": "200 OK with content",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-10",
+      "suite": "Orders",
+      "name": "Get orders by customer ID endpoint",
+      "type": "POSITIVE",
+      "expected": "200 OK with orders",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-11",
+      "suite": "Orders",
+      "name": "Duplicate quotation conversion rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-12",
+      "suite": "Orders",
+      "name": "Order exceeding available stock rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-13",
+      "suite": "Orders",
+      "name": "Missing customer on direct order rejection",
+      "type": "NEGATIVE",
+      "expected": "400/409",
+      "actual": "409",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-14",
+      "suite": "Orders",
+      "name": "Missing orderDate on direct order rejection",
+      "type": "NEGATIVE",
+      "expected": "400/409",
+      "actual": "409",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-15",
+      "suite": "Orders",
+      "name": "Negative quantity on order rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-16",
+      "suite": "Orders",
+      "name": "Invalid order status transition rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-17",
+      "suite": "Orders",
+      "name": "Status update on non-existent order ID",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-18",
+      "suite": "Orders",
+      "name": "Retrieve non-existent order ID",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-19",
+      "suite": "Orders",
+      "name": "Order with non-existent product rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-ORD-20",
+      "suite": "Orders",
+      "name": "Order with non-existent customer rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-01",
+      "suite": "Payments",
+      "name": "Record 50% partial advance payment",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": "Payment ID: 22"
+    },
+    {
+      "id": "TC-PAY-02",
+      "suite": "Payments",
+      "name": "Order payment status reflects PARTIAL",
+      "type": "POSITIVE",
+      "expected": "PARTIAL",
+      "actual": "PARTIAL",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-03",
+      "suite": "Payments",
+      "name": "Order remaining balance recalculation",
+      "type": "POSITIVE",
+      "expected": "6372.00",
+      "actual": "6372",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-04",
+      "suite": "Payments",
+      "name": "Process payment via UPI mode",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-05",
+      "suite": "Payments",
+      "name": "Process payment via CASH mode",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-06",
+      "suite": "Payments",
+      "name": "Process payment via CHEQUE mode",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-07",
+      "suite": "Payments",
+      "name": "Final settlement payment recording",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-08",
+      "suite": "Payments",
+      "name": "Order payment status reaches PAID with 0.00 balance",
+      "type": "POSITIVE",
+      "expected": "PAID with balance 0.00",
+      "actual": "PAID (bal: 0)",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-09",
+      "suite": "Payments",
+      "name": "Zero balance drift: Sum of ledger payments equals Grand Total",
+      "type": "POSITIVE",
+      "expected": "12744.00",
+      "actual": "12744",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-10",
+      "suite": "Payments",
+      "name": "Get payment receipt details by payment ID",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-11",
+      "suite": "Payments",
+      "name": "Overpayment rejection on fully settled order",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-12",
+      "suite": "Payments",
+      "name": "Zero payment amount rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-13",
+      "suite": "Payments",
+      "name": "Negative payment amount rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-14",
+      "suite": "Payments",
+      "name": "Missing payment method rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-15",
+      "suite": "Payments",
+      "name": "Invalid payment method enum rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-16",
+      "suite": "Payments",
+      "name": "Missing order ID on payment rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-17",
+      "suite": "Payments",
+      "name": "Payment against non-existent order ID",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-18",
+      "suite": "Payments",
+      "name": "Retrieve non-existent payment ID",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-19",
+      "suite": "Payments",
+      "name": "Query payments for non-existent order",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PAY-20",
+      "suite": "Payments",
+      "name": "Payment on cancelled order rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-01",
+      "suite": "Distributors",
+      "name": "Create new Distributor supplier profile",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "201",
+      "passed": true,
+      "details": "Distributor ID: 18"
+    },
+    {
+      "id": "TC-DIST-02",
+      "suite": "Distributors",
+      "name": "Get distributor by ID",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-03",
+      "suite": "Distributors",
+      "name": "List distributors directory",
+      "type": "POSITIVE",
+      "expected": "200 OK with list",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-04",
+      "suite": "Distributors",
+      "name": "Create Purchase Order (PO) for distributor",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": "PO ID: 30"
+    },
+    {
+      "id": "TC-DIST-05",
+      "suite": "Distributors",
+      "name": "Get Purchase Order by ID",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-06",
+      "suite": "Distributors",
+      "name": "PO fulfillment automatically increments inventory stock (+50)",
+      "type": "POSITIVE",
+      "expected": "148",
+      "actual": "148",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-07",
+      "suite": "Distributors",
+      "name": "Record payment made to distributor supplier",
+      "type": "POSITIVE",
+      "expected": "200/201 Created",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-08",
+      "suite": "Distributors",
+      "name": "Update distributor profile details",
+      "type": "POSITIVE",
+      "expected": "200 OK with updated name",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-09",
+      "suite": "Distributors",
+      "name": "Missing required phone number rejection",
+      "type": "NEGATIVE",
+      "expected": "400/409",
+      "actual": "409",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-10",
+      "suite": "Distributors",
+      "name": "Get non-existent distributor ID",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-11",
+      "suite": "Distributors",
+      "name": "PO with missing distributor ID rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-12",
+      "suite": "Distributors",
+      "name": "Receiving empty PO rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-13",
+      "suite": "Distributors",
+      "name": "PO with negative quantity rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-14",
+      "suite": "Distributors",
+      "name": "Negative distributor payment rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DIST-15",
+      "suite": "Distributors",
+      "name": "Payment to non-existent distributor rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-01",
+      "suite": "Analytics",
+      "name": "Get Executive KPI Dashboard statistics",
+      "type": "POSITIVE",
+      "expected": "200 OK with KPIs",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-02",
+      "suite": "Analytics",
+      "name": "Sales summary report generation",
+      "type": "POSITIVE",
+      "expected": "200 OK with summary",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-03",
+      "suite": "Analytics",
+      "name": "Customer outstanding accounts receivable report",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-04",
+      "suite": "Analytics",
+      "name": "Distributor outstanding payables report",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-05",
+      "suite": "Analytics",
+      "name": "Inventory summary report",
+      "type": "POSITIVE",
+      "expected": "200 OK",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-06",
+      "suite": "Analytics",
+      "name": "System audit logs security ledger",
+      "type": "POSITIVE",
+      "expected": "200 OK with entries",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-07",
+      "suite": "Analytics",
+      "name": "Sales summary malformed start date rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-08",
+      "suite": "Analytics",
+      "name": "Sales summary invalid order status enum rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-09",
+      "suite": "Analytics",
+      "name": "Malformed customerId type parameter rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-DASH-10",
+      "suite": "Analytics",
+      "name": "Non-existent report type endpoint",
+      "type": "NEGATIVE",
+      "expected": "404 Not Found",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-01",
+      "suite": "Catalog PDF",
+      "name": "Upload & preview valid sanitaryware PDF catalog",
+      "type": "POSITIVE",
+      "expected": "200 OK (importAllowed=true)",
+      "actual": "200",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-02",
+      "suite": "Catalog PDF",
+      "name": "Extracted product SKUs from PDF text stream",
+      "type": "POSITIVE",
+      "expected": "E8306..., T9830..., K1020...",
+      "actual": "E8306S8376, T9830S8376, K1020S8376",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-03",
+      "suite": "Catalog PDF",
+      "name": "Extracted HSN Codes from PDF",
+      "type": "POSITIVE",
+      "expected": "691010, 741820",
+      "actual": "691010, 741820, 691010",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-04",
+      "suite": "Catalog PDF",
+      "name": "Extracted Product Names from PDF",
+      "type": "POSITIVE",
+      "expected": "Matched names",
+      "actual": "Solid Plus Regular Seat Cover",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-05",
+      "suite": "Catalog PDF",
+      "name": "Extracted proposed MRP pricing",
+      "type": "POSITIVE",
+      "expected": "6650, 2500, 14800",
+      "actual": "6650, 2500, 14800",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-06",
+      "suite": "Catalog PDF",
+      "name": "Extracted Material & Spec codes",
+      "type": "POSITIVE",
+      "expected": "Ceramic/MC12/IT12",
+      "actual": "Ceramic/MC12/IT12",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-07",
+      "suite": "Catalog PDF",
+      "name": "Action detection classifies new items as CREATE",
+      "type": "POSITIVE",
+      "expected": "All CREATE",
+      "actual": "CREATE, CREATE, CREATE",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-08",
+      "suite": "Catalog PDF",
+      "name": "Confirm and commit catalog import into database (3 created)",
+      "type": "POSITIVE",
+      "expected": "200 OK (createdCount=3)",
+      "actual": "Created: 3",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-09",
+      "suite": "Catalog PDF",
+      "name": "Unconfirmed catalog import attempt rejection",
+      "type": "NEGATIVE",
+      "expected": "428 Precondition Required",
+      "actual": "428",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-10",
+      "suite": "Catalog PDF",
+      "name": "Missing SHA256 review token rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "428",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-11",
+      "suite": "Catalog PDF",
+      "name": "Mismatched SHA256 tamper rejection",
+      "type": "NEGATIVE",
+      "expected": "409 Conflict",
+      "actual": "409",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-12",
+      "suite": "Catalog PDF",
+      "name": "Corrupt/Unparseable pricing PDF blocks import (importAllowed=false)",
+      "type": "NEGATIVE",
+      "expected": "importAllowed=false",
+      "actual": "Allowed: false",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-13",
+      "suite": "Catalog PDF",
+      "name": "Non-PDF file type rejection",
+      "type": "NEGATIVE",
+      "expected": "415 Unsupported Media Type / 400",
+      "actual": "415",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-14",
+      "suite": "Catalog PDF",
+      "name": "Missing brandId parameter rejection",
+      "type": "NEGATIVE",
+      "expected": "400 Bad Request",
+      "actual": "400",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "id": "TC-PDF-15",
+      "suite": "Catalog PDF",
+      "name": "Non-existent brandId rejection",
+      "type": "NEGATIVE",
+      "expected": "400/404",
+      "actual": "404",
+      "passed": true,
+      "details": ""
+    }
+  ]
+}

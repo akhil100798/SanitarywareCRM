@@ -1,0 +1,102 @@
+[
+  {
+    "title": "Authentication - Rejection of invalid credentials",
+    "passed": true,
+    "notes": "Clean error feedback received"
+  },
+  {
+    "title": "Authentication - Valid Admin Login & Dashboard Redirect",
+    "passed": true,
+    "notes": "01a_web_login_auth.png"
+  },
+  {
+    "title": "Authentication - Session persistence across reload",
+    "passed": true,
+    "notes": "Remained authenticated on /dashboard"
+  },
+  {
+    "title": "RBAC - Sales role prevented from accessing /users admin page",
+    "passed": true,
+    "notes": "Protected route enforced (Access denied)"
+  },
+  {
+    "title": "Customer Management - Directory loaded and rendered",
+    "passed": true,
+    "notes": "01_web_customer_list.png"
+  },
+  {
+    "title": "Customer Management - Create and Search Customer",
+    "passed": true,
+    "notes": "Customer: Vikramaditya Sanitary Mart 5919"
+  },
+  {
+    "title": "Products - Product Catalog Directory Rendered",
+    "passed": true,
+    "notes": "02_web_product_catalog.png"
+  },
+  {
+    "title": "Products - Create product with SKU & Inventory Tracking",
+    "passed": true,
+    "notes": "Product: SKU-BASIN-5919"
+  },
+  {
+    "title": "Inventory - Stock levels and catalog view captured",
+    "passed": true,
+    "notes": "02b_web_inventory_adjustments.png"
+  },
+  {
+    "title": "Quotations - Create multi-item quotation with GST taxes",
+    "passed": true,
+    "notes": "Quotation created for Vikramaditya Sanitary Mart 5919"
+  },
+  {
+    "title": "Quotations - Detailed estimate view with item breakdown",
+    "passed": true,
+    "notes": "03_web_quotation_details.png"
+  },
+  {
+    "title": "Customer Portal - Public tokenized access without authentication",
+    "passed": true,
+    "notes": "03b_web_tokenized_portal.png"
+  },
+  {
+    "title": "Customer Portal - Customer 1-click self-service quotation approval",
+    "passed": true,
+    "notes": "Status updated to ACCEPTED"
+  },
+  {
+    "title": "Quotations - Real-time synchronization of portal approval back to CRM",
+    "passed": true,
+    "notes": "Quotation status in CRM: ACCEPTED"
+  },
+  {
+    "title": "Order Management - Convert accepted quotation to official order",
+    "passed": true,
+    "notes": "04_web_order_detail.png"
+  },
+  {
+    "title": "Order Management - Converted order visible in Order directory",
+    "passed": true,
+    "notes": "Customer: Vikramaditya Sanitary Mart 5919"
+  },
+  {
+    "title": "Order Management - Order Status Progression (PROCESSING)",
+    "passed": true,
+    "notes": "04b_web_order_status_progression.png"
+  },
+  {
+    "title": "Payments & Ledger - Recorded partial payment with balance recalculation",
+    "passed": true,
+    "notes": "05b_web_payments_receipt.png"
+  },
+  {
+    "title": "Analytics - Executive KPI dashboard with revenue and velocity metrics",
+    "passed": true,
+    "notes": "05_web_analytics_dashboard.png"
+  },
+  {
+    "title": "User Management - Administration roster & access control panel",
+    "passed": true,
+    "notes": "05c_web_user_management.png"
+  }
+]

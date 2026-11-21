@@ -34,8 +34,16 @@ public class DashboardDTO {
     @AllArgsConstructor
     @Builder
     public static class ProductSalesDTO {
+        private Long productId;
         private String productName;
         private Long quantitySold;
         private BigDecimal totalRevenue;
+
+        public ProductSalesDTO(String productName, Long quantitySold, BigDecimal totalRevenue) {
+            this.productId = null;
+            this.productName = productName;
+            this.quantitySold = quantitySold;
+            this.totalRevenue = totalRevenue;
+        }
     }
 }

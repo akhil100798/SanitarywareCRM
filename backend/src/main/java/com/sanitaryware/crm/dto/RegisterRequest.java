@@ -26,5 +26,6 @@ public class RegisterRequest {
     private String fullName;
     
     @Size(max = 15, message = "Phone number must not exceed 15 characters")
+    @jakarta.validation.constraints.Pattern(regexp = "^$|^[0-9+() -]{7,15}$", message = "Phone number must contain only valid digits and phone characters")
     private String phoneNumber;
 }

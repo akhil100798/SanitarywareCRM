@@ -90,6 +90,73 @@ export const ReportsPage = () => {
         setTimeout(() => fetchReportData(), 0);
     };
 
+    const handleExportReport = () => {
+        if (!data) {
+            toast.error('No report data available to export');
+            return;
+        }
+        try {
+            const safeTimestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '_');
+            const filename = `Financial_Report_${activeTab}_${safeTimestamp}.csv`;
+
+            let rows = [];
+            if (activeTab === 'inventory' && data.items) {
+                rows = [
+                    ['Product Name', 'SKU', 'Brand', 'Category', 'Stock Qty', 'Cost Price', 'Selling Price', 'Total Valuation'],
+                    ...data.items.map(item => [
+                        `"${(item.productName || '').replace(/"/g, '""')}"`,
+                        `"${item.sku || ''}"`,
+                        `"${item.brandName || ''}"`,
+                        `"${item.categoryName || ''}"`,
+                        item.stockQuantity || 0,
+                        item.purchasePrice || 0,
+                        item.sellingPrice || 0,
+                        item.totalValue || 0
+                    ])
+                ];
+            } else if (activeTab === 'sales' && data.orders) {
+                rows = [
+                    ['Order Number', 'Order Date', 'Customer Name', 'Subtotal', 'Tax Amount', 'Discount', 'Total', 'Status', 'Payment Status'],
+                    ...data.orders.map(o => [
+                        `"${o.orderNumber || ''}"`,
+                        o.orderDate || '',
+                        `"${(o.customerName || '').replace(/"/g, '""')}"`,
+                        o.subtotal || 0,
+                        o.taxAmount || 0,
+                        o.discount || 0,
+                        o.total || 0,
+                        o.status || '',
+                        o.paymentStatus || ''
+                    ])
+                ];
+            } else {
+                const items = data.items || data.orders || data.customers || data.distributors || data.payments || data.purchaseOrders || [];
+                if (items.length === 0) {
+                    toast.error('No tabular records to export for this view');
+                    return;
+                }
+                const headers = Object.keys(items[0]);
+                rows = [
+                    headers,
+                    ...items.map(item => headers.map(h => typeof item[h] === 'string' ? `"${item[h].replace(/"/g, '""')}"` : (item[h] ?? '')))
+                ];
+            }
+
+            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success(`Exported ${filename}`);
+        } catch (err) {
+            console.error('Export failed', err);
+            toast.error('Failed to export report');
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -103,14 +170,25 @@ export const ReportsPage = () => {
                         Authoritative business ledgers, customer receivables, supplier payables, and inventory valuations.
                     </p>
                 </div>
-                <button
-                    onClick={fetchReportData}
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all self-start md:self-auto"
-                >
-                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                    Refresh
-                </button>
+                <div className="flex items-center gap-2 self-start md:self-auto">
+                    <button
+                        onClick={handleExportReport}
+                        disabled={loading || !data}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-teal hover:bg-teal-600 text-white font-semibold rounded-xl text-sm transition-all shadow-sm disabled:opacity-50"
+                        title="Export Financial Summary"
+                    >
+                        <Download size={16} />
+                        Export Report
+                    </button>
+                    <button
+                        onClick={fetchReportData}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all disabled:opacity-50"
+                    >
+                        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -446,7 +524,7 @@ const PurchaseSummaryView = ({ data }) => (
 const InventorySummaryView = ({ data }) => (
     <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Total Catalog Value" value={`₹${Number(data.totalInventoryValue || 0).toLocaleString('en-IN')}`} color="teal" />
+            <StatCard label="Total Valuation (Cost Price)" value={`₹${Number(data.totalInventoryValue || 0).toLocaleString('en-IN')}`} color="teal" />
             <StatCard label="Total Units in Stock" value={data.totalStockQuantity || 0} color="blue" />
             <StatCard label="Low Stock Items (<10)" value={data.lowStockCount || 0} color="amber" />
             <StatCard label="Out of Stock Items" value={data.outOfStockCount || 0} color="rose" />

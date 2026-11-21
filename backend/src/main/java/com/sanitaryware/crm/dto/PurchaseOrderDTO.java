@@ -3,6 +3,7 @@ package com.sanitaryware.crm.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,6 +33,8 @@ public class PurchaseOrderDTO {
     private BigDecimal balanceAmount;
     private String invoicePdfPath;
     private String notes;
+    @NotNull(message = "Purchase order must have items")
+    @NotEmpty(message = "Purchase order must contain at least one item line")
     @Valid
     private List<PurchaseOrderItemDTO> items;
 

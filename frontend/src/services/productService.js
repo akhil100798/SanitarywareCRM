@@ -9,7 +9,7 @@ export const productService = {
     search: (query, params) => api.get('/products/search', { params: { ...params, query } }),
     getLowStock: () => api.get('/products/low-stock'),
     getFeatured: () => api.get('/products/featured'),
-    updateStock: (id, quantity) => api.patch(`/products/${id}/stock`, null, { params: { quantity } }),
+    updateStock: (id, quantity, reason, rmaCode) => api.patch(`/products/${id}/stock`, null, { params: { quantity, reason, rmaCode } }),
     updateAvailability: (id, available) => api.patch(`/products/${id}/availability`, null, { params: { available } }),
     getByCategory: (categoryId, params) => api.get(`/products/category/${categoryId}`, { params }),
     getByBrand: (brandId, params) => api.get(`/products/brand/${brandId}`, { params }),
@@ -42,6 +42,18 @@ export const productService = {
             },
         });
     },
+    previewCatalogUploadAsync: (brandId, file, onUploadProgress) => {
+        const formData = new FormData();
+        formData.append('brandId', brandId);
+        formData.append('file', file);
+        return api.post('/products/bulk-catalog-preview-async', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress,
+            timeout: 180000,
+        });
+    },
     bulkCatalogUpload: (brandId, file, previewSha256, selectedSkus, unavailableSkus) => {
         const formData = new FormData();
         formData.append('brandId', brandId);
@@ -56,6 +68,21 @@ export const productService = {
             },
         });
     },
+    bulkCatalogUploadAsync: (brandId, file, previewSha256, selectedSkus, unavailableSkus) => {
+        const formData = new FormData();
+        formData.append('brandId', brandId);
+        formData.append('file', file);
+        formData.append('previewSha256', previewSha256);
+        selectedSkus.forEach((sku) => formData.append('selectedSkus', sku));
+        unavailableSkus.forEach((sku) => formData.append('unavailableSkus', sku));
+        formData.append('confirmed', 'true');
+        return api.post('/products/bulk-catalog-upload-async', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+    getCatalogJobProgress: (jobId) => api.get(`/products/catalog-jobs/${jobId}`),
     deleteAll: () => api.delete('/products/all'),
 };
 
@@ -74,6 +101,12 @@ export const brandService = {
         });
     },
     downloadCatalog: (id) => api.get(`/brands/${id}/catalog`, { responseType: 'blob' }),
+};
+
+export const catalogVersionService = {
+    getVersionsByBrand: (brandId) => api.get(`/brands/${brandId}/catalog-versions`),
+    rollbackVersion: (versionId) => api.post(`/catalog-versions/${versionId}/rollback`),
+    downloadCircular: (versionId) => api.get(`/catalog-versions/${versionId}/circular`, { responseType: 'blob' }),
 };
 
 export const categoryService = {

@@ -66,6 +66,9 @@ class ProductServiceImplTest {
     @Mock
     private AccessControlService accessControlService;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private ProductServiceImpl productService;
 

@@ -38,9 +38,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:?CORS_ALLOWED_ORIGIN_PATTERNS is required}
-      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:-160MB}
-      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:-161MB}
-      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Djavax.net.ssl.trustStore=/app/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=staging_truststore_secret -Djavax.net.ssl.trustStoreType=PKCS12}
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:-250MB}
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:-251MB}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx2048m -Djavax.net.ssl.trustStore=/app/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=staging_truststore_secret -Djavax.net.ssl.trustStoreType=PKCS12}
     depends_on:
       mysql:
         condition: service_healthy

@@ -1,12 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Package, AlertCircle, Sparkles, Image as ImageIcon, CheckCircle, HelpCircle } from 'lucide-react';
+import { X, Package, AlertCircle, Sparkles, Image as ImageIcon, CheckCircle, HelpCircle, Printer, Sliders } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { productService } from '../../services/productService';
+import toast from 'react-hot-toast';
 
-const ProductDetailModal = ({ product, isOpen, onClose }) => {
+const ProductDetailModal = ({ product, isOpen, onClose, onRefresh }) => {
     const user = useAuthStore((state) => state.user);
     const canViewPurchasePrice = ['ADMIN', 'MANAGER'].includes(user?.role);
+    const canAdjustStock = ['ADMIN', 'MANAGER', 'WAREHOUSE'].includes(user?.role);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [imageErrorMap, setImageErrorMap] = useState({});
+    const [showStockAdjust, setShowStockAdjust] = useState(false);
+    const [adjustDelta, setAdjustDelta] = useState('');
+    const [adjustReason, setAdjustReason] = useState('SHOWROOM_DISPLAY');
+    const [adjustRma, setAdjustRma] = useState('');
+    const [isAdjusting, setIsAdjusting] = useState(false);
+    const [showBarcodePrint, setShowBarcodePrint] = useState(false);
     const dialogRef = useRef(null);
     const closeButtonRef = useRef(null);
     const returnFocusRef = useRef(null);
@@ -18,16 +27,52 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
             }
         };
         if (isOpen) {
+            document.body.style.overflow = 'hidden';
             returnFocusRef.current = document.activeElement;
             window.addEventListener('keydown', handleKeyDown);
             setSelectedImageIndex(0);
             setImageErrorMap({});
             requestAnimationFrame(() => closeButtonRef.current?.focus());
         } else {
+            document.body.style.overflow = 'unset';
             returnFocusRef.current?.focus?.();
         }
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = 'unset';
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, [isOpen, onClose]);
+
+    const handleStockAdjustSubmit = async (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        const delta = parseInt(adjustDelta, 10);
+        if (isNaN(delta) || delta === 0) {
+            toast.error('Enter a valid non-zero whole number for stock adjustment');
+            return;
+        }
+        if (!adjustReason || !adjustReason.trim()) {
+            toast.error('Adjustment reason is mandatory for inventory audit trail');
+            return;
+        }
+
+        try {
+            setIsAdjusting(true);
+            await productService.updateStock(product.id, delta, adjustReason, adjustRma || undefined);
+            toast.success(`Adjusted stock by ${delta > 0 ? '+' : ''}${delta}`);
+            setShowStockAdjust(false);
+            setAdjustDelta('');
+            setAdjustRma('');
+            if (onRefresh) onRefresh();
+            onClose();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to adjust stock');
+        } finally {
+            setIsAdjusting(false);
+        }
+    };
 
     const handleDialogKeyDown = (event) => {
         if (event.key !== 'Tab') return;
@@ -225,7 +270,19 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
 
                     {/* Tax & Compliance */}
                     <div className="border-t border-slate-100 pt-4">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tax & Barcode Compliance</h4>
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tax & Barcode Compliance</h4>
+                            {product.barcode && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBarcodePrint(!showBarcodePrint)}
+                                    className="text-xs text-teal font-semibold hover:underline inline-flex items-center gap-1"
+                                >
+                                    <Printer size={13} />
+                                    <span>{showBarcodePrint ? 'Hide Label' : 'Print Thermal Label (50x25mm)'}</span>
+                                </button>
+                            )}
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-100">
                                 <span className="text-xs font-medium text-slate-500">Barcode</span>
@@ -240,7 +297,127 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                                 </span>
                             </div>
                         </div>
+
+                        {/* Thermal Barcode Sticker Layout (BUG-163) */}
+                        {showBarcodePrint && (
+                            <div className="mt-3 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                                <style>{`
+                                    @media print {
+                                        @page { size: 50mm 25mm; margin: 0; }
+                                        body * { visibility: hidden; }
+                                        #thermal-barcode-sticker, #thermal-barcode-sticker * { visibility: visible; }
+                                        #thermal-barcode-sticker { position: absolute; left: 0; top: 0; width: 50mm; height: 25mm; padding: 2mm; box-sizing: border-box; }
+                                    }
+                                `}</style>
+                                <div id="thermal-barcode-sticker" className="w-[50mm] h-[25mm] bg-white border border-slate-300 p-2 text-center flex flex-col justify-between mx-auto shadow-sm">
+                                    <div className="text-[9px] font-bold text-slate-900 truncate leading-tight">{product.name}</div>
+                                    <div className="text-[8px] font-mono font-bold text-slate-700">SKU: {product.sku}</div>
+                                    <div className="text-[12px] font-mono tracking-widest font-black py-0.5">||||| |||| || |||||</div>
+                                    <div className="text-[8px] font-mono text-slate-500">{product.barcode || product.sku}</div>
+                                    <div className="text-[9px] font-extrabold text-slate-900">MRP: ₹{product.mrp}</div>
+                                </div>
+                                <div className="text-center mt-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => window.print()}
+                                        className="btn-primary text-xs px-4 py-1.5 inline-flex items-center gap-1.5"
+                                    >
+                                        <Printer size={14} />
+                                        <span>Print 50x25mm Label</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Stock Adjustment Section (BUG-152, BUG-158, BUG-159, BUG-162, BUG-164) */}
+                    {canAdjustStock && (
+                        <div className="border-t border-slate-100 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Inventory Adjustment</h4>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStockAdjust(!showStockAdjust)}
+                                    className="text-xs text-blue-600 font-semibold hover:underline inline-flex items-center gap-1"
+                                >
+                                    <Sliders size={13} />
+                                    <span>{showStockAdjust ? 'Cancel Adjustment' : 'Adjust Stock'}</span>
+                                </button>
+                            </div>
+
+                            {showStockAdjust && (
+                                <form
+                                    onSubmit={handleStockAdjustSubmit}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleStockAdjustSubmit(e);
+                                        }
+                                    }}
+                                    className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3"
+                                >
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Quantity Delta (+/- Integer)</label>
+                                            <input
+                                                type="number"
+                                                step="1"
+                                                placeholder="+10 or -5"
+                                                value={adjustDelta}
+                                                onChange={(e) => setAdjustDelta(e.target.value.replace(/[^0-9-]/g, ''))}
+                                                className="input-field text-sm py-2"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Reason (Mandatory)</label>
+                                            <select
+                                                value={adjustReason}
+                                                onChange={(e) => setAdjustReason(e.target.value)}
+                                                className="input-field text-sm py-2 bg-white"
+                                                required
+                                            >
+                                                <option value="SHOWROOM_DISPLAY">Showroom Display / Demonstration</option>
+                                                <option value="DAMAGED">Damaged Goods</option>
+                                                <option value="LOST_OR_THEFT">Lost / Shrinkage</option>
+                                                <option value="INVENTORY_AUDIT_COUNT">Physical Inventory Audit</option>
+                                                <option value="SUPPLIER_RETURN">Supplier Return</option>
+                                                <option value="OTHER">Other Reason</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    {(adjustReason === 'DAMAGED' || adjustReason === 'SUPPLIER_RETURN') && (
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Supplier RMA Return Code (Optional)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. RMA-2026-091"
+                                                value={adjustRma}
+                                                onChange={(e) => setAdjustRma(e.target.value)}
+                                                className="input-field text-sm py-2"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex justify-end gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowStockAdjust(false)}
+                                            className="btn-secondary text-xs px-3 py-1.5"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isAdjusting}
+                                            className="btn-primary text-xs px-4 py-1.5"
+                                        >
+                                            {isAdjusting ? 'Updating...' : 'Confirm Adjustment'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
 
                     {/* Specifications */}
                     <div className="border-t border-slate-100 pt-4">

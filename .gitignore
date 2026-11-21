@@ -17,10 +17,15 @@ frontend/build/
 mobile/.expo/
 mobile/.gradle/
 mobile/dist/
-mobile/dist-check*/
+mobile/dist-*/
+mobile/dist-rebuild/
+mobile/dist-web/
 mobile/build/
 mobile/android/
 .expo/
+uploads/
+*.png
+*.xml
 
 # Playwright / test outputs
 automation-tests/test-results/

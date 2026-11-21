@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,9 +47,7 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public QuotationDTO createQuotation(QuotationDTO quotationDTO) {
-        if (quotationDTO.getItems() == null || quotationDTO.getItems().isEmpty()) {
-            throw new IllegalArgumentException("Quotation must contain at least one item");
-        }
+        validateQuotationDTO(quotationDTO);
         
         Quotation quotation = quotationMapper.toEntity(quotationDTO);
         
@@ -83,9 +82,7 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public QuotationDTO updateQuotation(Long id, QuotationDTO quotationDTO) {
-        if (quotationDTO.getItems() == null || quotationDTO.getItems().isEmpty()) {
-            throw new IllegalArgumentException("Quotation must contain at least one item");
-        }
+        validateQuotationDTO(quotationDTO);
 
         Quotation existingQuotation = lockedQuotation(id);
         accessControlService.requireQuotationAccess(existingQuotation);
@@ -155,6 +152,11 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     public QuotationDTO updateStatus(Long id, String status) {
+        return updateStatus(id, status, null);
+    }
+
+    @Override
+    public QuotationDTO updateStatus(Long id, String status, String reason) {
         Quotation quotation = lockedQuotation(id);
         accessControlService.requireQuotationAccess(quotation);
         
@@ -164,10 +166,14 @@ public class QuotationServiceImpl implements QuotationService {
         }
 
         quotation.setStatus(newStatus);
+        if (reason != null && !reason.trim().isEmpty()) {
+            String trimmedReason = reason.trim();
+            quotation.setNotes((quotation.getNotes() != null && !quotation.getNotes().isEmpty() ? quotation.getNotes() + " | " : "") + "Reason: " + trimmedReason);
+        }
         Quotation saved = quotationRepository.save(quotation);
 
         auditService.logEvent("STATUS_CHANGE", "QUOTATION", id,
-                "Changed status of quotation " + quotation.getQuotationNumber() + " to " + newStatus);
+                "Changed status of quotation " + quotation.getQuotationNumber() + " to " + newStatus + (reason != null && !reason.trim().isEmpty() ? " (Reason: " + reason.trim() + ")" : ""));
 
         return quotationMapper.toDTO(saved);
     }
@@ -198,11 +204,15 @@ public class QuotationServiceImpl implements QuotationService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public byte[] getQuotationPdf(Long id) {
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         accessControlService.requireQuotationAccess(quotation);
+        if (quotation.getShareToken() == null || quotation.getShareToken().isBlank()) {
+            quotation.setShareToken(UUID.randomUUID().toString());
+            quotation = quotationRepository.save(quotation);
+        }
         return pdfGeneratorService.generateQuotationPdf(quotation);
     }
 
@@ -258,5 +268,28 @@ public class QuotationServiceImpl implements QuotationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
         entityManager.refresh(quotation, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         return quotation;
+    }
+
+    private void validateQuotationDTO(QuotationDTO quotationDTO) {
+        if (quotationDTO.getItems() == null || quotationDTO.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Quotation must contain at least one item");
+        }
+        if (quotationDTO.getValidUntil() != null && quotationDTO.getValidUntil().isBefore(java.time.LocalDate.now())) {
+            throw new IllegalArgumentException("Quotation validUntil date cannot be in the past");
+        }
+        if (quotationDTO.getDiscount() != null && quotationDTO.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Quotation discount cannot be negative");
+        }
+        for (QuotationDTO.QuotationItemDTO item : quotationDTO.getItems()) {
+            if (item.getQuantity() != null && item.getQuantity() < 1) {
+                throw new IllegalArgumentException("Quantity must be at least 1");
+            }
+            if (item.getDiscountPercentage() != null) {
+                if (item.getDiscountPercentage().compareTo(BigDecimal.ZERO) < 0
+                        || item.getDiscountPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
+                    throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
+                }
+            }
+        }
     }
 }

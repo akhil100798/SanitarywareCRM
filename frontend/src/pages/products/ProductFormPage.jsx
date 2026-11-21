@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Upload, Trash2, Image as ImageIcon, Star } from 'lucide-react';
 import { productService, brandService, categoryService } from '../../services/productService';
 import toast from 'react-hot-toast';
@@ -344,6 +344,15 @@ const ProductFormPage = () => {
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <nav className="flex items-center space-x-2 text-xs text-slate-400 mb-2 font-medium" aria-label="Breadcrumb">
+                        <Link to="/dashboard" className="hover:text-slate-600 transition-colors">Home</Link>
+                        <span>/</span>
+                        <Link to="/products" className="hover:text-slate-600 transition-colors">Products</Link>
+                        <span>/</span>
+                        <span className="text-slate-600 font-semibold truncate max-w-xs">
+                            {formData.name ? `${formData.name}${formData.sku ? ` (${formData.sku})` : ''}` : (isEditMode ? 'Edit Product' : 'New Product')}
+                        </span>
+                    </nav>
                     <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                         {isEditMode ? 'Edit Catalog Item' : 'Add New Product'}
                     </h2>
@@ -380,11 +389,15 @@ const ProductFormPage = () => {
                                 />
                             </div>
                             <div className="md:col-span-2 space-y-1.5">
-                                <label htmlFor="description" className="text-xs font-semibold text-slate-500">Description</label>
+                                <div className="flex justify-between items-center">
+                                    <label htmlFor="description" className="text-xs font-semibold text-slate-500">Description</label>
+                                    <span className="text-[11px] text-slate-400">{(formData.description || '').length} / 1000</span>
+                                </div>
                                 <textarea
                                     id="description"
                                     name="description"
                                     rows="3"
+                                    maxLength={1000}
                                     className="input-field text-sm resize-none"
                                     value={formData.description}
                                     onChange={handleChange}

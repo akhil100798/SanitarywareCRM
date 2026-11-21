@@ -23,13 +23,13 @@ public class DistributorController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<DistributorDTO> createDistributor(@RequestBody DistributorDTO dto) {
+    public ResponseEntity<DistributorDTO> createDistributor(@RequestBody @jakarta.validation.Valid DistributorDTO dto) {
         return new ResponseEntity<>(distributorService.createDistributor(dto), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<DistributorDTO> updateDistributor(@PathVariable Long id, @RequestBody DistributorDTO dto) {
+    public ResponseEntity<DistributorDTO> updateDistributor(@PathVariable Long id, @RequestBody @jakarta.validation.Valid DistributorDTO dto) {
         return ResponseEntity.ok(distributorService.updateDistributor(id, dto));
     }
 

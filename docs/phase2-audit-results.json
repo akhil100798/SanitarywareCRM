@@ -1,0 +1,602 @@
+[
+  {
+    "id": "TC-CUST-01",
+    "category": "Customer",
+    "name": "Create valid Retail customer with 10-digit phone",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": "Created Customer ID: 49"
+  },
+  {
+    "id": "TC-CUST-02",
+    "category": "Customer",
+    "name": "Create customer with formatted +91 phone number",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-03",
+    "category": "Customer",
+    "name": "Create customer with phone containing hyphens",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-04",
+    "category": "Customer",
+    "name": "Create customer with GSTIN and Contractor type",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-05",
+    "category": "Customer",
+    "name": "Create customer with BUILDER type",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-06",
+    "category": "Customer",
+    "name": "Get customer by ID",
+    "type": "POSITIVE",
+    "expected": "200 OK",
+    "actual": 200,
+    "passed": true,
+    "details": "Anita Ceramic House 3330"
+  },
+  {
+    "id": "TC-CUST-07",
+    "category": "Customer",
+    "name": "Search customer by partial name",
+    "type": "POSITIVE",
+    "expected": "200 OK with content",
+    "actual": 200,
+    "passed": true,
+    "details": "Found: 7"
+  },
+  {
+    "id": "TC-CUST-08",
+    "category": "Customer",
+    "name": "Search customer by phone query",
+    "type": "POSITIVE",
+    "expected": "200 OK with content",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-09",
+    "category": "Customer",
+    "name": "Update existing customer profile",
+    "type": "POSITIVE",
+    "expected": "200 OK with updated notes",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-10",
+    "category": "Customer",
+    "name": "Get active customers list endpoint",
+    "type": "POSITIVE",
+    "expected": "200 OK with active array",
+    "actual": 200,
+    "passed": true,
+    "details": "Active count: 51"
+  },
+  {
+    "id": "TC-CUST-11",
+    "category": "Customer",
+    "name": "Filter customers by CustomerType enum",
+    "type": "POSITIVE",
+    "expected": "200 OK",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-12",
+    "category": "Customer",
+    "name": "Customer pagination limit size=2",
+    "type": "POSITIVE",
+    "expected": "200 OK with size <= 2",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-13",
+    "category": "Customer",
+    "name": "Blank customer name rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-14",
+    "category": "Customer",
+    "name": "Null customer name rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-15",
+    "category": "Customer",
+    "name": "Missing phone number rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-16",
+    "category": "Customer",
+    "name": "Short phone number (<10 digits) rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-17",
+    "category": "Customer",
+    "name": "Oversized phone number (>15 digits) rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-18",
+    "category": "Customer",
+    "name": "Non-numeric phone characters rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-19",
+    "category": "Customer",
+    "name": "Special symbol phone rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-20",
+    "category": "Customer",
+    "name": "Duplicate phone number uniqueness constraint",
+    "type": "NEGATIVE",
+    "expected": "400/409 Conflict",
+    "actual": 409,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-21",
+    "category": "Customer",
+    "name": "Malformed email format rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-22",
+    "category": "Customer",
+    "name": "Invalid CustomerType enum rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-23",
+    "category": "Customer",
+    "name": "Get non-existent customer by ID",
+    "type": "NEGATIVE",
+    "expected": "404 Not Found",
+    "actual": 404,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CUST-24",
+    "category": "Customer",
+    "name": "Update non-existent customer ID",
+    "type": "NEGATIVE",
+    "expected": "404 Not Found",
+    "actual": 404,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CAT-01",
+    "category": "Category",
+    "name": "Create valid category",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": "Category ID: 49"
+  },
+  {
+    "id": "TC-CAT-02",
+    "category": "Category",
+    "name": "Create nested sub-category with parentId",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CAT-03",
+    "category": "Category",
+    "name": "Get categories list",
+    "type": "POSITIVE",
+    "expected": "200 OK array",
+    "actual": 200,
+    "passed": true,
+    "details": "Total categories: 47"
+  },
+  {
+    "id": "TC-BRD-01",
+    "category": "Brand",
+    "name": "Create valid Brand",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": "Brand ID: 42"
+  },
+  {
+    "id": "TC-BRD-02",
+    "category": "Brand",
+    "name": "Get brands list",
+    "type": "POSITIVE",
+    "expected": "200 OK array",
+    "actual": 200,
+    "passed": true,
+    "details": "Total brands: 39"
+  },
+  {
+    "id": "TC-BRD-03",
+    "category": "Brand",
+    "name": "Update existing Brand details",
+    "type": "POSITIVE",
+    "expected": "200 OK",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CAT-04",
+    "category": "Category",
+    "name": "Blank category name rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CAT-05",
+    "category": "Category",
+    "name": "Null category name rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-CAT-06",
+    "category": "Category",
+    "name": "Non-existent parentId rejection",
+    "type": "NEGATIVE",
+    "expected": "400/404",
+    "actual": 404,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-BRD-04",
+    "category": "Brand",
+    "name": "Delete non-existent brand ID rejection",
+    "type": "NEGATIVE",
+    "expected": "404 Not Found",
+    "actual": 404,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-BRD-05",
+    "category": "Brand",
+    "name": "Get non-existent brand ID",
+    "type": "NEGATIVE",
+    "expected": "404 Not Found",
+    "actual": 404,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-BRD-06",
+    "category": "Brand",
+    "name": "Update non-existent brand ID",
+    "type": "NEGATIVE",
+    "expected": "404 Not Found",
+    "actual": 404,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-01",
+    "category": "Product",
+    "name": "Create valid sanitaryware product with 18% GST",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": "Product ID: 67"
+  },
+  {
+    "id": "TC-PROD-02",
+    "category": "Product",
+    "name": "Create product with 0% GST (Tax Exempt)",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-03",
+    "category": "Product",
+    "name": "Create product with 28% GST (Luxury bracket)",
+    "type": "POSITIVE",
+    "expected": "201 Created",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-04",
+    "category": "Product",
+    "name": "Create product with 0 stock quantity",
+    "type": "POSITIVE",
+    "expected": "201 Created with stock=0",
+    "actual": 201,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-05",
+    "category": "Product",
+    "name": "Get product by ID",
+    "type": "POSITIVE",
+    "expected": "200 OK",
+    "actual": 200,
+    "passed": true,
+    "details": "Ceramic Table Basin 3330"
+  },
+  {
+    "id": "TC-PROD-06",
+    "category": "Product",
+    "name": "Search product by unique SKU query",
+    "type": "POSITIVE",
+    "expected": "200 OK with content",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-07",
+    "category": "Product",
+    "name": "Search product by partial name query",
+    "type": "POSITIVE",
+    "expected": "200 OK with content",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-08",
+    "category": "Product",
+    "name": "Filter products by category ID",
+    "type": "POSITIVE",
+    "expected": "200 OK with content",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-09",
+    "category": "Product",
+    "name": "Filter products by brand ID",
+    "type": "POSITIVE",
+    "expected": "200 OK with content",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-10",
+    "category": "Product",
+    "name": "Update existing product pricing & description",
+    "type": "POSITIVE",
+    "expected": "200 OK with 5199 price",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-11",
+    "category": "Product",
+    "name": "Product catalog pagination size=3",
+    "type": "POSITIVE",
+    "expected": "200 OK with size <= 3",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-12",
+    "category": "Product",
+    "name": "Get low stock products endpoint",
+    "type": "POSITIVE",
+    "expected": "200 OK array",
+    "actual": 200,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-13",
+    "category": "Product",
+    "name": "Blank SKU rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-14",
+    "category": "Product",
+    "name": "Null SKU rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-15",
+    "category": "Product",
+    "name": "Duplicate SKU uniqueness rejection",
+    "type": "NEGATIVE",
+    "expected": "400/409 Conflict",
+    "actual": 409,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-16",
+    "category": "Product",
+    "name": "Blank product name rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-17",
+    "category": "Product",
+    "name": "Missing category ID rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-18",
+    "category": "Product",
+    "name": "Missing brand ID rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-19",
+    "category": "Product",
+    "name": "Negative MRP rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-20",
+    "category": "Product",
+    "name": "Zero MRP value rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-21",
+    "category": "Product",
+    "name": "Negative selling price rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-22",
+    "category": "Product",
+    "name": "Negative stock quantity rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-23",
+    "category": "Product",
+    "name": "Negative GST rate rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-PROD-24",
+    "category": "Product",
+    "name": "Excessive GST rate (>100%) rejection",
+    "type": "NEGATIVE",
+    "expected": "400 Bad Request",
+    "actual": 400,
+    "passed": true,
+    "details": ""
+  }
+]

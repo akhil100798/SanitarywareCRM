@@ -83,8 +83,8 @@ class AuthControllerTest {
     void register_FirstUser_CreatesAdminAccount() {
         when(bootstrapLockRepository.findSingletonForUpdate()).thenReturn(Optional.of(new BootstrapLock(1)));
         when(userRepository.count()).thenReturn(0L);
-        when(userRepository.existsByUsername("owner")).thenReturn(false);
-        when(userRepository.existsByEmail("owner@example.com")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoreCase("owner")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("owner@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Admin@123")).thenReturn("encoded");
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 

@@ -17,8 +17,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sanitaryware.crm.dto.CatalogJobProgressDTO;
+import com.sanitaryware.crm.service.CatalogJobService;
+import org.springframework.http.MediaType;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
@@ -27,6 +34,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final PaginationFactory paginationFactory;
+    private final CatalogJobService catalogJobService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -150,9 +158,13 @@ public class ProductController {
     }
 
     @PatchMapping("/{id}/stock")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<Void> updateStock(@PathVariable Long id, @RequestParam Integer quantity) {
-        productService.updateStock(id, quantity);
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')")
+    public ResponseEntity<Void> updateStock(
+            @PathVariable Long id,
+            @RequestParam Integer quantity,
+            @RequestParam(required = false, defaultValue = "MANUAL_ADJUSTMENT") String reason,
+            @RequestParam(required = false) String rmaCode) {
+        productService.updateStock(id, quantity, reason, rmaCode);
         return ResponseEntity.ok().build();
     }
 
@@ -188,6 +200,44 @@ public class ProductController {
             @RequestParam("brandId") Long brandId,
             @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(productService.previewCatalogUpload(brandId, file));
+    }
+
+    @PostMapping("/bulk-catalog-preview-async")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CatalogJobProgressDTO> previewBulkCatalogUploadAsync(
+            @RequestParam("brandId") Long brandId,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.accepted().body(catalogJobService.submitPreviewJob(brandId, file));
+    }
+
+    @PostMapping("/bulk-catalog-upload-async")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CatalogJobProgressDTO> bulkCatalogUploadAsync(
+            @RequestParam("brandId") Long brandId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("previewSha256") String previewSha256,
+            @RequestParam(value = "selectedSkus", required = false) List<String> selectedSkus,
+            @RequestParam(value = "unavailableSkus", required = false) List<String> unavailableSkus,
+            @RequestParam(defaultValue = "false") boolean confirmed) {
+        if (!confirmed) {
+            throw new ResponseStatusException(HttpStatus.PRECONDITION_REQUIRED,
+                    "Review the catalogue preview and explicitly confirm before importing.");
+        }
+        return ResponseEntity.accepted().body(catalogJobService.submitImportJob(
+                brandId, file, previewSha256, selectedSkus,
+                unavailableSkus == null ? Set.of() : new HashSet<>(unavailableSkus)));
+    }
+
+    @GetMapping("/catalog-jobs/{jobId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CatalogJobProgressDTO> getCatalogJobProgress(@PathVariable String jobId) {
+        return ResponseEntity.ok(catalogJobService.getJobProgress(jobId));
+    }
+
+    @GetMapping(value = "/catalog-jobs/{jobId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public SseEmitter getCatalogJobEvents(@PathVariable String jobId) {
+        return catalogJobService.registerEmitter(jobId);
     }
 
     @PostMapping("/{id}/images")

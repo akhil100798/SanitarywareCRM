@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Search } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Search, Sparkles, Truck, ChevronUp, ChevronDown, Package } from 'lucide-react';
 import quotationService from '../../services/quotationService';
 import orderService from '../../services/orderService';
 import customerService from '../../services/customerService';
@@ -8,13 +8,24 @@ import { productService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import { calculateDocumentTotals } from '../../utils/documentTotals';
 import ProductSearchSelect from '../../components/ProductSearchSelect';
+import BoqImportModal from './BoqImportModal';
+import GenerateBackToBackPoModal from './GenerateBackToBackPoModal';
 
 const QuotationFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const isEditMode = !!id;
 
     const [loading, setLoading] = useState(false);
+    const [isBoqModalOpen, setIsBoqModalOpen] = useState(searchParams.get('importBoq') === 'true');
+    const [isBackToBackPoModalOpen, setIsBackToBackPoModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('importBoq') === 'true') {
+            setIsBoqModalOpen(true);
+        }
+    }, [searchParams]);
     const [customers, setCustomers] = useState([]);
     const [products, setProducts] = useState([]);
     const [formData, setFormData] = useState({
@@ -55,6 +66,17 @@ const QuotationFormPage = () => {
         return () => clearTimeout(timer);
     }, [productSearchQuery]);
 
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (items.length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [items.length]);
+
     const filteredProducts = products.filter(p => {
         if (!productSearchQuery.trim()) return true;
         const q = productSearchQuery.toLowerCase();
@@ -73,6 +95,31 @@ const QuotationFormPage = () => {
             newProds.forEach(p => map.set(p.id, p));
             return Array.from(map.values());
         });
+    };
+
+    const handleBoqItemsImported = (importedItems, appendMode) => {
+        setProducts(prev => {
+            const map = new Map(prev.map(p => [p.id, p]));
+            importedItems.forEach(it => {
+                if (it.productId && !map.has(it.productId)) {
+                    map.set(it.productId, {
+                        id: it.productId,
+                        name: it.productName,
+                        sku: it.productSku,
+                        barcode: it.barcode,
+                        hsnCode: it.hsnCode,
+                        gstRate: it.gstRate,
+                        sellingPrice: it.unitPrice
+                    });
+                }
+            });
+            return Array.from(map.values());
+        });
+
+        setFormData(prev => ({
+            ...prev,
+            items: appendMode ? [...prev.items, ...importedItems] : importedItems
+        }));
     };
 
     const fetchInitialData = async () => {
@@ -104,12 +151,23 @@ const QuotationFormPage = () => {
     const addItem = () => {
         setFormData({
             ...formData,
-            items: [...formData.items, { productId: '', quantity: 1, unitPrice: 0, discountPercentage: 0, lineTotal: 0 }]
+            items: [...formData.items, { productId: '', quantity: 1, unitPrice: 0, discountPercentage: 0, lineTotal: 0, notes: '' }]
         });
     };
 
     const removeItem = (index) => {
         const newItems = formData.items.filter((_, i) => i !== index);
+        setFormData({ ...formData, items: newItems });
+    };
+
+    // BUG-082: Preserve all item references, notes, and transient inputs during re-order
+    const moveItem = (index, direction) => {
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= formData.items.length) return;
+        const newItems = [...formData.items];
+        const temp = newItems[index];
+        newItems[index] = newItems[targetIndex];
+        newItems[targetIndex] = temp;
         setFormData({ ...formData, items: newItems });
     };
 
@@ -119,7 +177,12 @@ const QuotationFormPage = () => {
 
         const prod = product || products.find(p => p.id === parseInt(productId, 10));
         if (prod) {
-            item.unitPrice = prod.sellingPrice || 0;
+            item.unitPrice = (prod.sellingPrice != null && prod.sellingPrice > 0)
+                ? prod.sellingPrice
+                : (prod.mrp != null ? prod.mrp : 0);
+            if (item.unitPrice === 0) {
+                toast('Selected product has no selling price or MRP configured', { icon: '⚠️' });
+            }
             item.productName = prod.name;
             item.productSku = prod.sku;
             item.barcode = prod.barcode;
@@ -134,22 +197,23 @@ const QuotationFormPage = () => {
             item.gstRate = 0;
         }
 
-        const qty = Number(item.quantity) || 0;
-        const price = Number(item.unitPrice) || 0;
-        const disc = Number(item.discountPercentage) || 0;
+        const qty = item.quantity === '' ? 0 : (Number(item.quantity) || 0);
+        const price = item.unitPrice === '' ? 0 : (Number(item.unitPrice) || 0);
+        const disc = item.discountPercentage === '' ? 0 : (Number(item.discountPercentage) || 0);
         const sub = price * qty;
         item.lineTotal = sub - (sub * disc) / 100;
         newItems[index] = item;
         setFormData({ ...formData, items: newItems });
     };
 
+    // BUG-077: Handle empty string inputs without flashing NaN
     const handleItemChange = (index, field, value) => {
         const newItems = [...formData.items];
         const item = { ...newItems[index], [field]: value };
 
-        const qty = Number(item.quantity) || 0;
-        const price = Number(item.unitPrice) || 0;
-        const disc = Number(item.discountPercentage) || 0;
+        const qty = item.quantity === '' ? 0 : (Number(item.quantity) || 0);
+        const price = item.unitPrice === '' ? 0 : (Number(item.unitPrice) || 0);
+        const disc = item.discountPercentage === '' ? 0 : (Number(item.discountPercentage) || 0);
         const sub = price * qty;
         item.lineTotal = sub - (sub * disc) / 100;
         newItems[index] = item;
@@ -243,7 +307,7 @@ const QuotationFormPage = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6 w-full max-w-full overflow-x-hidden">
             <div className="flex items-center justify-between">
                 <button
                     onClick={() => navigate('/quotations')}
@@ -253,6 +317,16 @@ const QuotationFormPage = () => {
                     Back to Quotations
                 </button>
                 <div className="flex space-x-2">
+                    {isEditMode && (
+                        <button
+                            type="button"
+                            className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center shadow-md active:scale-95 duration-150"
+                            onClick={() => setIsBackToBackPoModalOpen(true)}
+                        >
+                            <Truck size={16} className="mr-2" />
+                            <span>Generate Back-to-Back PO</span>
+                        </button>
+                    )}
                     {isEditMode && formData.status !== 'CONVERTED' && (
                         <button
                             type="button"
@@ -309,7 +383,7 @@ const QuotationFormPage = () => {
                 </div>
 
                 {/* Items Canvas */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden w-full max-w-full">
                     <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                         <div className="flex items-center gap-3">
                             <h3 className="text-sm font-bold text-slate-700">Estimate Items Line</h3>
@@ -324,35 +398,53 @@ const QuotationFormPage = () => {
                                 />
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={addItem}
-                            className="text-teal hover:text-teal-800 flex items-center text-xs font-bold transition-colors"
-                        >
-                            <Plus size={16} className="mr-1" /> Add Line Item
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsBoqModalOpen(true)}
+                                className="px-3 py-1.5 rounded-xl border border-teal/40 bg-teal/5 text-teal hover:bg-teal/15 flex items-center text-xs font-bold transition-all shadow-sm"
+                            >
+                                <Sparkles size={14} className="mr-1.5 text-teal" />
+                                <span>Import from PDF / Excel (BOQ)</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={addItem}
+                                className="text-teal hover:text-teal-800 flex items-center text-xs font-bold transition-colors"
+                            >
+                                <Plus size={16} className="mr-1" /> Add Line Item
+                            </button>
+                        </div>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
-                                    <th className="px-4 py-3 min-w-[280px]">Product SKU / Name</th>
-                                    <th className="px-4 py-3 w-28">Quantity</th>
-                                    <th className="px-4 py-3 w-36">Unit Price</th>
-                                    <th className="px-4 py-3 w-28">Discount %</th>
-                                    <th className="px-4 py-3 w-36">Line Total</th>
-                                    <th className="px-4 py-3 w-16 text-right"></th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {formData.items.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="px-4 py-8 text-center text-slate-400 text-xs font-medium">
-                                            No line items added yet. Click 'Add Line Item' above.
-                                        </td>
+                    {formData.items.length === 0 ? (
+                        <div className="py-12 px-4 text-center">
+                            <Package size={40} className="mx-auto text-slate-300 mb-2" />
+                            <p className="text-sm font-semibold text-slate-700">No line items added yet</p>
+                            <p className="text-xs text-slate-400 mt-1">Click 'Add Line Item' above or import items via BOQ.</p>
+                            <button
+                                type="button"
+                                onClick={addItem}
+                                className="btn-primary text-xs px-3.5 py-1.5 mt-3 inline-flex items-center gap-1.5"
+                            >
+                                <Plus size={14} />
+                                <span>Add Line Item</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xxs font-bold uppercase tracking-wider">
+                                        <th className="px-4 py-3 min-w-[280px]">Product SKU / Name</th>
+                                        <th className="px-4 py-3 w-28">Quantity</th>
+                                        <th className="px-4 py-3 w-36">Unit Price</th>
+                                        <th className="px-4 py-3 w-28">Discount %</th>
+                                        <th className="px-4 py-3 w-36">Line Total</th>
+                                        <th className="px-4 py-3 w-28 text-right">Actions</th>
                                     </tr>
-                                ) : (
-                                    formData.items.map((item, index) => {
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {formData.items.map((item, index) => {
                                         const selectedProd = products.find(p => p.id === parseInt(item.productId, 10));
 
                                         return (
@@ -394,8 +486,11 @@ const QuotationFormPage = () => {
                                                         min="1"
                                                         name="quantity"
                                                         className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
-                                                        value={item.quantity}
-                                                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value, 10) || 0)}
+                                                        value={item.quantity === '' ? '' : item.quantity}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            handleItemChange(index, 'quantity', val === '' ? '' : parseInt(val, 10));
+                                                        }}
                                                     />
                                                 </td>
                                                 <td className="px-4 py-3 font-bold text-slate-800">
@@ -405,31 +500,59 @@ const QuotationFormPage = () => {
                                                     <input
                                                         type="number"
                                                         min="0" max="100"
+                                                        step="0.01"
                                                         name="discountPercentage"
                                                         className="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal text-center"
-                                                        value={item.discountPercentage}
-                                                        onChange={(e) => handleItemChange(index, 'discountPercentage', parseFloat(e.target.value) || 0)}
+                                                        value={item.discountPercentage === '' ? '' : item.discountPercentage}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            handleItemChange(index, 'discountPercentage', val === '' ? '' : parseFloat(val));
+                                                        }}
                                                     />
                                                 </td>
                                                 <td className="px-4 py-3 font-extrabold text-slate-900">
                                                     ₹{(item.lineTotal || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeItem(index)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-50 rounded-xl transition-all"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    <div className="flex items-center justify-end space-x-1">
+                                                        <button
+                                                            type="button"
+                                                            disabled={index === 0}
+                                                            onClick={() => moveItem(index, -1)}
+                                                            className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:hover:text-slate-400 rounded-lg hover:bg-slate-100 transition-all"
+                                                            title="Move Up"
+                                                            aria-label="Move item up"
+                                                        >
+                                                            <ChevronUp size={15} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={index === formData.items.length - 1}
+                                                            onClick={() => moveItem(index, 1)}
+                                                            className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:hover:text-slate-400 rounded-lg hover:bg-slate-100 transition-all"
+                                                            title="Move Down"
+                                                            aria-label="Move item down"
+                                                        >
+                                                            <ChevronDown size={15} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeItem(index)}
+                                                            className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 transition-all"
+                                                            title="Delete Line Item"
+                                                            aria-label="Delete line item"
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 {/* Terms and Invoice Summary */}
@@ -494,6 +617,27 @@ const QuotationFormPage = () => {
                     </div>
                 </div>
             </form>
+
+            <BoqImportModal
+                isOpen={isBoqModalOpen}
+                onClose={() => setIsBoqModalOpen(false)}
+                onImportItems={handleBoqItemsImported}
+            />
+
+            {isEditMode && (
+                <GenerateBackToBackPoModal
+                    isOpen={isBackToBackPoModalOpen}
+                    onClose={() => setIsBackToBackPoModalOpen(false)}
+                    quotation={{
+                        id,
+                        quotationNumber: formData.quotationNumber,
+                        customerName: customers.find(c => c.id === Number(formData.customerId))?.name
+                    }}
+                    onOrdersCreated={() => {
+                        fetchQuotation();
+                    }}
+                />
+            )}
         </div>
     );
 };

@@ -93,6 +93,8 @@ public class DistributorPaymentServiceImpl implements DistributorPaymentService 
             po.calculateBalance();
             purchaseOrderRepository.save(po);
 
+        } else if (distributor.getOutstandingBalance() != null && payment.getAmount().compareTo(distributor.getOutstandingBalance()) > 0) {
+            throw new com.sanitaryware.crm.exception.BusinessValidationException("Payment amount exceeds outstanding distributor balance");
         }
         // Payments before receipt are supplier advances. Receiving the PO later
         // adds its full liability, not its already-reduced remaining balance.

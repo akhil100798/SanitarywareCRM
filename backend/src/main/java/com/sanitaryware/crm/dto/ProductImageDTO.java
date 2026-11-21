@@ -14,6 +14,11 @@ import java.time.LocalDateTime;
 public class ProductImageDTO {
     private Long id;
     private Long productId;
+
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^$|^(https?://|data:image/).*",
+        message = "Image URL must start with http://, https://, or data:image/"
+    )
     private String imageUrl;
     private Boolean isPrimary;
     private Integer displayOrder;

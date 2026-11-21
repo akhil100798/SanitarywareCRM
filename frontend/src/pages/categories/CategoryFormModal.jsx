@@ -29,6 +29,12 @@ const CategoryFormModal = ({ isOpen, onClose, onSuccess, initialData, categories
                 isActive: true
             });
         }
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            return () => {
+                document.body.style.overflow = 'unset';
+            };
+        }
     }, [initialData, isOpen]);
 
     const handleChange = (e) => {

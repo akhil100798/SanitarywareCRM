@@ -79,6 +79,7 @@ public class OrderMapper {
         dto.setBarcode(item.getBarcode() != null ? item.getBarcode() : item.getProduct().getBarcode());
         dto.setHsnCode(item.getHsnCode() != null ? item.getHsnCode() : item.getProduct().getHsnCode());
         dto.setGstRate(item.getGstRate() != null ? item.getGstRate() : item.getProduct().getGstRate());
+        dto.setBinLocation(item.getProduct() != null ? item.getProduct().getBinLocation() : null);
         dto.setNotes(item.getNotes());
 
         return dto;

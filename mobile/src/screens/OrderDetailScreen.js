@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { Download, FileText, CheckCircle2 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { orderService, paymentService } from '../api/services';
 import DetailSection from '../components/DetailSection';
@@ -30,6 +31,8 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sendingReceiptId, setSendingReceiptId] = useState(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [invoiceDownloaded, setInvoiceDownloaded] = useState(false);
   const [error, setError] = useState('');
 
   const loadOrder = useCallback(async () => {
@@ -68,6 +71,22 @@ const OrderDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleDownloadInvoice = async () => {
+    try {
+      setDownloadingInvoice(true);
+      const fileInfo = await orderService.downloadInvoice(orderId);
+      setInvoiceDownloaded(true);
+      Alert.alert(
+        'Invoice Downloaded',
+        `Official tax invoice ${fileInfo?.fileName || `invoice-${orderId}.pdf`} has been downloaded successfully to device storage.`
+      );
+    } catch (err) {
+      Alert.alert('Download Error', getErrorMessage(err));
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
   if (loading) return <LoadingView label="Loading order..." />;
   if (error) return <ErrorView message={error} onRetry={loadOrder} />;
 
@@ -87,6 +106,51 @@ const OrderDetailScreen = ({ route, navigation }) => {
       >
         <Text style={styles.title}>{order.orderNumber || `Order #${order.id}`}</Text>
         <Text style={styles.subtitle}>{order.customerName}</Text>
+
+        {/* Invoice & Billing Documents Card */}
+        <DetailSection title="Invoice & Billing Documents">
+          <View style={styles.invoiceCard}>
+            <View style={styles.invoiceHeader}>
+              <View style={styles.invoiceIconBox}>
+                <FileText color={colors.primary} size={24} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.invoiceTitle}>
+                  {order.orderNumber ? `Invoice #${order.orderNumber}` : `Invoice #${order.id}`}
+                </Text>
+                <Text style={styles.invoiceSubtitle}>
+                  GST Tax Invoice • Total: {formatMoney(order.total)}
+                </Text>
+              </View>
+              {invoiceDownloaded && (
+                <View style={styles.downloadedBadge}>
+                  <CheckCircle2 color="#047857" size={14} />
+                  <Text style={styles.downloadedText}>Saved</Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Download Invoice PDF"
+              style={[styles.invoiceButton, downloadingInvoice && styles.invoiceButtonDisabled]}
+              onPress={handleDownloadInvoice}
+              disabled={downloadingInvoice}
+              activeOpacity={0.8}
+            >
+              {downloadingInvoice ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Download color="#ffffff" size={16} />
+                  <Text style={styles.invoiceButtonText}>
+                    {invoiceDownloaded ? 'Re-Download Invoice (PDF)' : 'Download Invoice (PDF)'}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </DetailSection>
 
         <DetailSection title="Order Summary">
           <FieldRow label="Customer" value={order.customerName} />
@@ -279,6 +343,67 @@ const styles = StyleSheet.create({
     color: '#16a34a',
     fontSize: 11,
     fontWeight: '700'
+  },
+  invoiceCard: {
+    backgroundColor: '#f8fafc',
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14
+  },
+  invoiceHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 12
+  },
+  invoiceIconBox: {
+    alignItems: 'center',
+    backgroundColor: '#f0fdfa',
+    borderRadius: 10,
+    height: 44,
+    justifyContent: 'center',
+    width: 44
+  },
+  invoiceTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '900'
+  },
+  invoiceSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2
+  },
+  downloadedBadge: {
+    alignItems: 'center',
+    backgroundColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+    borderRadius: 6,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3
+  },
+  downloadedText: {
+    color: '#047857',
+    fontSize: 11,
+    fontWeight: '800'
+  },
+  invoiceButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    justifyContent: 'center',
+    paddingVertical: 12
+  },
+  invoiceButtonDisabled: {
+    opacity: 0.6
+  },
+  invoiceButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800'
   }
 });
 

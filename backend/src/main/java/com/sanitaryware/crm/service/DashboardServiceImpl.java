@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,22 +38,23 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardDTO getDashboardStats() {
         var currentUser = accessControlService.currentUser();
         boolean warehouse = currentUser.getRole() == User.UserRole.WAREHOUSE;
+        boolean isExecutive = currentUser.getRole() == User.UserRole.ADMIN || currentUser.getRole() == User.UserRole.MANAGER;
         LocalDate now = LocalDate.now();
-        LocalDate startOfMonth = now.withDayOfMonth(1);
-        LocalDate endOfMonth = now.withDayOfMonth(now.lengthOfMonth());
+        LocalDate startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
 
-        BigDecimal totalRevenue = warehouse ? null
+        BigDecimal totalRevenue = (!isExecutive || warehouse) ? null
                 : paymentRepository.getTotalPaymentsBetweenDates(startOfMonth, endOfMonth);
-        if (!warehouse && totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+        if (isExecutive && !warehouse && totalRevenue == null) totalRevenue = BigDecimal.ZERO;
 
         long totalOrders = orderRepository.count();
         Long totalCustomers = warehouse ? null : customerRepository.count();
         // Preserve the dashboard's existing <10 threshold (catalogue alerts use reorderLevel).
         long lowStockProducts = productRepository.countByStockQuantityLessThan(10);
-        BigDecimal distributorPaymentsTotal = warehouse ? null : distributorPaymentRepository
+        BigDecimal distributorPaymentsTotal = (!isExecutive || warehouse) ? null : distributorPaymentRepository
                 .getTotalDistributorPaymentsBetweenDates(startOfMonth, endOfMonth);
-        BigDecimal totalReceivables = warehouse ? null : orderRepository.getTotalBalance();
-        BigDecimal totalPayables = warehouse ? null : purchaseOrderRepository.getTotalBalance();
+        BigDecimal totalReceivables = (!isExecutive || warehouse) ? null : orderRepository.getTotalBalance();
+        BigDecimal totalPayables = (!isExecutive || warehouse) ? null : purchaseOrderRepository.getTotalBalance();
 
         var recentPage = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
         List<OrderDTO> recentOrders = warehouse ? null
@@ -73,24 +75,29 @@ public class DashboardServiceImpl implements DashboardService {
                 orderStatusBreakdown.put(row.getStatus().name(), row.getCount()));
         long pendingOrders = orderStatusBreakdown.get(Order.OrderStatus.PENDING.name());
 
-        // Monthly revenue for the last 6 months
-        Map<String, BigDecimal> monthlyRevenue = warehouse ? null : new java.util.LinkedHashMap<>();
-        if (!warehouse) {
+        // Monthly revenue for the last 6 months (executive only)
+        Map<String, BigDecimal> monthlyRevenue = (!isExecutive || warehouse) ? null : new java.util.LinkedHashMap<>();
+        if (isExecutive && !warehouse) {
             for (int i = 5; i >= 0; i--) {
                 LocalDate monthDate = now.minusMonths(i);
-                LocalDate monthStart = monthDate.withDayOfMonth(1);
-                LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
+                LocalDate monthStart = monthDate.with(TemporalAdjusters.firstDayOfMonth());
+                LocalDate monthEnd = monthDate.with(TemporalAdjusters.lastDayOfMonth());
                 String monthLabel = monthDate.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH);
                 BigDecimal rev = i == 0 ? totalRevenue : paymentRepository.getTotalPaymentsBetweenDates(monthStart, monthEnd);
                 monthlyRevenue.put(monthLabel, rev != null ? rev : BigDecimal.ZERO);
             }
         }
 
-        List<DashboardDTO.ProductSalesDTO> topProducts = warehouse ? null : orderRepository
-                .findTopProductSales(Order.OrderStatus.CANCELLED, PageRequest.of(0, 5)).stream()
-                .map(row -> new DashboardDTO.ProductSalesDTO(
-                        row.getProductName(), row.getQuantitySold(), row.getTotalRevenue()))
-                .toList();
+        List<DashboardDTO.ProductSalesDTO> topProducts = null;
+        if (!warehouse) {
+            topProducts = orderRepository
+                    .findTopProductSales(Order.OrderStatus.CANCELLED, PageRequest.of(0, 5)).stream()
+                    .map(row -> new DashboardDTO.ProductSalesDTO(
+                            row.getProductName(),
+                            row.getQuantitySold(),
+                            isExecutive ? row.getTotalRevenue() : null))
+                    .toList();
+        }
 
         return DashboardDTO.builder()
                 .totalRevenue(totalRevenue)

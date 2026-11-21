@@ -64,10 +64,20 @@ public class OrderController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE')")
-    public ResponseEntity<OrderDTO> updateStatus(@PathVariable Long id, @RequestParam String status) {
-        return ResponseEntity.ok(orderService.updateStatus(id, status));
+    public ResponseEntity<OrderDTO> updateStatus(
+            @PathVariable Long id,
+            @RequestParam(required = false) String status,
+            @RequestBody(required = false) java.util.Map<String, Object> body) {
+        String effectiveStatus = status;
+        if ((effectiveStatus == null || effectiveStatus.isBlank()) && body != null && body.containsKey("status")) {
+            effectiveStatus = String.valueOf(body.get("status"));
+        }
+        if (effectiveStatus == null || effectiveStatus.isBlank()) {
+            throw new IllegalArgumentException("Order status is required");
+        }
+        return ResponseEntity.ok(orderService.updateStatus(id, effectiveStatus));
     }
 
     @PatchMapping("/{id}/payment-status")
@@ -82,13 +92,13 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
     }
 
-    @GetMapping("/{id}/invoice/pdf")
+    @GetMapping(value = {"/{id}/invoice", "/{id}/invoice/pdf"})
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES')")
     public ResponseEntity<byte[]> getOrderInvoicePdf(@PathVariable Long id) {
         byte[] pdf = orderService.getOrderInvoicePdf(id);
         return ResponseEntity.ok()
                 .header("Content-Type", "application/pdf")
-                .header("Content-Disposition", "attachment; filename=\"invoice-" + id + ".pdf\"")
+                .header("Content-Disposition", String.format("attachment; filename=\"invoice-%06d.pdf\"", id))
                 .body(pdf);
     }
 }

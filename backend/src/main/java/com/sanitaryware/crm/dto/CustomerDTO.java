@@ -36,6 +36,7 @@ public class CustomerDTO {
     private String shippingAddress;
     private String city;
     private String state;
+    @jakarta.validation.constraints.Pattern(regexp = "^$|^[1-9][0-9]{5}$", message = "Pincode must be a 6-digit Indian postal code")
     private String pincode;
     private Boolean isActive;
     private String notes;
@@ -44,5 +45,13 @@ public class CustomerDTO {
 
     public void setEmail(String email) {
         this.email = email == null ? null : email.trim();
+    }
+
+    public void setNotes(String notes) {
+        if (notes != null) {
+            this.notes = org.springframework.web.util.HtmlUtils.htmlEscape(notes.trim());
+        } else {
+            this.notes = null;
+        }
     }
 }

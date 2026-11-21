@@ -1,4 +1,6 @@
 const http = require('http');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config();
 
 const url = `${process.env.BACKEND_BASE_URL || 'http://localhost:8081'}/api/health`;

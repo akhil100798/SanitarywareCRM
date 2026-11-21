@@ -22,7 +22,7 @@ public class SystemSettingsController {
 
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SystemSettingsDTO> updateSettings(@RequestBody SystemSettingsDTO dto) {
+    public ResponseEntity<SystemSettingsDTO> updateSettings(@jakarta.validation.Valid @RequestBody SystemSettingsDTO dto) {
         return ResponseEntity.ok(systemSettingsService.updateSettings(dto));
     }
 }

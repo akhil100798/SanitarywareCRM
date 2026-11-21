@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Mobile App Installation & Launch",
+    "passed": true,
+    "details": "Installed release APK on x86_64 emulator and launched com.sanitarywarecrm.MainActivity cleanly"
+  },
+  {
+    "name": "Mobile Auth - Login Screen & Credential Validation",
+    "passed": true,
+    "details": "06_mobile_splash_login.png - Form validation and auth flow operational"
+  },
+  {
+    "name": "Mobile Auth - SecureStore session persistence after app force close",
+    "passed": true,
+    "details": "07_mobile_dashboard.png - Authenticated session securely restored without login prompt"
+  },
+  {
+    "name": "Mobile Quotations - Module navigation & list rendering",
+    "passed": true,
+    "details": "09_mobile_quotation_view.png - Rendered quotations directory and detail estimate view"
+  },
+  {
+    "name": "Mobile Orders - Order roster loaded and details inspected",
+    "passed": true,
+    "details": "10_mobile_payment_receipt.png - Orders directory, status tracking, and payment history"
+  },
+  {
+    "name": "Mobile RBAC - Admin login and role elevation",
+    "passed": true,
+    "details": "Authenticated as System Administrator with administrative privileges"
+  },
+  {
+    "name": "Mobile Inventory - Real-time inventory health & predictive deficit cards",
+    "passed": true,
+    "details": "08_mobile_inventory_health.png - Healthy/Low/Out-of-Stock counters and deficit cards rendered"
+  }
+]

@@ -19,10 +19,14 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        configuration.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
+        java.util.List<String> origins = Arrays.stream(allowedOriginPatterns.split(","))
                 .map(String::trim)
-                .filter(origin -> !origin.isEmpty())
-                .toList());
+                .filter(origin -> !origin.isEmpty() && !origin.equals("*"))
+                .toList();
+        if (origins.isEmpty()) {
+            origins = Arrays.asList("http://localhost:5173", "http://localhost:80", "http://localhost");
+        }
+        configuration.setAllowedOriginPatterns(origins);
         
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList(

@@ -1,0 +1,98 @@
+
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body { font-family: Helvetica, Arial, sans-serif; margin: 40px; font-size: 13px; color: #111; }
+      .page { page-break-after: always; min-height: 900px; }
+      .catalog-header { font-size: 20px; font-weight: bold; margin-bottom: 24px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+      .product-grid { display: flex; flex-direction: column; gap: 30px; }
+      .product-item { display: flex; align-items: flex-start; gap: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
+      .product-img { width: 80px; height: 80px; object-fit: cover; border: 1px solid #ddd; }
+      .product-info { flex: 1; }
+      .product-sku { font-weight: bold; font-size: 15px; color: #0284c7; }
+      .mrp-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      .mrp-table th, .mrp-table td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+      .mrp-table th { background-color: #f3f4f6; }
+    </style>
+  </head>
+  <body>
+    <!-- PAGE 1: Standard Items with Images & Fallbacks -->
+    <div class="page">
+      <div class="catalog-header">Sanitaryware Master Catalog 2026 - Collection A</div>
+      <div class="product-grid">
+        
+        <!-- Item 1: Complete data + Blue Image -->
+        <div class="product-item">
+          <img class="product-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNkYPj/nwEJMDEwMDAAABsBAf61zH1QAAAAAElFTkSuQmCC" />
+          <div class="product-info">
+            <div class="product-sku">SN-8801</div>
+            <div>Royal Cascade Wall Hung Ceramic Water Closet</div>
+            <div>HSN Code: 691010 Material: Ceramic Material Code: CER01 Item Code: IT8801</div>
+            <div>MRP ₹ 14,500</div>
+          </div>
+        </div>
+
+        <!-- Item 2: Pure Numeric SKU + Green Image + Column format -->
+        <div class="product-item">
+          <img class="product-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNkaGD4z4AEmBgYGBgAAMQAAf5l9m5WAAAAAElFTkSuQmCC" />
+          <div class="product-info">
+            <div class="product-sku">7418209</div>
+            <div>Brass Pillar Cock High Neck Chrome Plated</div>
+            <div>HSN Code: 741820 Material Code: BR44</div>
+            <div>Price ₹ 3,250</div>
+          </div>
+        </div>
+
+        <!-- Item 3: Missing Name, Missing HSN, Missing Material, No Image -->
+        <div class="product-item">
+          <div class="product-info">
+            <div class="product-sku">SL-102/B</div>
+            <div>MRP ₹ 1,850</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGE 2: Numeric SKUs, Column-aware MRP, Zero Price Fallbacks -->
+    <div class="page">
+      <div class="catalog-header">Sanitaryware Master Catalog 2026 - Price Table</div>
+      
+      <table class="mrp-table">
+        <thead>
+          <tr>
+            <th>ITEM CODE / SKU</th>
+            <th>PRODUCT DESCRIPTION</th>
+            <th>HSN</th>
+            <th>MRP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Item 4: Alphanumeric with slash under MRP column without currency symbol -->
+          <tr>
+            <td>CP-990/X</td>
+            <td>Angle Valve Concealed Cartridge</td>
+            <td>848180</td>
+            <td>850</td>
+          </tr>
+          <!-- Item 5: Purely numeric SKU without name/material/HSN under MRP column -->
+          <tr>
+            <td>6910105</td>
+            <td>Counter Top Oval Art Basin</td>
+            <td>691010</td>
+            <td>5400</td>
+          </tr>
+          <!-- Item 6: Unpriced item (missing price should fallback to 0.00 instead of failing) -->
+          <tr>
+            <td>UNP-404</td>
+            <td>Display Showcase Sample Unit</td>
+            <td>--</td>
+            <td>--</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+  </html>
+  

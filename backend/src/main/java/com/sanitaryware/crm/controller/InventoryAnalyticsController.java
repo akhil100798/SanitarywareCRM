@@ -1,5 +1,6 @@
 package com.sanitaryware.crm.controller;
 
+import com.sanitaryware.crm.dto.InventoryAnalyticsDTO.DeadStockSummaryDTO;
 import com.sanitaryware.crm.dto.InventoryAnalyticsDTO.InventoryHealthSummaryDTO;
 import com.sanitaryware.crm.dto.InventoryAnalyticsDTO.LowStockAlertDTO;
 import com.sanitaryware.crm.dto.InventoryAnalyticsDTO.ReorderSuggestionDTO;
@@ -30,6 +31,12 @@ public class InventoryAnalyticsController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')")
     public ResponseEntity<List<ReorderSuggestionDTO>> getReorderSuggestions() {
         return ResponseEntity.ok(inventoryAnalyticsService.getReorderSuggestions());
+    }
+
+    @GetMapping("/dead-stock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'WAREHOUSE')")
+    public ResponseEntity<DeadStockSummaryDTO> getDeadStockSummary() {
+        return ResponseEntity.ok(inventoryAnalyticsService.getDeadStockSummary());
     }
 
     @GetMapping("/summary")

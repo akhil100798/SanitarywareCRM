@@ -21,5 +21,10 @@ public class SystemSettingsDTO {
     private String website;
     private String gstNumber;
     private String currencySymbol;
+
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^$|^(https?://|data:image/).*",
+        message = "Logo URL must start with http://, https://, or data:image/"
+    )
     private String logoUrl;
 }

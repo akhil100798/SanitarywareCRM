@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, ToastBar, toast, useToasterStore } from 'react-hot-toast';
+import { X } from 'lucide-react';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -38,6 +39,17 @@ const CustomerPortalPage = lazy(() => import('./pages/portal/CustomerPortalPage'
 
 const managementRoles = ['ADMIN', 'MANAGER'];
 const orderAccessRoles = ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE'];
+
+const ToastLimiter = ({ limit = 3 }) => {
+    const { toasts } = useToasterStore();
+    React.useEffect(() => {
+        toasts
+            .filter((t) => t.visible)
+            .filter((_, i) => i >= limit)
+            .forEach((t) => toast.dismiss(t.id));
+    }, [toasts, limit]);
+    return null;
+};
 
 function App() {
     return (
@@ -223,7 +235,50 @@ function App() {
                 </Routes>
                 </Suspense>
             </Router>
-            <Toaster position="top-right" />
+            <ToastLimiter limit={3} />
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        borderRadius: '12px',
+                        background: '#0f172a',
+                        color: '#f8fafc',
+                        fontSize: '13px',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+                        padding: '12px 16px',
+                        maxWidth: '420px',
+                    },
+                }}
+            >
+                {(t) => (
+                    <ToastBar toast={t}>
+                        {({ icon, message }) => (
+                            <div
+                                className="flex items-center gap-2 cursor-pointer select-none w-full"
+                                onClick={() => toast.dismiss(t.id)}
+                                role="alert"
+                            >
+                                <span className="shrink-0">{icon}</span>
+                                <div className="text-xs font-medium leading-snug flex-1">{message}</div>
+                                {t.type !== 'loading' && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toast.dismiss(t.id);
+                                        }}
+                                        className="ml-2 p-1 text-slate-400 hover:text-white rounded transition-colors shrink-0"
+                                        aria-label="Dismiss toast"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </ToastBar>
+                )}
+            </Toaster>
         </>
     );
 }

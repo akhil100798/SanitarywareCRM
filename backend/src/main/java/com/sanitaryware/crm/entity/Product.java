@@ -82,6 +82,9 @@ public class Product {
     @Column(length = 100)
     private String itemCode;
 
+    @Column(name = "bin_location", length = 50)
+    private String binLocation;
+
     @Column(length = 100)
     private String size;
 

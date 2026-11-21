@@ -79,6 +79,8 @@ const CustomerDetailScreen = ({ route, navigation }) => {
           <FieldRow label="Company" value={customer?.company} />
           <FieldRow label="Phone" value={customer?.phoneNumber} />
           <FieldRow label="Email" value={customer?.email} />
+          <FieldRow label="GSTIN" value={customer?.gstNumber} />
+          <FieldRow label="State" value={customer?.state} />
           <FieldRow label="Address" value={joinAddress(customer)} />
           <FieldRow label="City" value={customer?.city} />
           <FieldRow label="Type" value={customer?.customerType} />

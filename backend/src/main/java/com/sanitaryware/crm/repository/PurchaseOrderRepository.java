@@ -28,6 +28,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
     Optional<PurchaseOrder> findByInvoicePdfPath(String invoicePdfPath);
     Page<PurchaseOrder> findByStatus(PurchaseOrder.POStatus status, Pageable pageable);
     List<PurchaseOrder> findByDistributorId(Long distributorId);
+    long countByDistributorId(Long distributorId);
 
     @Query("SELECT COALESCE(SUM(po.total), 0) FROM PurchaseOrder po WHERE po.orderDate BETWEEN :start AND :end")
     BigDecimal getTotalPurchasesBetweenDates(LocalDate start, LocalDate end);

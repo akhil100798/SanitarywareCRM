@@ -13,6 +13,7 @@ public interface QuotationService {
     Page<QuotationDTO> getAllQuotations(Pageable pageable);
     void deleteQuotation(Long id);
     QuotationDTO updateStatus(Long id, String status);
+    QuotationDTO updateStatus(Long id, String status, String reason);
     List<QuotationDTO> getQuotationsByCustomer(Long customerId);
     String generateQuotationNumber();
     byte[] getQuotationPdf(Long id);

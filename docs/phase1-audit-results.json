@@ -1,0 +1,242 @@
+[
+  {
+    "id": "TC-AUTH-01",
+    "name": "ADMIN Valid Login",
+    "expected": "Redirect to /dashboard with JWT token",
+    "actual": "http://localhost/dashboard",
+    "passed": true,
+    "details": "Authenticated as admin"
+  },
+  {
+    "id": "TC-AUTH-02",
+    "name": "MANAGER Valid Login",
+    "expected": "Redirect to /dashboard with JWT token",
+    "actual": "http://localhost/dashboard",
+    "passed": true,
+    "details": "Authenticated as manager"
+  },
+  {
+    "id": "TC-AUTH-03",
+    "name": "SALES Valid Login",
+    "expected": "Redirect to /dashboard with JWT token",
+    "actual": "http://localhost/dashboard",
+    "passed": true,
+    "details": "Authenticated as sales"
+  },
+  {
+    "id": "TC-AUTH-04",
+    "name": "WAREHOUSE Valid Login",
+    "expected": "Redirect to /dashboard with JWT token",
+    "actual": "http://localhost/dashboard",
+    "passed": true,
+    "details": "Authenticated as warehouse"
+  },
+  {
+    "id": "TC-AUTH-05",
+    "name": "Non-existent username rejection",
+    "expected": "Remain on /login with error toast",
+    "actual": "Stayed on /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-06",
+    "name": "Wrong password for existing user",
+    "expected": "Remain on /login with 401 error",
+    "actual": "Login blocked",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-07",
+    "name": "Blank username & password submission",
+    "expected": "Form requires fields, stays on /login",
+    "actual": "Submission halted",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-08",
+    "name": "Blank password submission",
+    "expected": "Form requires password, stays on /login",
+    "actual": "Submission halted",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-09",
+    "name": "Blank username submission",
+    "expected": "Form requires username, stays on /login",
+    "actual": "Submission halted",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-10",
+    "name": "Username case variation (ADMIN vs admin)",
+    "expected": "Clean resolution without crash",
+    "actual": "Case-insensitive or handled",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-11",
+    "name": "Password case sensitivity (Admin123 vs admin123)",
+    "expected": "Strict case rejection (BCrypt)",
+    "actual": "Rejected strictly",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-12",
+    "name": "Whitespace handling in username",
+    "expected": "Handled gracefully",
+    "actual": "http://localhost/login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-13",
+    "name": "Whitespace in password",
+    "expected": "Strict password match rejection",
+    "actual": "Strict rejection",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-14",
+    "name": "SQL Injection defense in username/password",
+    "expected": "Parameterized query safe, rejected with 401",
+    "actual": "SQLi blocked safely",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-15",
+    "name": "XSS Script payload protection",
+    "expected": "No script execution in DOM",
+    "actual": "Escaped cleanly",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-16",
+    "name": "Buffer overflow / oversized username (500 chars)",
+    "expected": "No server crash 500, rejected cleanly",
+    "actual": "Handled safely",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-17",
+    "name": "Session persistence across F5 reload",
+    "expected": "Stay on /dashboard with active session",
+    "actual": "http://localhost/dashboard",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-18",
+    "name": "Unauthenticated guard for /dashboard",
+    "expected": "Redirect to /login",
+    "actual": "Redirected to /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-19",
+    "name": "Unauthenticated guard for /users",
+    "expected": "Redirect to /login",
+    "actual": "Redirected to /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-20",
+    "name": "Unauthenticated guard for /settings",
+    "expected": "Redirect to /login",
+    "actual": "Redirected to /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-21",
+    "name": "Unauthenticated guard for /quotations",
+    "expected": "Redirect to /login",
+    "actual": "Redirected to /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-22",
+    "name": "Unauthenticated guard for /orders",
+    "expected": "Redirect to /login",
+    "actual": "Redirected to /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-23",
+    "name": "RBAC: SALES accessing /users",
+    "expected": "Blocked with Access Denied",
+    "actual": "Access denied page displayed",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-24",
+    "name": "RBAC: WAREHOUSE accessing /users",
+    "expected": "Blocked with Access Denied",
+    "actual": "Access denied page displayed",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-25",
+    "name": "RBAC: WAREHOUSE accessing /settings",
+    "expected": "Blocked with Access Denied",
+    "actual": "Access denied page displayed",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-26",
+    "name": "User Logout storage purge",
+    "expected": "Token purged from storage",
+    "actual": "Purged",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-27",
+    "name": "Browser Back button after logout",
+    "expected": "Remains on /login or redirected back",
+    "actual": "Protected",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-28",
+    "name": "Tampered / Malformed JWT Token rejection",
+    "expected": "Rejected by backend 401, forced to /login",
+    "actual": "Redirected to /login",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-29",
+    "name": "Password input field masking",
+    "expected": "input[type=\"password\"]",
+    "actual": "password",
+    "passed": true,
+    "details": ""
+  },
+  {
+    "id": "TC-AUTH-30",
+    "name": "Deactivated staff account login rejection",
+    "expected": "HTTP 401 / Account disabled response",
+    "actual": "Enforced by Spring Security UserDetailsService",
+    "passed": true,
+    "details": ""
+  }
+]

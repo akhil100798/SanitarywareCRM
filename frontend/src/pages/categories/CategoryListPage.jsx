@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ArrowLeft, FolderTree } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ArrowLeft, FolderTree, X } from 'lucide-react';
 import { categoryService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import CategoryFormModal from './CategoryFormModal';
@@ -93,10 +93,21 @@ const CategoryListPage = () => {
                         <input
                             type="text"
                             placeholder="Search categories..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && searchQuery.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </div>
                 </div>
 

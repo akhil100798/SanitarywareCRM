@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Search } from 'lucide-react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Plus, Search } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { fetchList, listServices } from '../api/services';
 import ListCard from '../components/ListCard';
 import Screen from '../components/Screen';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
+import CreateCustomerModal from '../components/CreateCustomerModal';
+import CreateBrandModal from '../components/CreateBrandModal';
 import { colors } from '../theme/colors';
 import { createLatestRequestRunner } from '../utils/latestRequest';
 
 const detailRoutes = {
   customers: 'CustomerDetail',
+  products: 'ProductDetail',
+  brands: 'BrandDetail',
   quotations: 'QuotationDetail',
   orders: 'OrderDetail'
 };
@@ -23,6 +27,8 @@ const ListScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [showAddBrand, setShowAddBrand] = useState(false);
   const requests = useRef(null);
   if (!requests.current) requests.current = createLatestRequestRunner();
 
@@ -48,6 +54,23 @@ const ListScreen = ({ route, navigation }) => {
     setQuery(value);
   };
 
+  const handleOpenAdd = () => {
+    if (resource === 'customers') setShowAddCustomer(true);
+    if (resource === 'brands') setShowAddBrand(true);
+  };
+
+  const handleCustomerCreated = (newCust) => {
+    setShowAddCustomer(false);
+    loadItems();
+    navigation.navigate('CustomerDetail', { id: newCust.id });
+  };
+
+  const handleBrandCreated = (newBrand) => {
+    setShowAddBrand(false);
+    loadItems();
+    navigation.navigate('BrandDetail', { id: newBrand.id });
+  };
+
   if (loading) {
     return <LoadingView label={`Loading ${config.title.toLowerCase()}...`} />;
   }
@@ -56,11 +79,31 @@ const ListScreen = ({ route, navigation }) => {
     return <ErrorView message={error} onRetry={() => loadItems()} />;
   }
 
+  const canAdd = resource === 'customers' || resource === 'brands';
+
   return (
     <Screen padded={false} safeTop={route.name !== 'ModuleList'}>
       <View style={styles.header}>
-        <Text style={styles.title}>{config.title}</Text>
-        <Text style={styles.count}>{items.length} records</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>{config.title}</Text>
+            <Text style={styles.count}>{items.length} records</Text>
+          </View>
+          {canAdd && (
+            <TouchableOpacity
+              onPress={handleOpenAdd}
+              style={styles.addBtn}
+              activeOpacity={0.8}
+              accessibilityLabel={`Add ${resource === 'customers' ? 'Customer' : 'Brand'}`}
+            >
+              <Plus size={16} color="#ffffff" />
+              <Text style={styles.addBtnText}>
+                {resource === 'customers' ? 'Add Customer' : 'Add Brand'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {config.searchEndpoint ? (
           <View style={styles.searchBox}>
             <Search color={colors.muted} size={18} />
@@ -97,10 +140,23 @@ const ListScreen = ({ route, navigation }) => {
           return (
             <ListCard
               item={item}
-              onPress={detailRoute ? () => navigation.navigate(detailRoute, { id: item.id }) : undefined}
+              onPress={detailRoute && resource !== 'products' ? () => navigation.navigate(detailRoute, { id: item.id }) : undefined}
+              onNavigateDetail={resource === 'products' ? (id) => navigation.navigate('ProductDetail', { id }) : undefined}
             />
           );
         }}
+      />
+
+      {/* Modals */}
+      <CreateCustomerModal
+        visible={showAddCustomer}
+        onClose={() => setShowAddCustomer(false)}
+        onSuccess={handleCustomerCreated}
+      />
+      <CreateBrandModal
+        visible={showAddBrand}
+        onClose={() => setShowAddBrand(false)}
+        onSuccess={handleBrandCreated}
       />
     </Screen>
   );
@@ -113,6 +169,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     padding: 16
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
   title: {
     color: colors.text,
     fontSize: 24,
@@ -121,7 +182,21 @@ const styles = StyleSheet.create({
   count: {
     color: colors.muted,
     fontSize: 13,
-    marginTop: 4
+    marginTop: 2
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8
+  },
+  addBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800'
   },
   searchBox: {
     alignItems: 'center',

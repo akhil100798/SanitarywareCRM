@@ -13,7 +13,8 @@ import {
     Percent,
     ArrowUpRight,
     Sparkles,
-    CheckCircle2
+    CheckCircle2,
+    RefreshCw
 } from 'lucide-react';
 import dashboardService from '../services/dashboardService';
 import toast from 'react-hot-toast';
@@ -42,11 +43,37 @@ const DashboardPage = () => {
         || fallbackName[user?.role]
         || 'User';
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState(null);
+    const [dbHealthy, setDbHealthy] = useState(true);
 
     useEffect(() => {
         fetchDashboardStats();
+        checkHealth();
+        const interval = setInterval(checkHealth, 30000);
+        return () => clearInterval(interval);
     }, []);
+
+    const checkHealth = async () => {
+        try {
+            const res = await fetch('/api/health');
+            const data = await res.json();
+            setDbHealthy(data.database === 'UP' && data.status === 'UP');
+        } catch (err) {
+            setDbHealthy(false);
+        }
+    };
+
+    const handleRefresh = async () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        try {
+            await Promise.all([fetchDashboardStats(), checkHealth()]);
+            toast.success('Dashboard refreshed');
+        } finally {
+            setTimeout(() => setRefreshing(false), 500);
+        }
+    };
 
     const fetchDashboardStats = async () => {
         try {
@@ -79,9 +106,24 @@ const DashboardPage = () => {
                 <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                     <div className="space-y-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 rounded-full text-xs font-bold text-teal border border-slate-700">
-                            <Sparkles size={12} />
-                            <span>System Status: Healthy</span>
+                        <div className="flex items-center gap-3">
+                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+                                dbHealthy 
+                                    ? 'bg-slate-800/80 text-teal border-slate-700' 
+                                    : 'bg-red-950/80 text-red-400 border-red-800'
+                            }`}>
+                                <span className={`w-2 h-2 rounded-full ${dbHealthy ? 'bg-teal animate-pulse' : 'bg-red-500'}`} />
+                                <span>{dbHealthy ? 'Database Connected: Healthy' : 'Database Disconnected / Offline'}</span>
+                            </div>
+                            <button
+                                onClick={handleRefresh}
+                                disabled={refreshing}
+                                title="Refresh Analytics"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 hover:bg-slate-700 rounded-full text-xs font-bold text-slate-300 border border-slate-700 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                <RefreshCw size={12} className={refreshing ? 'animate-spin text-teal' : ''} />
+                                <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                            </button>
                         </div>
                         <h1 className="text-3xl font-extrabold tracking-tight text-white">Hello, {displayName}</h1>
                         <p className="text-slate-400 text-sm max-w-lg">
@@ -144,7 +186,11 @@ const DashboardPage = () => {
                     <div className="flex justify-between items-start">
                         <div>
                             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Gross Revenue</span>
-                            <h3 className="text-3xl font-extrabold text-slate-900 mt-1">₹{(stats?.totalRevenue || 0).toLocaleString('en-IN')}</h3>
+                            {loading || !stats ? (
+                                <div className="h-9 w-32 bg-slate-200 animate-pulse rounded-lg mt-1" />
+                            ) : (
+                                <h3 className="text-3xl font-extrabold text-slate-900 mt-1">₹{(stats?.totalRevenue || 0).toLocaleString('en-IN')}</h3>
+                            )}
                         </div>
                         <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
                             <TrendingUp size={20} />
@@ -232,19 +278,27 @@ const DashboardPage = () => {
                         ) : (
                             (() => {
                                 const entries = Object.entries(stats.monthlyRevenue);
-                                const maxVal = Math.max(...entries.map(([_, v]) => Number(v)), 1000);
+                                const maxVal = Math.max(...entries.map(([_, v]) => Math.abs(Number(v) || 0)), 1000);
                                 return entries.map(([month, val]) => {
-                                    const pct = (Number(val) / maxVal) * 100;
+                                    const numVal = Number(val) || 0;
+                                    const isNegative = numVal < 0;
+                                    const pct = (Math.abs(numVal) / maxVal) * 100;
                                     return (
                                         <div key={month} className="flex flex-col items-center flex-1 group relative">
-                                            <div className="absolute bottom-full mb-2 bg-slate-900 text-white text-xxs font-bold px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                                ₹{Number(val).toLocaleString()}
+                                            <div className={`absolute bottom-full mb-2 bg-slate-900 text-white text-xxs font-bold px-2.5 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20 ${isNegative ? 'border border-rose-500 text-rose-200' : ''}`}>
+                                                {isNegative 
+                                                    ? `-₹${Math.abs(numVal).toLocaleString('en-IN')} (Net Return Adjustment)` 
+                                                    : `₹${numVal.toLocaleString('en-IN')}`}
                                             </div>
                                             <div 
-                                                className="w-8 bg-gradient-to-t from-teal/60 to-teal rounded-t-lg transition-all duration-1000 hover:from-teal hover:to-teal-400 cursor-pointer"
+                                                className={`w-8 rounded-t-lg transition-all duration-1000 cursor-pointer ${
+                                                    isNegative
+                                                        ? 'bg-gradient-to-t from-rose-500/70 to-rose-500 hover:from-rose-500 hover:to-rose-400'
+                                                        : 'bg-gradient-to-t from-teal/60 to-teal rounded-t-lg hover:from-teal hover:to-teal-400'
+                                                }`}
                                                 style={{ height: `${Math.max(pct, 5)}%` }}
                                             ></div>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase mt-2">{month.slice(0, 3)}</span>
+                                            <span className={`text-[10px] font-bold uppercase mt-2 ${isNegative ? 'text-rose-400' : 'text-slate-400'}`}>{month.slice(0, 3)}</span>
                                         </div>
                                     );
                                 });
@@ -386,9 +440,13 @@ const DashboardPage = () => {
                             <tbody>
                                 {stats.topProducts.map((prod, index) => (
                                     <tr key={index} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors text-sm">
-                                        <td className="py-3.5 font-semibold text-slate-950">{prod.productName}</td>
+                                        <td className="py-3.5 font-semibold text-slate-950">
+                                            <Link to={prod.productId ? `/products?selectedId=${prod.productId}` : `/products?query=${encodeURIComponent(prod.productName)}`} className="text-teal hover:underline font-bold">
+                                                {prod.productName}
+                                            </Link>
+                                        </td>
                                         <td className="py-3.5 text-right font-bold text-slate-600">{prod.quantitySold}</td>
-                                        <td className="py-3.5 text-right font-extrabold text-slate-950">₹{prod.totalRevenue.toLocaleString()}</td>
+                                        <td className="py-3.5 text-right font-extrabold text-slate-950">{prod.totalRevenue != null ? `₹${Number(prod.totalRevenue).toLocaleString()}` : '—'}</td>
                                     </tr>
                                 ))}
                             </tbody>

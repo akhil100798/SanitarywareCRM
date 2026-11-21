@@ -3,8 +3,12 @@ const globals = {
   clearTimeout: 'readonly',
   console: 'readonly',
   document: 'readonly',
+  window: 'readonly',
   __DEV__: 'readonly',
   fetch: 'readonly',
+  Blob: 'readonly',
+  File: 'readonly',
+  FormData: 'readonly',
   localStorage: 'readonly',
   module: 'readonly',
   process: 'readonly',
@@ -17,6 +21,7 @@ export default [
   {
     ignores: [
       'android/**',
+      'dist-*/**',
       'dist-check*/**',
       'node_modules/**',
       '.qa-*/**',

@@ -15,6 +15,10 @@ api.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+    config.timeout = 180000;
+  }
   return config;
 });
 

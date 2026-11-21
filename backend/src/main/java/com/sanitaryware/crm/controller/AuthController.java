@@ -49,8 +49,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        String rateLimitKey = httpRequest.getRemoteAddr() + ":" + request.getUsername().trim().toLowerCase();
-        loginRateLimiter.checkAllowed(rateLimitKey);
+        if (request.getUsername() == null || request.getUsername().contains("\0") || (request.getPassword() != null && request.getPassword().contains("\0"))) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid characters in credentials"));
+        }
+        String cleanUsername = request.getUsername().trim().toLowerCase();
+        String ipUserKey = httpRequest.getRemoteAddr() + ":" + cleanUsername;
+        String userKey = "user:" + cleanUsername;
+        loginRateLimiter.checkAllowed(ipUserKey);
+        loginRateLimiter.checkAllowed(userKey);
         try {
             log.info("Attempting login for user: {}", request.getUsername());
             Authentication authentication = authenticationManager.authenticate(
@@ -74,7 +80,8 @@ public class AuthController {
 
             String jwt = jwtTokenProvider.generateToken(user.getUsername(), user.getRole().name());
             log.info("JWT generated for: {}", request.getUsername());
-            loginRateLimiter.reset(rateLimitKey);
+            loginRateLimiter.reset(ipUserKey);
+            loginRateLimiter.reset(userKey);
 
             // Update last login
             user.setLastLogin(LocalDateTime.now());
@@ -91,7 +98,8 @@ public class AuthController {
             ));
 
         } catch (BadCredentialsException e) {
-            loginRateLimiter.recordFailure(rateLimitKey);
+            loginRateLimiter.recordFailure(ipUserKey);
+            loginRateLimiter.recordFailure(userKey);
             log.warn("Invalid login attempt for: {}", request.getUsername());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse("Invalid username or password"));
@@ -118,6 +126,12 @@ public class AuthController {
     @Transactional
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registering new user: {}", request.getUsername());
+        if (request.getUsername() == null || request.getUsername().contains("\0") 
+                || (request.getEmail() != null && request.getEmail().contains("\0")) 
+                || (request.getPassword() != null && request.getPassword().contains("\0"))) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid characters in registration"));
+        }
+
         bootstrapLockRepository.findSingletonForUpdate()
                 .orElseThrow(() -> new IllegalStateException(
                         "Bootstrap lock row is missing; apply database migrations"));
@@ -127,13 +141,16 @@ public class AuthController {
                     .body(new MessageResponse("Only administrators and managers can register users"));
         }
 
-        if (userRepository.existsByUsername(request.getUsername())) {
+        String normalizedUsername = request.getUsername().trim();
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
             log.warn("Username already exists: {}", request.getUsername());
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Username already exists"));
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             log.warn("Email already exists: {}", request.getEmail());
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Email already exists"));
@@ -141,10 +158,10 @@ public class AuthController {
 
         try {
             User user = new User();
-            user.setUsername(request.getUsername());
-            user.setEmail(request.getEmail());
+            user.setUsername(normalizedUsername);
+            user.setEmail(normalizedEmail);
             user.setPassword(passwordEncoder.encode(request.getPassword()));
-            user.setFullName(request.getFullName());
+            user.setFullName(request.getFullName().trim());
             user.setPhoneNumber(request.getPhoneNumber());
             user.setRole(firstUser ? User.UserRole.ADMIN : User.UserRole.SALES);
             user.setIsActive(true);
@@ -214,18 +231,33 @@ public class AuthController {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (request.getFullName() != null && !request.getFullName().isEmpty()) {
-            user.setFullName(request.getFullName());
+        if (request.getFullName() != null) {
+            String cleanName = request.getFullName().trim();
+            if (cleanName.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Full name cannot be blank"));
+            }
+            user.setFullName(cleanName);
         }
         if (request.getPhoneNumber() != null) {
-            user.setPhoneNumber(request.getPhoneNumber());
+            String cleanPhone = request.getPhoneNumber().trim();
+            if (!cleanPhone.isEmpty() && !cleanPhone.matches("^[0-9+() -]{7,15}$")) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Phone number must contain only valid digits and phone characters"));
+            }
+            user.setPhoneNumber(cleanPhone.isEmpty() ? null : cleanPhone);
         }
-        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+        if (request.getEmail() != null) {
+            String cleanEmail = request.getEmail().trim().toLowerCase();
+            if (cleanEmail.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Email cannot be blank"));
+            }
+            if (!cleanEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmailIgnoreCase(cleanEmail)) {
                  return ResponseEntity.badRequest()
                         .body(new MessageResponse("Email already in use by another account"));
             }
-            user.setEmail(request.getEmail());
+            user.setEmail(cleanEmail);
         }
 
         boolean passwordChanged = false;

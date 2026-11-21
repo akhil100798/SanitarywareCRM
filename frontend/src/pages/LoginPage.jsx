@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import { Droplet, Lock, User, Loader2 } from 'lucide-react';
+import { Droplet, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -84,15 +85,23 @@ const LoginPage = () => {
                             </span>
                             <input
                                 id="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 name="password"
                                 autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-500 text-sm"
+                                className="w-full pl-10 pr-10 py-3 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal bg-slate-950 text-slate-100 transition-all placeholder:text-slate-500 text-sm"
                                 placeholder="Enter your password"
                                 required
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-200"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
                         </div>
                     </div>
 

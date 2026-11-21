@@ -23,7 +23,9 @@ public class PaymentDTO {
     private Long orderId;
 
     private String orderNumber;
+    private String customerName;
     private String paymentNumber;
+    @jakarta.validation.constraints.PastOrPresent(message = "Payment date cannot be in the future")
     private LocalDate paymentDate;
 
     @NotNull(message = "Amount is required")

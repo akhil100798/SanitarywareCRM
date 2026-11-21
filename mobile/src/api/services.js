@@ -1,5 +1,15 @@
+import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './client';
 import { sessionStorage } from './storage';
+import { API_BASE_URL } from './config';
+
+export const resolveMediaUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  const base = (API_BASE_URL || 'http://10.0.2.2:8081/api').replace(/\/api\/?$/, '');
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 const unwrapPage = (data) => {
   if (Array.isArray(data)) return data;
@@ -65,7 +75,7 @@ export const listServices = {
     title: 'Customers',
     endpoint: '/customers',
     searchEndpoint: '/customers/search',
-    params: { size: 50 },
+    params: { size: 50, sort: 'id,desc' },
     mapItem: (item) => ({
       id: item.id,
       title: item.name,
@@ -79,19 +89,27 @@ export const listServices = {
     endpoint: '/products',
     searchEndpoint: '/products/search',
     params: { size: 50 },
-    mapItem: (item) => ({
-      id: item.id,
-      title: item.name,
-      subtitle: joinMeta(item.sku || 'No SKU', item.brandName),
-      meta: `Stock ${item.stockQuantity ?? 0} ${item.unit || ''}`,
-      amount: money(item.sellingPrice),
-      badge: item.stockQuantity <= item.reorderLevel ? 'Low stock' : 'In stock'
-    })
+    mapItem: (item) => {
+      const rawImg = item.images?.find((img) => img.isPrimary)?.imageUrl ||
+        item.images?.[0]?.imageUrl ||
+        item.imageUrls?.[0] ||
+        item.imageUrl;
+      return {
+        id: item.id,
+        title: item.name,
+        subtitle: joinMeta(item.sku || 'No SKU', item.brandName, item.size && item.size !== '--' && item.size),
+        meta: `Stock ${item.stockQuantity ?? 0} ${item.unit || ''}`,
+        amount: money(item.sellingPrice),
+        badge: item.stockQuantity <= item.reorderLevel ? 'Low stock' : (item.isAvailable === false ? 'Unavailable' : 'In stock'),
+        imageUrl: resolveMediaUrl(rawImg),
+        raw: item
+      };
+    }
   },
   orders: {
     title: 'Orders',
     endpoint: '/orders',
-    params: { size: 50 },
+    params: { size: 50, sort: 'id,desc' },
     mapItem: (item) => ({
       id: item.id,
       title: item.orderNumber || `Order #${item.id}`,
@@ -104,7 +122,7 @@ export const listServices = {
   quotations: {
     title: 'Quotations',
     endpoint: '/quotations',
-    params: { size: 50 },
+    params: { size: 50, sort: 'id,desc' },
     mapItem: (item) => ({
       id: item.id,
       title: item.quotationNumber || `Quotation #${item.id}`,
@@ -208,11 +226,20 @@ export const fetchList = async (resource, query) => {
   const response = await api.get(isSearch ? config.searchEndpoint : config.endpoint, {
     params: isSearch ? { ...config.params, query: query.trim() } : config.params
   });
-  return unwrapPage(response.data).map(config.mapItem);
+  let items = unwrapPage(response.data);
+  if (resource === 'brands') {
+    items = [...items].sort((a, b) => (b.id || 0) - (a.id || 0));
+  }
+  return items.map(config.mapItem);
 };
 export const customerService = {
   async getById(customerId) {
     const response = await api.get(`/customers/${customerId}`);
+    return response.data;
+  },
+
+  async create(payload) {
+    const response = await api.post('/customers', payload);
     return response.data;
   },
 
@@ -240,6 +267,46 @@ export const productService = {
     }
     const response = await api.get('/products/search', { params: { ...params, query: trimmed } });
     return unwrapPage(response.data);
+  },
+
+  async getById(productId) {
+    const response = await api.get(`/products/${productId}`);
+    return response.data;
+  },
+
+  async getVariantsByModel(brandId, query) {
+    if (!brandId) return [];
+    const response = await api.get('/products', {
+      params: { brandId, query: query?.trim(), size: 30 }
+    });
+    return unwrapPage(response.data);
+  }
+};
+
+export const brandService = {
+  async getAll() {
+    const response = await api.get('/brands');
+    return response.data;
+  },
+
+  async getById(brandId) {
+    const response = await api.get(`/brands/${brandId}`);
+    return response.data;
+  },
+
+  async create(payload) {
+    const response = await api.post('/brands', payload);
+    return response.data;
+  },
+
+  async attachCatalog(brandId, fileOrFormData) {
+    const response = await api.post(`/brands/${brandId}/catalog`, fileOrFormData);
+    return response.data;
+  },
+
+  async getCatalogVersions(brandId) {
+    const response = await api.get(`/brands/${brandId}/catalog-versions`);
+    return response.data;
   }
 };
 
@@ -257,6 +324,36 @@ export const quotationService = {
   async sendWhatsApp(quotationId, phoneNumber) {
     const response = await api.post(`/quotations/${quotationId}/send-whatsapp`, phoneNumber ? { phoneNumber } : {});
     return response.data;
+  },
+
+  async importContractorNote(asset) {
+    const formData = new FormData();
+    if (Platform.OS === 'web') {
+      if (asset instanceof Blob || (typeof File !== 'undefined' && asset instanceof File)) {
+        formData.append('file', asset, asset.name || 'contractor_note.jpg');
+      } else if (asset.file) {
+        formData.append('file', asset.file, asset.fileName || asset.file.name || 'contractor_note.jpg');
+      } else if (typeof asset.uri === 'string' && (asset.uri.startsWith('blob:') || asset.uri.startsWith('data:'))) {
+        const res = await fetch(asset.uri);
+        const blob = await res.blob();
+        formData.append('file', blob, asset.fileName || 'contractor_note.jpg');
+      } else {
+        formData.append('file', asset);
+      }
+    } else {
+      formData.append('file', {
+        uri: asset.uri,
+        name: asset.fileName || 'contractor_note.jpg',
+        type: asset.mimeType || 'image/jpeg'
+      });
+    }
+
+    const response = await api.post('/quotations/import-boq', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
   }
 };
 
@@ -269,6 +366,68 @@ export const orderService = {
   async createFromQuotation(quotationId) {
     const response = await api.post(`/orders/from-quotation/${quotationId}`);
     return response.data;
+  },
+
+  async downloadInvoice(orderId) {
+    if (Platform.OS === 'web') {
+      const response = await api.get(`/orders/${orderId}/invoice/pdf`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      return { uri: `invoice-${orderId}.pdf`, fileName: `invoice-${orderId}.pdf` };
+    }
+
+    const token = await sessionStorage.getToken();
+    const fileName = `invoice-${orderId}.pdf`;
+    const targetUri = `${FileSystem.documentDirectory}${fileName}`;
+
+    const downloadResult = await FileSystem.downloadAsync(
+      `${API_BASE_URL}/orders/${orderId}/invoice/pdf`,
+      targetUri,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      }
+    );
+
+    if (downloadResult.status !== 200) {
+      throw new Error(`Failed to download invoice PDF: HTTP ${downloadResult.status}`);
+    }
+
+    // Copy to external app storage for instant non-root accessibility
+    const externalUri = `file:///sdcard/Android/data/com.sanitarywarecrm/files/${fileName}`;
+    try {
+      await FileSystem.copyAsync({
+        from: downloadResult.uri,
+        to: externalUri
+      });
+    } catch {
+      // Ignored if external storage is inaccessible
+    }
+
+    // Also attempt copy to public /sdcard/Download/
+    try {
+      await FileSystem.copyAsync({
+        from: downloadResult.uri,
+        to: `file:///sdcard/Download/${fileName}`
+      });
+    } catch {
+      // Ignored if /sdcard/Download is inaccessible
+    }
+
+    return {
+      uri: downloadResult.uri,
+      externalUri,
+      fileName,
+      status: downloadResult.status
+    };
   }
 };
 

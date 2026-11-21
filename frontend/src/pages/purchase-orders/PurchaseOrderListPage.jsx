@@ -8,6 +8,7 @@ const PurchaseOrderListPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedDistributor, setSelectedDistributor] = useState('');
     const [receivingOrder, setReceivingOrder] = useState(null);
     const [isReceiving, setIsReceiving] = useState(false);
 
@@ -63,7 +64,7 @@ const PurchaseOrderListPage = () => {
         switch (status) {
             case 'DRAFT': return 'bg-gray-100 text-gray-800 border border-gray-200';
             case 'ORDERED': return 'bg-blue-100 text-blue-800 border border-blue-200';
-            case 'PARTIALLY_RECEIVED': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+            case 'PARTIALLY_RECEIVED': return 'bg-orange-100 text-orange-800 border border-orange-200 font-semibold';
             case 'RECEIVED': return 'bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold';
             case 'CANCELLED': return 'bg-red-100 text-red-800 border border-red-200';
             default: return 'bg-gray-100 text-gray-800';
@@ -87,10 +88,16 @@ const PurchaseOrderListPage = () => {
         return 'Unpaid';
     };
 
-    const filteredOrders = orders.filter(order =>
-        (order.poNumber && order.poNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (order.distributorName && order.distributorName.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const uniqueDistributors = Array.from(new Set(orders.map(o => o.distributorName).filter(Boolean))).sort();
+
+    const filteredOrders = orders.filter(order => {
+        const matchesSearch = !searchQuery.trim() || (
+            (order.poNumber && order.poNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (order.distributorName && order.distributorName.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+        const matchesDistributor = !selectedDistributor || order.distributorName === selectedDistributor;
+        return matchesSearch && matchesDistributor;
+    });
 
     return (
         <div className="space-y-6">
@@ -109,16 +116,40 @@ const PurchaseOrderListPage = () => {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
+                <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="relative flex-1 w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
                             placeholder="Search by PO Number or Distributor..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                            className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && searchQuery.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Distributor:</span>
+                        <select
+                            value={selectedDistributor}
+                            onChange={(e) => setSelectedDistributor(e.target.value)}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">All Distributors</option>
+                            {uniqueDistributors.map((d) => (
+                                <option key={d} value={d}>{d}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 

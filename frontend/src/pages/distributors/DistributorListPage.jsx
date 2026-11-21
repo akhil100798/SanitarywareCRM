@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Mail, Phone, MapPin } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Mail, Phone, MapPin, X } from 'lucide-react';
 import distributorService from '../../services/distributorService';
 import toast from 'react-hot-toast';
 
@@ -55,6 +55,13 @@ const DistributorListPage = () => {
         }
     };
 
+    const maskAccountNumber = (acc) => {
+        if (!acc) return null;
+        const str = String(acc).trim();
+        if (str.length <= 4) return str;
+        return 'XXXX-XXXX-' + str.slice(-4);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -78,10 +85,24 @@ const DistributorListPage = () => {
                         <input
                             type="text"
                             placeholder="Search distributors by name, phone..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-9 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && searchQuery.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    fetchDistributors();
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
                     </form>
                     <button className="flex items-center justify-center space-x-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <Filter size={20} />
@@ -120,7 +141,8 @@ const DistributorListPage = () => {
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900">{distributor.name}</div>
                                             <div className="text-xs text-gray-500">Contact: {distributor.contactPerson || '-'}</div>
-                                            {distributor.gstNumber && <div className="text-xs text-gray-400 mt-1">GST: {distributor.gstNumber}</div>}
+                                            {distributor.gstNumber && <div className="text-xs text-gray-400 mt-0.5">GST: {distributor.gstNumber}</div>}
+                                            {distributor.bankAccountNumber && <div className="text-xs text-slate-400 font-mono mt-0.5">A/C: {maskAccountNumber(distributor.bankAccountNumber)}</div>}
                                         </td>
                                         <td className="px-6 py-4">
                                             {distributor.email && (

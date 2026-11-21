@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -167,11 +169,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiErrorResponse> handleRuntimeException(RuntimeException ex) {
+        log.error("Unhandled runtime exception: ", ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex) {
+        log.error("Unhandled exception: ", ex);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+    }
+
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<ApiErrorResponse> handleGenericThrowable(Throwable ex) {
+        log.error("Unhandled throwable: ", ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 
@@ -186,7 +196,7 @@ public class GlobalExceptionHandler {
     ) {
         ApiErrorResponse response = new ApiErrorResponse(
                 status.value(), status.getReasonPhrase(), message, validationErrors);
-        return ResponseEntity.status(status).body(response);
+        return ResponseEntity.status(status).contentType(org.springframework.http.MediaType.APPLICATION_JSON).body(response);
     }
 
     private boolean isUploadSizeExceeded(Throwable exception) {

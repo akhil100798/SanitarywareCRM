@@ -1,6 +1,7 @@
 package com.sanitaryware.crm.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -36,6 +37,8 @@ public class QuotationDTO {
     private BigDecimal subtotal;
     private BigDecimal taxPercentage;
     private BigDecimal taxAmount;
+    
+    @DecimalMin(value = "0.0", inclusive = true, message = "Discount cannot be negative")
     private BigDecimal discount;
     private BigDecimal total;
     private String notes;
@@ -66,7 +69,8 @@ public class QuotationDTO {
         @DecimalMin(value = "0.0", inclusive = true, message = "Unit price cannot be negative")
         private BigDecimal unitPrice;
         
-        @DecimalMin(value = "0.0", inclusive = true)
+        @DecimalMin(value = "0.0", inclusive = true, message = "Discount percentage cannot be negative")
+        @DecimalMax(value = "100.0", inclusive = true, message = "Discount percentage cannot exceed 100%")
         private BigDecimal discountPercentage;
         
         private BigDecimal lineTotal;

@@ -1,8 +1,10 @@
 package com.sanitaryware.crm.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,7 +33,9 @@ public class OrderDTO {
     private BigDecimal subtotal;
     private BigDecimal taxPercentage;
     private BigDecimal taxAmount;
+    @DecimalMin(value = "0.0", inclusive = true, message = "Discount cannot be negative")
     private BigDecimal discount;
+    @DecimalMin(value = "0.0", inclusive = true, message = "Shipping charge cannot be negative")
     private BigDecimal shippingCharge;
     private BigDecimal total;
     private BigDecimal paidAmount;
@@ -39,6 +43,16 @@ public class OrderDTO {
     private String shippingAddress;
     private String notes;
     private String billPadImageUrl;
+
+    public void setShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress != null ? org.springframework.web.util.HtmlUtils.htmlEscape(shippingAddress.trim()) : null;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes != null ? org.springframework.web.util.HtmlUtils.htmlEscape(notes.trim()) : null;
+    }
+    @NotNull(message = "Order items are required")
+    @NotEmpty(message = "Order must have at least one line item")
     @Valid
     private List<OrderItemDTO> items;
 
@@ -56,12 +70,14 @@ public class OrderDTO {
         @NotNull(message = "Unit price is required")
         @DecimalMin(value = "0.0", inclusive = true, message = "Unit price cannot be negative")
         private BigDecimal unitPrice;
-        @DecimalMin(value = "0.0", inclusive = true)
+        @DecimalMin(value = "0.0", inclusive = true, message = "Discount percentage cannot be negative")
+        @DecimalMax(value = "100.0", inclusive = true, message = "Discount percentage cannot exceed 100%")
         private BigDecimal discountPercentage;
         private BigDecimal lineTotal;
         private String barcode;
         private String hsnCode;
         private BigDecimal gstRate;
+        private String binLocation;
         private String notes;
     }
 }

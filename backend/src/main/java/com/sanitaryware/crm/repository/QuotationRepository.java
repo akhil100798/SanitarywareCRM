@@ -28,6 +28,9 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
     
     @Query("SELECT q FROM Quotation q WHERE q.validUntil < :today AND q.status = 'SENT'")
     List<Quotation> findExpiredQuotations(@Param("today") LocalDate today);
+
+    @Query("SELECT q FROM Quotation q WHERE q.status IN ('DRAFT', 'SENT') AND q.validUntil BETWEEN :startDate AND :endDate ORDER BY q.validUntil ASC")
+    List<Quotation> findExpiringQuotations(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     
     @Query("SELECT COUNT(q) FROM Quotation q WHERE q.quotationDate = :date")
     Long countQuotationsByDate(@Param("date") LocalDate date);

@@ -39,11 +39,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        jwt = authHeader.substring(7);
+        jwt = authHeader.substring(7).trim();
+        if (jwt.isEmpty()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         
         try {
-            // Reject invalid signatures and expired tokens before querying shared storage.
+            // Reject invalid signatures, blank subject, and expired tokens before querying shared storage.
             username = jwtTokenProvider.extractUsername(jwt);
+            if (username == null || username.trim().isEmpty()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             if (tokenRevocationService.isRevoked(jwt)) {
                 logger.debug("Bearer authentication rejected");
                 filterChain.doFilter(request, response);
