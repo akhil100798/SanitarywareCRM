@@ -26,9 +26,9 @@ import PurchaseOrderListPage from './pages/purchase-orders/PurchaseOrderListPage
 import DistributorPaymentListPage from './pages/distributor-payments/DistributorPaymentListPage';
 import DistributorPaymentFormPage from './pages/distributor-payments/DistributorPaymentFormPage';
 
+import ProductListPage from './pages/products/ProductListPage';
 import './index.css';
 
-const ProductListPage = lazy(() => import('./pages/products/ProductListPage'));
 const ProductFormPage = lazy(() => import('./pages/products/ProductFormPage'));
 const QuotationFormPage = lazy(() => import('./pages/quotations/QuotationFormPage'));
 const OrderFormPage = lazy(() => import('./pages/orders/OrderFormPage'));

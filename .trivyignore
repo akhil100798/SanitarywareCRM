@@ -1,0 +1,8 @@
+# Trivy ignore file for dev/test-only transitive dependencies
+# https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/#trivyignore
+
+# Tinypool: Prototype Pollution in test worker pool (transitive dependency of vitest in frontend devDependencies)
+# Justification: Used exclusively during test runs; never packaged or shipped into the production web bundle.
+CVE-2024-52595
+GHSA-5gmw-xhrv-c9v3
+GHSA-85c8-ppgw-ccpr
