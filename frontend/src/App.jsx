@@ -27,14 +27,14 @@ import DistributorPaymentListPage from './pages/distributor-payments/Distributor
 import DistributorPaymentFormPage from './pages/distributor-payments/DistributorPaymentFormPage';
 
 import ProductListPage from './pages/products/ProductListPage';
+import ReportsPage from './pages/reports/ReportsPage';
+import AuditLogsPage from './pages/audit/AuditLogsPage';
 import './index.css';
 
 const ProductFormPage = lazy(() => import('./pages/products/ProductFormPage'));
 const QuotationFormPage = lazy(() => import('./pages/quotations/QuotationFormPage'));
 const OrderFormPage = lazy(() => import('./pages/orders/OrderFormPage'));
 const PurchaseOrderFormPage = lazy(() => import('./pages/purchase-orders/PurchaseOrderFormPage'));
-const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
-const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage'));
 const UserManagementPage = lazy(() => import('./pages/users/UserManagementPage'));
 const CustomerPortalPage = lazy(() => import('./pages/portal/CustomerPortalPage'));
 

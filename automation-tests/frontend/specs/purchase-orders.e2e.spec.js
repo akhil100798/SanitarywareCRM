@@ -66,9 +66,14 @@ test.describe('Frontend Purchase Order E2E Suite', () => {
     await distSelect.waitFor({ state: 'visible' });
     await page.locator('select option:not([value=""])').first().waitFor({ state: 'attached', timeout: 15000 });
 
-    const distOptions = await distSelect.locator('option').allInnerTexts();
-    const matchedDist = distOptions.find(o => o.includes(testDistributorName)) || distOptions.find(o => o !== 'Select Distributor');
-    await distSelect.selectOption({ label: matchedDist });
+    const matchedDistOption = distSelect.locator('option').filter({ hasText: testDistributorName }).first();
+    const hasDist = await matchedDistOption.count();
+    if (hasDist > 0) {
+      const distValue = await matchedDistOption.getAttribute('value');
+      await distSelect.selectOption(distValue);
+    } else {
+      await distSelect.selectOption({ index: 1 });
+    }
 
     // Click Add Product to add a row
     await page.click('button:has-text("Add Product")');
@@ -78,9 +83,14 @@ test.describe('Frontend Purchase Order E2E Suite', () => {
     await productSelect.waitFor({ state: 'visible' });
     await page.locator('table select option:not([value=""])').first().waitFor({ state: 'attached', timeout: 15000 });
 
-    const prodOptions = await productSelect.locator('option').allInnerTexts();
-    const matchedProd = prodOptions.find(o => o.includes(testProductName)) || prodOptions.find(o => o !== 'Select Product...');
-    await productSelect.selectOption({ label: matchedProd });
+    const matchedProdOption = productSelect.locator('option').filter({ hasText: testProductName }).first();
+    const hasProd = await matchedProdOption.count();
+    if (hasProd > 0) {
+      const prodValue = await matchedProdOption.getAttribute('value');
+      await productSelect.selectOption(prodValue);
+    } else {
+      await productSelect.selectOption({ index: 1 });
+    }
 
     // Verify unit cost auto-filled with purchase price (e.g. 950.00) rather than 70% of selling price
     const unitCostInput = page.locator('table input[type="number"][step="0.01"]').first();

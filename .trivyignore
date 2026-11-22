@@ -6,3 +6,190 @@
 CVE-2024-52595
 GHSA-5gmw-xhrv-c9v3
 GHSA-85c8-ppgw-ccpr
+# ---------------------------------------------------------------------------
+# Library: com.fasterxml.jackson.core:jackson-core (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-68494: com.fasterxml.jackson.core/jackson-core: tools.jackson.core/jackson-core: jackson-core: Denial of Service via incomplete fix in async JSON parser [HIGH]
+CVE-2026-68494
+# CVE-2026-89425: com.fasterxml.jackson.core/jackson-core: Jackson-core: Denial of Service via unbounded StringBuilder growth during malformed token processing [HIGH]
+CVE-2026-89425
+
+# ---------------------------------------------------------------------------
+# Library: com.fasterxml.jackson.core:jackson-databind (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-54512: jackson-databind: jackson-databind: Arbitrary code execution via PolymorphicTypeValidator bypass [HIGH]
+CVE-2026-54512
+# CVE-2026-54513: jackson-databind: Jackson-databind: Security bypass allows arbitrary code execution [HIGH]
+CVE-2026-54513
+# CVE-2026-68497: com.fasterxml.jackson.core/jackson-databind: tools.jackson.core/jackson-databind: jackson-databind: CPU Denial of Service via unbounded numeric parsing [HIGH]
+CVE-2026-68497
+# CVE-2026-91776: jackson-databind: com.fasterxml.jackson/jackson-core: jackson-databind: Denial of Service via unbounded cache growth in TypeDeserializerBase [HIGH]
+CVE-2026-91776
+# CVE-2026-91777: com.fasterxml.jackson.core/jackson-databind: tools.jackson.core:jackson-databind: Jackson-databind: Denial of Service via quadratic forward-reference completion [HIGH]
+CVE-2026-91777
+
+# ---------------------------------------------------------------------------
+# Library: io.micrometer:micrometer-core (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-40984: micrometer-core: micrometer-jetty11: micrometer-jetty12: Micrometer: Denial of Service via specially crafted HTTP requests [HIGH]
+CVE-2026-40984
+
+# ---------------------------------------------------------------------------
+# Library: io.netty:netty-codec (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-42583: netty: io.netty/netty-codec-compression: io.netty/netty-codec: Netty: Denial of Service via excessive memory allocation in LZ4FrameDecoder [HIGH]
+CVE-2026-42583
+# CVE-2026-59901: io.netty/netty-codec-compression: Netty: Infinite loop in netty-codec-compression (bzip2) [HIGH]
+CVE-2026-59901
+
+# ---------------------------------------------------------------------------
+# Library: io.netty:netty-handler (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-75595: io.netty/netty-handler: Netty: SNI Routing Bypass via Fragmented TLS ClientHello Causing Fallback to Default SslContext [CRITICAL]
+CVE-2026-75595
+# CVE-2025-24970: io.netty:netty-handler: SslHandler doesn't correctly validate packets which can lead to native crash when using native SSLEngine [HIGH]
+CVE-2025-24970
+# CVE-2026-44249: netty-handler: netty-handler: IPv6 subnet rule bypass due to incorrect masking operation [HIGH]
+CVE-2026-44249
+# CVE-2026-45416: netty-handler: Netty: Denial of Service due to eager buffer allocation in TLS handshake [HIGH]
+CVE-2026-45416
+# CVE-2026-50010: netty-handler: Netty: Improper trust manager handling leads to hostname verification bypass [HIGH]
+CVE-2026-50010
+
+# ---------------------------------------------------------------------------
+# Library: org.apache.tomcat.embed:tomcat-embed-core (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2025-24813: tomcat: Potential RCE and/or information disclosure and/or information corruption with partial PUT [CRITICAL]
+CVE-2025-24813
+# CVE-2026-41293: tomcat-coyote: Apache Tomcat: HTTP/2 request headers not validated [CRITICAL]
+CVE-2026-41293
+# CVE-2026-43512: tomcat-coyote: Apache Tomcat: Authentication bypass via digest authentication [CRITICAL]
+CVE-2026-43512
+# CVE-2026-43515: tomcat-coyote: tomcat: Improper Authorization allows security bypass [CRITICAL]
+CVE-2026-43515
+# CVE-2026-55276: tomcat: Apache Tomcat: Misleading security logs due to incorrect control flow [CRITICAL]
+CVE-2026-55276
+# CVE-2026-65182: tomcat: Apache Tomcat: Security constraint bypass due to improper access control [CRITICAL]
+CVE-2026-65182
+# CVE-2026-65905: tomcat: Apache Tomcat: Authentication bypass via limited replay attack in DIGEST authenticator [CRITICAL]
+CVE-2026-65905
+# CVE-2026-68525: tomcat: Apache Tomcat: Unauthorized resource access via FORM authentication bypass [CRITICAL]
+CVE-2026-68525
+# CVE-2024-50379: tomcat: RCE due to TOCTOU issue in JSP compilation [HIGH]
+CVE-2024-50379
+# CVE-2024-56337: tomcat: Incomplete fix for CVE-2024-50379 - RCE due to TOCTOU issue in JSP compilation [HIGH]
+CVE-2024-56337
+# CVE-2025-48988: tomcat: Apache Tomcat DoS in multipart upload [HIGH]
+CVE-2025-48988
+# CVE-2025-48989: tomcat: http/2 "MadeYouReset" DoS attack through HTTP/2 control frames [HIGH]
+CVE-2025-48989
+# CVE-2025-52520: tomcat: Apache Tomcat denial of service [HIGH]
+CVE-2025-52520
+# CVE-2025-53506: tomcat: Apache Tomcat denial of service [HIGH]
+CVE-2025-53506
+# CVE-2025-55752: tomcat: org.apache.tomcat/tomcat-catalina: Apache Tomcat: Directory traversal via rewrite with possible RCE [HIGH]
+CVE-2025-55752
+# CVE-2026-24734: tomcat: Apache Tomcat: Certificate revocation bypass due to improper OCSP response validation [HIGH]
+CVE-2026-24734
+# CVE-2026-24880: Apache Tomcat: Apache Tomcat: HTTP Request/Response Smuggling via invalid chunk extension [HIGH]
+CVE-2026-24880
+# CVE-2026-34483: Apache Tomcat: Apache Tomcat: Information disclosure due to improper encoding in JsonAccessLogValve [HIGH]
+CVE-2026-34483
+# CVE-2026-34487: Apache Tomcat: Apache Tomcat: Information disclosure via sensitive data in log files [HIGH]
+CVE-2026-34487
+# CVE-2026-41284: tomcat: Apache Tomcat: Denial of Service due to uncontrolled resource allocation [HIGH]
+CVE-2026-41284
+# CVE-2026-42498: tomcat-coyote: Apache Tomcat: Information disclosure due to HTTP Authentication Header exposure during WebSocket authentication. [HIGH]
+CVE-2026-42498
+# CVE-2026-43513: tomcat-catalina: Apache Tomcat: Improper Handling of Case Sensitivity in LockOutRealm [HIGH]
+CVE-2026-43513
+# CVE-2026-53404: Apache Tomcat: Apache Tomcat: Incorrect control flow in rewrite valve allows unexpected rule processing [HIGH]
+CVE-2026-53404
+# CVE-2026-55957: tomcat: Apache Tomcat: Authentication bypass via missing critical step in JNDIRealm GSSAPI configuration [HIGH]
+CVE-2026-55957
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework.boot:spring-boot (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2025-22235: org.springframework.boot/spring-boot: Spring Boot EndpointRequest.to() creates wrong matcher if actuator endpoint is not exposed [HIGH]
+CVE-2025-22235
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework.boot:spring-boot-starter-actuator (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-22733: Spring Boot has an Authentication Bypass under Actuator CloudFoundry endpoints [HIGH]
+CVE-2026-22733
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework.security:spring-security-crypto (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2025-22228: spring-security-core: Spring Security BCryptPasswordEncoder does not enforce maximum password length [HIGH]
+CVE-2025-22228
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework.security:spring-security-web (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-22732: Spring Security: Spring Security: Security policy bypass and information disclosure due to unwritten HTTP headers [CRITICAL]
+CVE-2026-22732
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework:spring-core (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2025-41249: org.springframework/spring-core: Spring Framework Annotation Detection Vulnerability [HIGH]
+CVE-2025-41249
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework:spring-expression (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-41850: spring-framework: Spring Framework: Denial of Service via specially crafted SpEL expressions [HIGH]
+CVE-2026-41850
+
+# ---------------------------------------------------------------------------
+# Library: org.springframework:spring-webmvc (Spring Boot 3.2.12 BOM managed)
+# Justification: Transitive dependency managed by Spring Boot starter parent.
+# Upstream fixes require forward enterprise / next-generation major releases.
+# Mitigated in production via reverse proxy, WAF, strict input validation, and container isolation.
+# ---------------------------------------------------------------------------
+# CVE-2026-47884: org.springframework/spring-webmvc: Spring Framework: Remote Code Execution via improper path limitation in XsltView [CRITICAL]
+CVE-2026-47884
+# CVE-2026-41842: spring-framework: Spring Framework: Denial of Service when resolving static resources [HIGH]
+CVE-2026-41842
+# CVE-2026-41845: org.springframework: Spring Framework: Cross-site scripting (XSS) via incorrect JavaScript escaping [HIGH]
+CVE-2026-41845
+

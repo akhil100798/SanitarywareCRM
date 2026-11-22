@@ -52,6 +52,7 @@ const requestJson = (method, path, body = null, token = null) => {
 };
 
 const postJson = (path, body, token = null) => requestJson('POST', path, body, token);
+const patchJson = (path, body, token = null) => requestJson('PATCH', path, body, token);
 const getJson = (path, token = null) => requestJson('GET', path, null, token);
 
 const runSeeding = async () => {
@@ -161,6 +162,31 @@ const runSeeding = async () => {
       const distributors = await getJson('/api/distributors', token).catch(() => []);
       distributor = getItems(distributors).find(d => d.phoneNumber === '8881234567') || { name: 'QA Distributor Supply', id: 1 };
       console.log(`Reusing Distributor: ${distributor.name} (ID: ${distributor.id})`);
+    }
+
+    // 5.5. Create Seed Quotation & Order
+    let order;
+    try {
+      const quotation = await postJson('/api/quotations', {
+        customerId: customer.id,
+        quotationDate: new Date().toISOString().split('T')[0],
+        validUntil: '2028-12-31',
+        status: 'DRAFT',
+        items: [{
+          productId: product.id,
+          quantity: 2,
+          unitPrice: 220.00
+        }]
+      }, token);
+      createdEntities.push({ type: 'quotation', id: quotation.id, path: `/api/quotations/${quotation.id}` });
+      console.log(`Created Quotation: (ID: ${quotation.id})`);
+
+      await patchJson(`/api/quotations/${quotation.id}/status?status=ACCEPTED`, null, token);
+      order = await postJson(`/api/orders/from-quotation/${quotation.id}`, null, token);
+      createdEntities.push({ type: 'order', id: order.id, path: `/api/orders/${order.id}` });
+      console.log(`Created Order from Quotation: (ID: ${order.id})`);
+    } catch (err) {
+      console.log(`Seed quotation/order setup note: ${err.message}`);
     }
 
     // 6. Record run-owned fixtures in manifest for deterministic cleanup

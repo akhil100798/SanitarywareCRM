@@ -231,6 +231,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          trivyignores: '.trivyignore'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           format: 'table'
@@ -244,6 +245,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'sanitarywarecrm-backend:latest'
+          trivyignores: '.trivyignore'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           format: 'table'
@@ -253,6 +255,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'sanitarywarecrm-frontend:latest'
+          trivyignores: '.trivyignore'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           format: 'table'

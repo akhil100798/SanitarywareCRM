@@ -26,7 +26,7 @@ class QuotationPage {
       await this.customerSelect.selectOption({ index: 1 });
     }
     
-    await this.addItemButton.click();
+    await this.addItemButton.first().click();
     await this.productPicker.last().click();
     if (productName) {
       await this.productSearch.fill(productName);

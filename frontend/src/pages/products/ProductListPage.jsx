@@ -536,16 +536,16 @@ const ProductListPage = () => {
                 {viewMode === 'MATRIX' ? (
                     <div className="p-6">
                         {loading ? (
-                            <div className="py-16 text-center text-slate-400">
+                            <div className="py-16 text-center text-slate-600">
                                 <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
                                 <span>Fetching catalog list...</span>
                             </div>
                         ) : groupedProductFamilies.length === 0 ? (
-                            <div className="py-16 text-center text-slate-400">
+                            <div className="py-16 text-center text-slate-600">
                                 <div className="max-w-xs mx-auto space-y-2">
-                                    <Package size={40} className="mx-auto text-slate-300 mb-2" />
+                                    <Package size={40} className="mx-auto text-slate-400 mb-2" />
                                     <p className="font-semibold text-slate-700">No products found</p>
-                                    <p className="text-xs text-slate-400">No catalogue items match your current filters or query parameters.</p>
+                                    <p className="text-xs text-slate-600">No catalogue items match your current filters or query parameters.</p>
                                     {hasActiveFilters && (
                                         <button
                                             onClick={handleResetFilters}
@@ -579,9 +579,9 @@ const ProductListPage = () => {
                                                         className="h-full w-full object-contain"
                                                     />
                                                 ) : (
-                                                    <div className="flex flex-col items-center justify-center text-slate-300">
+                                                    <div className="flex flex-col items-center justify-center text-slate-400">
                                                         <Package size={40} />
-                                                        <span className="text-[10px] mt-1 text-slate-400 font-medium">No Image</span>
+                                                        <span className="text-[10px] mt-1 text-slate-600 font-medium">No Image</span>
                                                     </div>
                                                 )}
                                                 <div className="absolute top-3 left-3 flex flex-wrap gap-1">
@@ -694,18 +694,18 @@ const ProductListPage = () => {
                             <tbody className="divide-y divide-slate-100">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
+                                        <td colSpan="8" className="px-6 py-12 text-center text-slate-600 text-sm">
                                             <div className="inline-block w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mr-2 align-middle"></div>
                                             <span>Fetching catalog list...</span>
                                         </td>
                                     </tr>
                                 ) : products.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="px-6 py-12 text-center text-slate-400 text-sm">
+                                        <td colSpan="8" className="px-6 py-12 text-center text-slate-600 text-sm">
                                             <div className="max-w-xs mx-auto space-y-2">
-                                                <Package size={40} className="mx-auto text-slate-300 mb-2" />
+                                                <Package size={40} className="mx-auto text-slate-400 mb-2" />
                                                 <p className="font-semibold text-slate-700">No products found</p>
-                                                <p className="text-xs text-slate-400">No catalogue items match your current filters or query parameters.</p>
+                                                <p className="text-xs text-slate-600">No catalogue items match your current filters or query parameters.</p>
                                                 {hasActiveFilters && (
                                                     <button
                                                         onClick={handleResetFilters}

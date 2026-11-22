@@ -621,13 +621,18 @@ const OrderFormPage = () => {
                                         title="Click to enlarge"
                                     />
                                     <div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setLightboxImage(billPadPreview.url)}
+                                        <a
+                                            href={billPadPreview.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setLightboxImage(billPadPreview.url);
+                                            }}
                                             className="text-xs text-teal hover:underline font-extrabold text-left block"
                                         >
                                             View uploaded reference pad
-                                        </button>
+                                        </a>
                                         <div className="text-[10px] text-slate-400 mt-0.5 font-mono">{formData.billPadImageUrl}</div>
                                     </div>
                                 </div>

@@ -11,7 +11,7 @@ async function loginAs(page, role) {
   await page.locator('input[name="username"]').fill(credentials[role].username);
   await page.locator('input[name="password"]').fill(credentials[role].password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/\/dashboard$/, { timeout: 25000 });
+  await page.waitForURL(url => url.pathname.includes('/dashboard'), { timeout: 25000 });
 }
 
 test.describe('Frontend Audit Logs E2E Suite', () => {
@@ -20,7 +20,7 @@ test.describe('Frontend Audit Logs E2E Suite', () => {
 
     // Click on Audit Logs in sidebar
     await page.getByRole('link', { name: 'Audit Logs', exact: true }).click();
-    await page.waitForURL(/\/audit-logs$/, { timeout: 15000 });
+    await page.waitForURL(url => url.pathname.includes('/audit-logs'), { timeout: 15000 });
 
     // Verify page header
     await expect(page.getByRole('heading', { name: 'Audit Trail & System Logs' })).toBeVisible();
@@ -40,7 +40,7 @@ test.describe('Frontend Audit Logs E2E Suite', () => {
     const auditLink = page.getByRole('link', { name: 'Audit Logs', exact: true });
     await expect(auditLink).toBeVisible();
     await auditLink.click();
-    await page.waitForURL(/\/audit-logs$/, { timeout: 15000 });
+    await page.waitForURL(url => url.pathname.includes('/audit-logs'), { timeout: 15000 });
     await expect(page.getByRole('heading', { name: 'Audit Trail & System Logs' })).toBeVisible();
   });
 
