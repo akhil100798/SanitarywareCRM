@@ -28,7 +28,8 @@ const mapProduct = (product) => {
   };
 };
 
-const ProductPickerScreen = ({ navigation }) => {
+const ProductPickerScreen = ({ route, navigation }) => {
+  const targetScreen = route?.params?.targetScreen || 'QuotationForm';
   const [products, setProducts] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -163,7 +164,7 @@ const ProductPickerScreen = ({ navigation }) => {
             item={item}
             onPress={() =>
               navigation.navigate(
-                'QuotationForm',
+                targetScreen,
                 { selectedProduct: item.raw },
                 { merge: true, pop: true }
               )

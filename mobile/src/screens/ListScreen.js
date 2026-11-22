@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Search } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { fetchList, listServices } from '../api/services';
@@ -50,12 +51,25 @@ const ListScreen = ({ route, navigation }) => {
     return () => { clearTimeout(timer); runner.invalidate(); };
   }, [config.searchEndpoint, loadItems, query]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadItems(query);
+    }, [loadItems, query])
+  );
+
   const handleSearch = (value) => {
     setQuery(value);
   };
 
   const handleOpenAdd = () => {
-    if (resource === 'customers') setShowAddCustomer(true);
+    if (resource === 'customers') {
+      navigation.navigate('CustomerForm');
+      return;
+    }
+    if (resource === 'orders') {
+      navigation.navigate('OrderForm');
+      return;
+    }
     if (resource === 'brands') setShowAddBrand(true);
   };
 
@@ -79,7 +93,7 @@ const ListScreen = ({ route, navigation }) => {
     return <ErrorView message={error} onRetry={() => loadItems()} />;
   }
 
-  const canAdd = resource === 'customers' || resource === 'brands';
+  const canAdd = resource === 'customers' || resource === 'brands' || resource === 'orders';
 
   return (
     <Screen padded={false} safeTop={route.name !== 'ModuleList'}>
@@ -94,11 +108,11 @@ const ListScreen = ({ route, navigation }) => {
               onPress={handleOpenAdd}
               style={styles.addBtn}
               activeOpacity={0.8}
-              accessibilityLabel={`Add ${resource === 'customers' ? 'Customer' : 'Brand'}`}
+              accessibilityLabel={`Add ${resource === 'customers' ? 'Customer' : resource === 'orders' ? 'Order' : 'Brand'}`}
             >
               <Plus size={16} color="#ffffff" />
               <Text style={styles.addBtnText}>
-                {resource === 'customers' ? 'Add Customer' : 'Add Brand'}
+                {resource === 'customers' ? 'Add Customer' : resource === 'orders' ? 'New Order' : 'Add Brand'}
               </Text>
             </TouchableOpacity>
           )}

@@ -11,17 +11,21 @@ import {
   Users
 } from 'lucide-react-native';
 import CustomerDetailScreen from '../screens/CustomerDetailScreen';
+import CustomerFormScreen from '../screens/CustomerFormScreen';
 import BrandDetailScreen from '../screens/BrandDetailScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ListScreen from '../screens/ListScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ModuleMenuScreen from '../screens/ModuleMenuScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
+import OrderFormScreen from '../screens/OrderFormScreen';
 import PaymentFormScreen from '../screens/PaymentFormScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProductPickerScreen from '../screens/ProductPickerScreen';
 import QuotationDetailScreen from '../screens/QuotationDetailScreen';
 import QuotationFormScreen from '../screens/QuotationFormScreen';
+import ReportsScreen from '../screens/ReportsScreen';
 import OfflineSyncScreen from '../screens/OfflineSyncScreen';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
@@ -96,6 +100,8 @@ const MoreNavigator = () => (
   >
     <MoreStack.Screen name="MoreMenu" component={ModuleMenuScreen} options={{ headerShown: false }} />
     <MoreStack.Screen name="ModuleList" component={ListScreen} options={{ title: '' }} />
+    <MoreStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications & Alerts' }} />
+    <MoreStack.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports & Analytics' }} />
     <MoreStack.Screen name="OfflineSync" component={OfflineSyncScreen} options={{ title: 'Offline Outbox & Sync' }} />
   </MoreStack.Navigator>
 );
@@ -117,8 +123,12 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
+          <Stack.Screen name="CustomerForm" component={CustomerFormScreen} />
           <Stack.Screen name="BrandDetail" component={BrandDetailScreen} />
           <Stack.Screen name="QuotationForm" component={QuotationFormScreen} />
+          <Stack.Screen name="OrderForm" component={OrderFormScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="Reports" component={ReportsScreen} />
           <Stack.Screen name="ProductPicker" component={ProductPickerScreen} />
           <Stack.Screen name="QuotationDetail" component={QuotationDetailScreen} />
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />

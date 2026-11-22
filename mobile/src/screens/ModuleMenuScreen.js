@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
+  BarChart3,
+  Bell,
   Building2,
   CloudOff,
   CreditCard,
@@ -27,6 +29,24 @@ const modules = [
     roles: ['ADMIN', 'MANAGER', 'SALES']
   },
   { resource: 'quotations', title: 'Quotations', subtitle: 'Customer estimates and quote status', icon: FileText, roles: ['ADMIN', 'MANAGER', 'SALES'] },
+  {
+    resource: 'notifications',
+    title: 'Notifications & Alerts',
+    subtitle: 'Dispatch logs, retry failed alerts & triggers',
+    icon: Bell,
+    isDirectScreen: true,
+    screen: 'Notifications',
+    roles: ['ADMIN', 'MANAGER']
+  },
+  {
+    resource: 'reports',
+    title: 'Reports & Analytics',
+    subtitle: 'GST summaries, aging schedule & inventory health',
+    icon: BarChart3,
+    isDirectScreen: true,
+    screen: 'Reports',
+    roles: ['ADMIN', 'MANAGER']
+  },
   { resource: 'payments', title: 'Payments', subtitle: 'Customer payment records', icon: CreditCard, roles: ['ADMIN', 'MANAGER', 'SALES'] },
   { resource: 'distributors', title: 'Distributors', subtitle: 'Suppliers and outstanding balances', icon: Truck, roles: ['ADMIN', 'MANAGER'] },
   { resource: 'purchaseOrders', title: 'Purchase Orders', subtitle: 'Purchases from distributors', icon: ReceiptIndianRupee, roles: ['ADMIN', 'MANAGER'] },

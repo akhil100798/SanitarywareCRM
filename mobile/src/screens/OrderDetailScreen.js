@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +26,6 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const { user } = useAuth();
   const canAccessPayments = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
   const orderId = route.params?.id;
-  const refreshKey = route.params?.refreshKey;
   const [order, setOrder] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,9 +52,11 @@ const OrderDetailScreen = ({ route, navigation }) => {
     }
   }, [orderId, canAccessPayments]);
 
-  useEffect(() => {
-    loadOrder();
-  }, [loadOrder, refreshKey]);
+  useFocusEffect(
+    useCallback(() => {
+      loadOrder();
+    }, [loadOrder])
+  );
 
   const handleSendPaymentReceipt = async (paymentId) => {
     try {
@@ -152,7 +154,19 @@ const OrderDetailScreen = ({ route, navigation }) => {
           </View>
         </DetailSection>
 
-        <DetailSection title="Order Summary">
+        <DetailSection
+          title="Order Summary"
+          action={
+            ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role) ? (
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => navigation.navigate('OrderForm', { id: order.id })}
+              >
+                <Text style={styles.editBtnText}>Edit</Text>
+              </TouchableOpacity>
+            ) : null
+          }
+        >
           <FieldRow label="Customer" value={order.customerName} />
           <FieldRow label="Order Date" value={formatDate(order.orderDate)} />
           <FieldRow label="Order Status" value={order.status} />
@@ -403,6 +417,17 @@ const styles = StyleSheet.create({
   invoiceButtonText: {
     color: '#ffffff',
     fontSize: 13,
+    fontWeight: '800'
+  },
+  editBtn: {
+    backgroundColor: '#ccfbf1',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  editBtnText: {
+    color: colors.primary,
+    fontSize: 12,
     fontWeight: '800'
   }
 });
