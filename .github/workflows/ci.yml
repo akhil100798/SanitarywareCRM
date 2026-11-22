@@ -148,6 +148,11 @@ jobs:
           cd automation-tests
           npm run test:bughunt
 
+      - name: Seed Test Fixtures
+        run: |
+          cd automation-tests
+          npm run seed
+
       - name: Run Frontend E2E Tests
         run: |
           cd automation-tests
@@ -231,6 +236,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          scanners: 'vuln'
           trivyignores: '.trivyignore'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
