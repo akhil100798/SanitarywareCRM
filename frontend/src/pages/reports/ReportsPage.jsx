@@ -54,7 +54,7 @@ export const ReportsPage = () => {
         fetchReportData();
     }, [activeTab]);
 
-    const fetchReportData = async () => {
+    const fetchReportData = async (overrideFilters) => {
         if (activeTab === 'inventory-intelligence') {
             setData({});
             setLoading(false);
@@ -62,11 +62,12 @@ export const ReportsPage = () => {
         }
         setLoading(true);
         try {
+            const activeFilters = overrideFilters || filters;
             const params = {};
-            if (filters.startDate) params.startDate = filters.startDate;
-            if (filters.endDate) params.endDate = filters.endDate;
-            if (filters.status) params.status = filters.status;
-            if (filters.days) params.days = filters.days;
+            if (activeFilters.startDate) params.startDate = activeFilters.startDate;
+            if (activeFilters.endDate) params.endDate = activeFilters.endDate;
+            if (activeFilters.status) params.status = activeFilters.status;
+            if (activeFilters.days) params.days = activeFilters.days;
 
             let res;
             if (activeTab === 'sales') {
@@ -105,8 +106,9 @@ export const ReportsPage = () => {
     };
 
     const resetFilters = () => {
-        setFilters({ startDate: '', endDate: '', status: '', days: 90 });
-        setTimeout(() => fetchReportData(), 0);
+        const defaultFilters = { startDate: '', endDate: '', status: '', days: 90 };
+        setFilters(defaultFilters);
+        fetchReportData(defaultFilters);
     };
 
     const downloadBlob = (blobData, filename) => {
@@ -297,18 +299,23 @@ export const ReportsPage = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex overflow-x-auto gap-2 border-b border-slate-200 pb-2 scrollbar-none">
+            <div role="tablist" aria-label="Report modules" className="flex overflow-x-auto gap-2 border-b border-slate-200 pb-2 scrollbar-none">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
                         <button
                             key={tab.id}
+                            id={`tab-${tab.id}`}
+                            role="tab"
+                            aria-selected={isActive}
+                            aria-controls={`tabpanel-${tab.id}`}
+                            tabIndex={isActive ? 0 : -1}
                             onClick={() => {
                                 setActiveTab(tab.id);
                                 setData(null);
                             }}
-                            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${
+                            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-teal ${
                                 isActive
                                     ? 'bg-slate-900 text-white shadow-sm'
                                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -395,17 +402,19 @@ export const ReportsPage = () => {
             ) : (
                 <div className="space-y-6">
                     {/* Render per tab */}
-                    {activeTab === 'sales' && <SalesSummaryView data={data} />}
-                    {activeTab === 'gst' && <GstTaxSummaryView data={data} onExport={(fmt) => handleServerExport('gst', fmt)} exporting={exporting} />}
-                    {activeTab === 'aging' && <PaymentAgingView data={data} onExport={(fmt) => handleServerExport('aging', fmt)} exporting={exporting} />}
-                    {activeTab === 'dead-stock' && <DeadStockView data={data} />}
-                    {activeTab === 'brand-margins' && <BrandMarginView data={data} />}
-                    {activeTab === 'customer-outstanding' && <CustomerOutstandingView data={data} />}
-                    {activeTab === 'distributor-outstanding' && <DistributorOutstandingView data={data} />}
-                    {activeTab === 'payments' && <PaymentSummaryView data={data} />}
-                    {activeTab === 'purchases' && <PurchaseSummaryView data={data} />}
-                    {activeTab === 'inventory' && <InventorySummaryView data={data} />}
-                    {activeTab === 'inventory-intelligence' && <InventoryAnalyticsWidget />}
+                    <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
+                        {activeTab === 'sales' && <SalesSummaryView data={data} />}
+                        {activeTab === 'gst' && <GstTaxSummaryView data={data} onExport={(fmt) => handleServerExport('gst', fmt)} exporting={exporting} />}
+                        {activeTab === 'aging' && <PaymentAgingView data={data} onExport={(fmt) => handleServerExport('aging', fmt)} exporting={exporting} />}
+                        {activeTab === 'dead-stock' && <DeadStockView data={data} />}
+                        {activeTab === 'brand-margins' && <BrandMarginView data={data} />}
+                        {activeTab === 'customer-outstanding' && <CustomerOutstandingView data={data} />}
+                        {activeTab === 'distributor-outstanding' && <DistributorOutstandingView data={data} />}
+                        {activeTab === 'payments' && <PaymentSummaryView data={data} />}
+                        {activeTab === 'purchases' && <PurchaseSummaryView data={data} />}
+                        {activeTab === 'inventory' && <InventorySummaryView data={data} />}
+                        {activeTab === 'inventory-intelligence' && <InventoryAnalyticsWidget />}
+                    </div>
                 </div>
             )}
 
@@ -522,7 +531,7 @@ const GstTaxSummaryView = ({ data, onExport, exporting }) => (
                                 <td className="px-5 py-3.5 font-bold text-slate-900">{inv.invoiceNumber}</td>
                                 <td className="px-4 py-3.5 text-slate-600">{inv.invoiceDate}</td>
                                 <td className="px-5 py-3.5 font-medium">{inv.customerName}</td>
-                                <td className="px-4 py-3.5 font-mono text-xxs text-slate-600">{inv.customerGstin || 'URP'}</td>
+                                <td className="px-4 py-3.5 font-mono text-xs text-slate-600">{inv.customerGstin || 'URP'}</td>
                                 <td className="px-4 py-3.5 text-slate-600">{inv.placeOfSupply || '—'}</td>
                                 <td className="px-4 py-3.5 text-right">₹{Number(inv.taxableAmount || 0).toLocaleString('en-IN')}</td>
                                 <td className="px-4 py-3.5 text-right">₹{Number(inv.cgst || 0).toLocaleString('en-IN')}</td>
@@ -601,7 +610,7 @@ const PaymentAgingView = ({ data, onExport, exporting }) => (
                                 <tr key={c.customerId} className="hover:bg-slate-50/60 transition-colors">
                                     <td className="px-5 py-3.5">
                                         <span className="font-bold text-slate-900 block">{c.customerName}</span>
-                                        {c.company && <span className="text-xxs text-slate-500">{c.company}</span>}
+                                        {c.company && <span className="text-xs text-slate-500">{c.company}</span>}
                                     </td>
                                     <td className="px-4 py-3.5 text-slate-600">{c.phoneNumber}</td>
                                     <td className="px-4 py-3.5 text-right font-extrabold text-slate-900">
@@ -671,7 +680,7 @@ const DeadStockView = ({ data }) => (
                                     <td className="px-4 py-3.5 text-right font-extrabold text-rose-700">₹{Number(item.tiedUpCapital || 0).toLocaleString('en-IN')}</td>
                                     <td className="px-4 py-3.5 text-slate-600">{item.lastSaleDate || 'No Prior Sales'}</td>
                                     <td className="px-4 py-3.5 text-center">
-                                        <span className="px-2.5 py-0.5 rounded-full text-xxs font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
+                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
                                             {item.daysSinceLastSale != null ? `${item.daysSinceLastSale} days` : 'Permanent Dormant'}
                                         </span>
                                     </td>
@@ -774,7 +783,7 @@ const SalesSummaryView = ({ data }) => (
                                 <td className="px-6 py-3.5 text-right">₹{Number(o.discount || 0).toLocaleString('en-IN')}</td>
                                 <td className="px-6 py-3.5 text-right font-bold text-slate-900">₹{Number(o.total || 0).toLocaleString('en-IN')}</td>
                                 <td className="px-6 py-3.5 text-center">
-                                    <span className="px-2 py-0.5 rounded-full text-xxs font-extrabold uppercase bg-slate-100 text-slate-700">
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-extrabold uppercase bg-slate-100 text-slate-700">
                                         {o.status}
                                     </span>
                                 </td>
@@ -960,7 +969,7 @@ const PurchaseSummaryView = ({ data }) => (
                                 <td className="px-6 py-3.5 text-right text-emerald-700">₹{Number(po.paidAmount || 0).toLocaleString('en-IN')}</td>
                                 <td className="px-6 py-3.5 text-right font-bold text-rose-700">₹{Number(po.balanceAmount || 0).toLocaleString('en-IN')}</td>
                                 <td className="px-6 py-3.5 text-center">
-                                    <span className="px-2 py-0.5 rounded-full text-xxs font-extrabold uppercase bg-slate-100 text-slate-700">
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-extrabold uppercase bg-slate-100 text-slate-700">
                                         {po.status}
                                     </span>
                                 </td>

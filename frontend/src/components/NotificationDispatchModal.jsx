@@ -79,25 +79,25 @@ export const NotificationDispatchModal = ({ isOpen, onClose }) => {
         switch (status) {
             case 'SENT':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xxs font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <CheckCircle2 size={11} /> Sent
                     </span>
                 );
             case 'SIMULATED':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xxs font-extrabold uppercase bg-teal-50 text-teal-700 border border-teal-200">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase bg-teal-50 text-teal-700 border border-teal-200">
                         <Clock size={11} /> Simulated
                     </span>
                 );
             case 'FAILED':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xxs font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200">
                         <AlertCircle size={11} /> Failed
                     </span>
                 );
             default:
                 return (
-                    <span className="px-2.5 py-0.5 rounded-full text-xxs font-extrabold uppercase bg-slate-100 text-slate-700">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase bg-slate-100 text-slate-700">
                         {status}
                     </span>
                 );
@@ -210,7 +210,8 @@ export const NotificationDispatchModal = ({ isOpen, onClose }) => {
                             No notification dispatch logs recorded yet.
                         </div>
                     ) : (
-                        <table className="w-full text-left text-xs">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs min-w-[680px]">
                             <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100 sticky top-0">
                                 <tr>
                                     <th className="px-5 py-3">Timestamp</th>
@@ -225,7 +226,7 @@ export const NotificationDispatchModal = ({ isOpen, onClose }) => {
                             <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {logs.map((log) => (
                                     <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
-                                        <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 font-mono text-xxs">
+                                        <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 font-mono text-xs">
                                             {log.dispatchedAt ? new Date(log.dispatchedAt).toLocaleString('en-IN') : '—'}
                                         </td>
                                         <td className="px-4 py-3.5 font-bold text-slate-800">
@@ -234,16 +235,16 @@ export const NotificationDispatchModal = ({ isOpen, onClose }) => {
                                         <td className="px-4 py-3.5">
                                             <span className="font-semibold text-slate-900 block">{log.notificationType}</span>
                                             {log.subject && (
-                                                <span className="text-xxs text-slate-400 block truncate max-w-xs">{log.subject}</span>
+                                                <span className="text-xs text-slate-400 block truncate max-w-xs">{log.subject}</span>
                                             )}
                                         </td>
-                                        <td className="px-5 py-3.5 font-mono text-slate-600 text-xxs">
+                                        <td className="px-5 py-3.5 font-mono text-slate-600 text-xs">
                                             {log.recipient}
                                         </td>
                                         <td className="px-4 py-3.5 text-center">
                                             {getStatusBadge(log.deliveryStatus)}
                                             {log.errorMessage && (
-                                                <span className="text-xxs text-rose-600 block mt-0.5 truncate max-w-xs" title={log.errorMessage}>
+                                                <span className="text-xs text-rose-600 block mt-0.5 truncate max-w-xs" title={log.errorMessage}>
                                                     {log.errorMessage}
                                                 </span>
                                             )}
@@ -255,7 +256,7 @@ export const NotificationDispatchModal = ({ isOpen, onClose }) => {
                                             <button
                                                 onClick={() => handleRetry(log.id)}
                                                 disabled={retryingId === log.id}
-                                                className="inline-flex items-center gap-1 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-xxs shadow-sm transition-all disabled:opacity-50"
+                                                className="inline-flex items-center gap-1 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-xs shadow-sm transition-all disabled:opacity-50"
                                             >
                                                 <RefreshCw size={11} className={retryingId === log.id ? 'animate-spin' : ''} />
                                                 Retry
@@ -264,7 +265,8 @@ export const NotificationDispatchModal = ({ isOpen, onClose }) => {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                            </table>
+                        </div>
                     )}
                 </div>
 

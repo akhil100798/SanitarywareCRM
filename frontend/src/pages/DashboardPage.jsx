@@ -268,37 +268,46 @@ const DashboardPage = () => {
                     </div>
 
                     {/* Visual Bar Chart */}
-                    <div className="flex items-end justify-between h-40 pt-4 border-b border-slate-100 px-4">
-                        {!stats?.monthlyRevenue || Object.keys(stats.monthlyRevenue).length === 0 ? (
-                            <div className="w-full text-center text-slate-300 text-sm py-12">No monthly breakdown available</div>
-                        ) : (
-                            (() => {
-                                const entries = Object.entries(stats.monthlyRevenue);
-                                const maxVal = Math.max(...entries.map(([_, v]) => Math.abs(Number(v) || 0)), 1000);
-                                return entries.map(([month, val]) => {
-                                    const numVal = Number(val) || 0;
-                                    const isNegative = numVal < 0;
-                                    const pct = (Math.abs(numVal) / maxVal) * 100;
-                                    return (
-                                        <div key={month} className="flex flex-col items-center flex-1 group relative">
-                                            <div className={`absolute bottom-full mb-2 bg-slate-900 text-white text-xxs font-bold px-2.5 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20 ${isNegative ? 'border border-rose-500 text-rose-200' : ''}`}>
-                                                {isNegative
-                                                    ? `-₹${Math.abs(numVal).toLocaleString('en-IN')} (Net Return Adjustment)`
-                                                    : `₹${numVal.toLocaleString('en-IN')}`}
-                                            </div>
+                    <div className="overflow-x-auto">
+                        <div className="flex items-end justify-between h-40 pt-4 border-b border-slate-100 px-4 min-w-[360px]" role="region" aria-label="Monthly Revenue Comparison Chart">
+                            {!stats?.monthlyRevenue || Object.keys(stats.monthlyRevenue).length === 0 ? (
+                                <div className="w-full text-center text-slate-300 text-sm py-12">No monthly breakdown available</div>
+                            ) : (
+                                (() => {
+                                    const entries = Object.entries(stats.monthlyRevenue);
+                                    const maxVal = Math.max(...entries.map(([_, v]) => Math.abs(Number(v) || 0)), 1000);
+                                    return entries.map(([month, val]) => {
+                                        const numVal = Number(val) || 0;
+                                        const isNegative = numVal < 0;
+                                        const pct = (Math.abs(numVal) / maxVal) * 100;
+                                        const labelText = isNegative
+                                            ? `${month}: -₹${Math.abs(numVal).toLocaleString('en-IN')} (Net Return Adjustment)`
+                                            : `${month}: ₹${numVal.toLocaleString('en-IN')}`;
+                                        return (
                                             <div
-                                                className={`w-8 rounded-t-lg transition-all duration-1000 cursor-pointer ${isNegative
-                                                        ? 'bg-gradient-to-t from-rose-500/70 to-rose-500 hover:from-rose-500 hover:to-rose-400'
-                                                        : 'bg-gradient-to-t from-teal/60 to-teal rounded-t-lg hover:from-teal hover:to-teal-400'
-                                                    }`}
-                                                style={{ height: `${Math.max(pct, 5)}%` }}
-                                            ></div>
-                                            <span className={`text-[10px] font-bold uppercase mt-2 ${isNegative ? 'text-rose-600' : 'text-slate-600'}`}>{month.slice(0, 3)}</span>
-                                        </div>
-                                    );
-                                });
-                            })()
-                        )}
+                                                key={month}
+                                                className="flex flex-col items-center flex-1 group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-teal rounded"
+                                                tabIndex={0}
+                                                role="img"
+                                                aria-label={labelText}
+                                            >
+                                                <div className={`absolute bottom-full mb-2 bg-slate-900 text-white text-xs font-bold px-2.5 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-visible:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20 ${isNegative ? 'border border-rose-500 text-rose-200' : ''}`}>
+                                                    {labelText}
+                                                </div>
+                                                <div
+                                                    className={`w-8 rounded-t-lg transition-all duration-1000 cursor-pointer ${isNegative
+                                                            ? 'bg-gradient-to-t from-rose-500/70 to-rose-500 hover:from-rose-500 hover:to-rose-400'
+                                                            : 'bg-gradient-to-t from-teal/60 to-teal rounded-t-lg hover:from-teal hover:to-teal-400'
+                                                        }`}
+                                                    style={{ height: `${Math.max(pct, 5)}%` }}
+                                                ></div>
+                                                <span className={`text-[10px] font-bold uppercase mt-2 ${isNegative ? 'text-rose-600' : 'text-slate-600'}`}>{month.slice(0, 3)}</span>
+                                            </div>
+                                        );
+                                    });
+                                })()
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>}
@@ -383,9 +392,10 @@ const DashboardPage = () => {
                             </div>
                         ) : (
                             stats.recentOrders.slice(0, 4).map((order) => (
-                                <div
+                                <button
                                     key={order.id}
-                                    className="flex items-center justify-between p-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                    type="button"
+                                    className="w-full flex items-center justify-between p-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50/50 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-teal cursor-pointer"
                                     onClick={() => navigate(canManageSales ? `/orders/edit/${order.id}` : '/orders')}
                                 >
                                     <div className="flex items-center space-x-3.5">
@@ -408,7 +418,7 @@ const DashboardPage = () => {
                                             {order.status}
                                         </span>
                                     </div>
-                                </div>
+                                </button>
                             ))
                         )}
                     </div>
@@ -425,7 +435,7 @@ const DashboardPage = () => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                    <tr className="border-b border-slate-100 text-slate-600 text-xxs font-bold uppercase tracking-wider">
+                                    <tr className="border-b border-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider">
                                         <th className="py-3 font-semibold">Product Name</th>
                                         <th className="py-3 font-semibold text-right">Units Sold</th>
                                         <th className="py-3 font-semibold text-right">Total Revenue</th>

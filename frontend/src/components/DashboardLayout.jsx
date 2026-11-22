@@ -19,13 +19,22 @@ import {
     CreditCard,
     Droplet,
     ShieldCheck,
-    Sun,
-    Moon
 } from 'lucide-react';
-const Sidebar = ({ isOpen, setIsOpen }) => {
+
+const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
+
+    React.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, setIsOpen]);
 
     const handleLogout = async () => {
         try {
@@ -69,6 +78,10 @@ import {
 
             {/* Sidebar */}
             <aside
+                id="mobile-sidebar-drawer"
+                role={isOpen ? 'dialog' : undefined}
+                aria-modal={isOpen ? 'true' : undefined}
+                aria-label={isOpen ? 'Navigation drawer' : 'Sidebar navigation'}
                 className={`fixed top-0 left-0 z-50 h-full w-64 bg-slate-900 text-slate-100 border-r border-slate-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
@@ -84,7 +97,11 @@ import {
                             </span>
                         </Link>
                         <button
+                            type="button"
                             onClick={() => setIsOpen(false)}
+                            aria-label="Close navigation menu"
+                            aria-expanded={isOpen}
+                            aria-controls="mobile-sidebar-drawer"
                             className="lg:hidden p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
                         >
                             <X size={20} />
@@ -99,7 +116,7 @@ import {
                             </div>
                             <div className="overflow-hidden">
                                 <p className="font-semibold text-slate-200 truncate text-sm">{user?.fullName}</p>
-                                <span className="inline-block mt-0.5 text-xxs font-extrabold tracking-wider bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md uppercase">
+                                <span className="inline-block mt-0.5 text-xs font-extrabold tracking-wider bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md uppercase">
                                     {user?.role}
                                 </span>
                             </div>
@@ -152,7 +169,6 @@ import {
 const DashboardLayout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
     const [dbHealthy, setDbHealthy] = React.useState(true);
-    const [isDark, setIsDark] = React.useState(() => localStorage.getItem('theme') === 'dark');
     const location = useLocation();
 
     React.useEffect(() => {
@@ -169,13 +185,6 @@ const DashboardLayout = ({ children }) => {
         const timer = setInterval(checkHealth, 30000);
         return () => clearInterval(timer);
     }, []);
-
-    const toggleTheme = () => {
-        const next = !isDark;
-        setIsDark(next);
-        localStorage.setItem('theme', next ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', next);
-    };
 
     // Map pathname to friendly header title
     const getPageTitle = () => {
@@ -206,7 +215,11 @@ const DashboardLayout = ({ children }) => {
                     <div className="flex items-center justify-between px-6 py-4.5">
                         <div className="flex items-center space-x-3">
                             <button
+                                type="button"
                                 onClick={() => setSidebarOpen(true)}
+                                aria-label="Open navigation menu"
+                                aria-expanded={sidebarOpen}
+                                aria-controls="mobile-sidebar-drawer"
                                 className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-all active:scale-95"
                             >
                                 <Menu size={20} />
@@ -218,14 +231,6 @@ const DashboardLayout = ({ children }) => {
                                 <span className={`w-1.5 h-1.5 rounded-full ${dbHealthy ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
                                 <span>{dbHealthy ? 'Live Database Connection' : 'Database Disconnected / Offline'}</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={toggleTheme}
-                                className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                                title="Toggle Theme / High Contrast"
-                            >
-                                {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                            </button>
                             <span className="text-xs font-semibold text-slate-500">Operations workspace</span>
                         </div>
                     </div>

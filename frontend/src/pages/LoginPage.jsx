@@ -37,7 +37,7 @@ const LoginPage = () => {
             <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-teal/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-[35rem] h-[35rem] bg-blue-600/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
 
-            <div className="bg-slate-900 border border-slate-800 p-8.5 rounded-3xl shadow-2xl w-full max-w-md relative z-10 transition-all duration-300">
+            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-md relative z-10 transition-all duration-300">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center bg-teal p-3.5 rounded-2xl text-white shadow-xl shadow-teal/20 mb-4">
                         <Droplet size={28} className="fill-current" />
@@ -47,7 +47,7 @@ const LoginPage = () => {
                 </div>
 
                 {errorMsg && (
-                    <div className="error-message mb-6 p-4 bg-red-950/40 border border-red-900/50 text-red-300 rounded-2xl text-center text-xs font-semibold">
+                    <div role="alert" aria-live="polite" className="error-message mb-6 p-4 bg-red-950/40 border border-red-900/50 text-red-300 rounded-2xl text-center text-xs font-semibold">
                         {errorMsg}
                     </div>
                 )}

@@ -71,7 +71,7 @@ describe('ReportsPage P3 Modules', () => {
         render(<ReportsPage />);
 
         // Switch to GST tab
-        const gstTab = screen.getByRole('button', { name: /gst tax summary/i });
+        const gstTab = screen.getByRole('tab', { name: /gst tax summary/i });
         fireEvent.click(gstTab);
 
         await waitFor(() => {
@@ -118,7 +118,7 @@ describe('ReportsPage P3 Modules', () => {
 
         render(<ReportsPage />);
 
-        const agingTab = screen.getByRole('button', { name: /payment aging buckets/i });
+        const agingTab = screen.getByRole('tab', { name: /payment aging buckets/i });
         fireEvent.click(agingTab);
 
         await waitFor(() => {
@@ -159,7 +159,7 @@ describe('ReportsPage P3 Modules', () => {
 
         render(<ReportsPage />);
 
-        const deadStockTab = screen.getByRole('button', { name: /dead-stock/i });
+        const deadStockTab = screen.getByRole('tab', { name: /dead-stock/i });
         fireEvent.click(deadStockTab);
 
         await waitFor(() => {
@@ -197,7 +197,7 @@ describe('ReportsPage P3 Modules', () => {
 
         render(<ReportsPage />);
 
-        const brandMarginsTab = screen.getByRole('button', { name: /brand gross margins/i });
+        const brandMarginsTab = screen.getByRole('tab', { name: /brand gross margins/i });
         fireEvent.click(brandMarginsTab);
 
         await waitFor(() => {
