@@ -4,6 +4,27 @@ const { OrderPage } = require('../pages/OrderPage');
 
 test.describe('Frontend Orders E2E Suite', () => {
 
+  test.beforeAll(async () => {
+    const { getAdminToken } = require('../../api/helpers/authHelper');
+    const { getClient } = require('../../api/helpers/apiClient');
+    const token = await getAdminToken();
+    const client = await getClient(token);
+    const existingOrders = await client.get('/api/orders');
+    const ordersData = await existingOrders.json();
+    const orderList = ordersData.content || ordersData;
+    if (!orderList || orderList.length === 0) {
+      const qRes = await client.post('/api/quotations', {
+        data: {
+          customerId: 1,
+          items: [{ productId: 1, quantity: 2, unitPrice: 220 }]
+        }
+      });
+      const quote = await qRes.json();
+      await client.patch(`/api/quotations/${quote.id}/status`, { params: { status: 'ACCEPTED' } });
+      await client.post(`/api/orders/from-quotation/${quote.id}`);
+    }
+  });
+
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.navigate();

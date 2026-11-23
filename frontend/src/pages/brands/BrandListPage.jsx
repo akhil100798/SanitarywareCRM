@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ArrowLeft, Tag, History, FileText, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ArrowLeft, Tag, History, X } from 'lucide-react';
 import { brandService } from '../../services/productService';
 import toast from 'react-hot-toast';
 import BrandFormModal from './BrandFormModal';

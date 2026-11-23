@@ -20,4 +20,16 @@ public interface ReportService {
     ReportDTO.PurchaseSummaryReport getPurchaseSummary(LocalDate startDate, LocalDate endDate, Long distributorId, PurchaseOrder.POStatus status);
 
     ReportDTO.InventorySummaryReport getInventorySummary(Long categoryId, Long brandId);
+
+    ReportDTO.GstTaxSummaryReport getGstTaxSummary(LocalDate startDate, LocalDate endDate);
+
+    byte[] exportGstTaxSummary(LocalDate startDate, LocalDate endDate, String format);
+
+    ReportDTO.PaymentAgingReport getPaymentAgingReport(String customerType);
+
+    byte[] exportPaymentAgingReport(String customerType, String format);
+
+    ReportDTO.DeadStockReport getDeadStockReport(Integer dormantDaysThreshold);
+
+    ReportDTO.BrandMarginReport getBrandMarginReport(LocalDate startDate, LocalDate endDate);
 }

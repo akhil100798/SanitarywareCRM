@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +26,6 @@ const OrderDetailScreen = ({ route, navigation }) => {
   const { user } = useAuth();
   const canAccessPayments = ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role);
   const orderId = route.params?.id;
-  const refreshKey = route.params?.refreshKey;
   const [order, setOrder] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,9 +52,11 @@ const OrderDetailScreen = ({ route, navigation }) => {
     }
   }, [orderId, canAccessPayments]);
 
-  useEffect(() => {
-    loadOrder();
-  }, [loadOrder, refreshKey]);
+  useFocusEffect(
+    useCallback(() => {
+      loadOrder();
+    }, [loadOrder])
+  );
 
   const handleSendPaymentReceipt = async (paymentId) => {
     try {
@@ -152,67 +154,79 @@ const OrderDetailScreen = ({ route, navigation }) => {
           </View>
         </DetailSection>
 
-        <DetailSection title="Order Summary">
-          <FieldRow label="Customer" value={order.customerName} />
-          <FieldRow label="Order Date" value={formatDate(order.orderDate)} />
-          <FieldRow label="Order Status" value={order.status} />
-          {canAccessPayments && <FieldRow label="Payment Status" value={order.paymentStatus} />}
-        </DetailSection>
+          <DetailSection
+            title="Order Summary"
+            action={
+              ['ADMIN', 'MANAGER', 'SALES'].includes(user?.role) ? (
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => navigation.navigate('OrderForm', { id: order.id })}
+                >
+                  <Text style={styles.editBtnText}>Edit</Text>
+                </TouchableOpacity>
+              ) : null
+            }
+          >
+            <FieldRow label="Customer" value={order.customerName} />
+            <FieldRow label="Order Date" value={formatDate(order.orderDate)} />
+            <FieldRow label="Order Status" value={order.status} />
+            {canAccessPayments && <FieldRow label="Payment Status" value={order.paymentStatus} />}
+          </DetailSection>
 
-        <DetailSection title="Line Items">
-          {(order.items || []).map((item) => (
-            <View key={item.id || `${item.productId}-${item.productName}`} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.productName}</Text>
-              <Text style={styles.itemMeta}>
-                {item.quantity} x {formatMoney(item.unitPrice)} | Disc {item.discountPercentage || 0}%
-              </Text>
-              <Text style={styles.itemTotal}>{formatMoney(item.lineTotal)}</Text>
-            </View>
-          ))}
-        </DetailSection>
-
-        {canAccessPayments && <DetailSection title="Payment Summary">
-          <View style={styles.totalRow}><Text>Subtotal</Text><Text>{formatMoney(order.subtotal)}</Text></View>
-          <View style={styles.totalRow}><Text>Total</Text><Text>{formatMoney(order.total)}</Text></View>
-          <View style={styles.totalRow}><Text>Paid</Text><Text>{formatMoney(order.paidAmount)}</Text></View>
-          <View style={styles.grandRow}><Text style={styles.grandText}>Balance</Text><Text style={styles.grandText}>{formatMoney(order.balanceAmount)}</Text></View>
-        </DetailSection>}
-
-        {canAccessPayments && <DetailSection title="Payment History">
-          {payments.length ? (
-            payments.map((payment) => (
-              <View key={payment.id} style={styles.paymentRow}>
-                <View style={styles.paymentInfo}>
-                  <Text style={styles.paymentTitle}>{payment.paymentNumber || `Payment #${payment.id}`}</Text>
-                  <Text style={styles.paymentMeta}>
-                    {formatDate(payment.paymentDate)} | {payment.paymentMethod}
-                  </Text>
-                  {payment.referenceNumber ? (
-                    <Text style={styles.paymentRef}>Ref: {payment.referenceNumber}</Text>
-                  ) : null}
-                </View>
-                <View style={styles.paymentRight}>
-                  <Text style={styles.paymentAmount}>{formatMoney(payment.amount)}</Text>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel={`Send WhatsApp receipt for payment ${payment.paymentNumber || payment.id}`}
-                    style={[styles.receiptButton, sendingReceiptId === payment.id && styles.receiptButtonDisabled]}
-                    onPress={() => handleSendPaymentReceipt(payment.id)}
-                    disabled={sendingReceiptId === payment.id}
-                  >
-                    {sendingReceiptId === payment.id ? (
-                      <ActivityIndicator size="small" color="#16a34a" />
-                    ) : (
-                      <Text style={styles.receiptButtonText}>WhatsApp Receipt</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+          <DetailSection title="Line Items">
+            {(order.items || []).map((item) => (
+              <View key={item.id || `${item.productId}-${item.productName}`} style={styles.itemRow}>
+                <Text style={styles.itemName}>{item.productName}</Text>
+                <Text style={styles.itemMeta}>
+                  {item.quantity} x {formatMoney(item.unitPrice)} | Disc {item.discountPercentage || 0}%
+                </Text>
+                <Text style={styles.itemTotal}>{formatMoney(item.lineTotal)}</Text>
               </View>
-            ))
-          ) : (
-            <EmptyView title="No payments recorded" message="Record a payment when the customer pays." />
-          )}
-        </DetailSection>}
+            ))}
+          </DetailSection>
+
+          {canAccessPayments && <DetailSection title="Payment Summary">
+            <View style={styles.totalRow}><Text>Subtotal</Text><Text>{formatMoney(order.subtotal)}</Text></View>
+            <View style={styles.totalRow}><Text>Total</Text><Text>{formatMoney(order.total)}</Text></View>
+            <View style={styles.totalRow}><Text>Paid</Text><Text>{formatMoney(order.paidAmount)}</Text></View>
+            <View style={styles.grandRow}><Text style={styles.grandText}>Balance</Text><Text style={styles.grandText}>{formatMoney(order.balanceAmount)}</Text></View>
+          </DetailSection>}
+
+          {canAccessPayments && <DetailSection title="Payment History">
+            {payments.length ? (
+              payments.map((payment) => (
+                <View key={payment.id} style={styles.paymentRow}>
+                  <View style={styles.paymentInfo}>
+                    <Text style={styles.paymentTitle}>{payment.paymentNumber || `Payment #${payment.id}`}</Text>
+                    <Text style={styles.paymentMeta}>
+                      {formatDate(payment.paymentDate)} | {payment.paymentMethod}
+                    </Text>
+                    {payment.referenceNumber ? (
+                      <Text style={styles.paymentRef}>Ref: {payment.referenceNumber}</Text>
+                    ) : null}
+                  </View>
+                  <View style={styles.paymentRight}>
+                    <Text style={styles.paymentAmount}>{formatMoney(payment.amount)}</Text>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={`Send WhatsApp receipt for payment ${payment.paymentNumber || payment.id}`}
+                      style={[styles.receiptButton, sendingReceiptId === payment.id && styles.receiptButtonDisabled]}
+                      onPress={() => handleSendPaymentReceipt(payment.id)}
+                      disabled={sendingReceiptId === payment.id}
+                    >
+                      {sendingReceiptId === payment.id ? (
+                        <ActivityIndicator size="small" color="#16a34a" />
+                      ) : (
+                        <Text style={styles.receiptButtonText}>WhatsApp Receipt</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <EmptyView title="No payments recorded" message="Record a payment when the customer pays." />
+            )}
+          </DetailSection>}
       </ScrollView>
       <PrimaryActionBar
         label={canAccessPayments ? 'Record Payment' : 'Refresh'}
@@ -403,6 +417,17 @@ const styles = StyleSheet.create({
   invoiceButtonText: {
     color: '#ffffff',
     fontSize: 13,
+    fontWeight: '800'
+  },
+  editBtn: {
+    backgroundColor: '#ccfbf1',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  editBtnText: {
+    color: colors.primary,
+    fontSize: 12,
     fontWeight: '800'
   }
 });

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, CreditCard, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, CreditCard } from 'lucide-react';
 import paymentService from '../../services/paymentService';
 import orderService from '../../services/orderService';
 import toast from 'react-hot-toast';

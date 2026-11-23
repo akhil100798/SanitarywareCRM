@@ -11,7 +11,7 @@ const clearSession = () => {
 
 const withoutToken = (user) => {
     if (!user || typeof user !== 'object') return user;
-    const { token, ...safeUser } = user;
+    const { token: _token, ...safeUser } = user;
     return safeUser;
 };
 

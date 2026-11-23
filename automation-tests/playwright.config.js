@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const bugHuntRequested = process.argv.some((argument) => argument.includes('bug-hunt'));
 const matrixRequested = process.argv.some((argument) => argument.includes('matrix'));
-const releaseSpecMatch = /(?:api|frontend|security|database)[\\/]specs[\\/].*\.spec\.js/;
+const releaseSpecMatch = /(?:api|frontend|security|database|accessibility)[\\/]specs[\\/].*\.spec\.js/;
 const bugHuntSpecMatch = /(?:api|frontend|security)[\\/]bug-hunt[\\/].*\.spec\.js/;
 const frontendMatrixSpecMatch = /frontend[\\/]matrix[\\/].*\.spec\.js/;
 const mobileMatrixSpecMatch = /mobile[\\/]matrix[\\/].*\.spec\.js/;
@@ -19,7 +19,7 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [['html', { outputFolder: 'reports' }]],
   webServer: {
-    command: 'cmd.exe /c "set NODE_OPTIONS=--max-old-space-size=4096 && npm run dev -- --host 127.0.0.1"',
+    command: 'npm run dev -- --host 127.0.0.1',
     cwd: path.resolve(__dirname, '../frontend'),
     url: process.env.FRONTEND_BASE_URL || 'http://127.0.0.1:5173',
     reuseExistingServer: true,

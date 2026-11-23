@@ -26,6 +26,9 @@ mobile/android/
 uploads/
 *.png
 *.xml
+!pom.xml
+!**/pom.xml
+!backend/src/main/resources/logback-spring.xml
 
 # Playwright / test outputs
 automation-tests/test-results/

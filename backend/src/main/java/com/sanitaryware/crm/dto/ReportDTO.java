@@ -180,4 +180,137 @@ public class ReportDTO {
         private BigDecimal totalValue;
         private boolean isLowStock;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GstTaxSummaryReport {
+        private BigDecimal totalTaxableAmount;
+        private BigDecimal totalCgst;
+        private BigDecimal totalSgst;
+        private BigDecimal totalIgst;
+        private BigDecimal totalTax;
+        private BigDecimal totalInvoiceAmount;
+        private long totalInvoices;
+        private List<GstHsnBreakdown> hsnBreakdowns;
+        private List<GstInvoiceItem> invoices;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GstHsnBreakdown {
+        private String hsnCode;
+        private String description;
+        private BigDecimal taxRate;
+        private BigDecimal taxableAmount;
+        private BigDecimal cgstAmount;
+        private BigDecimal sgstAmount;
+        private BigDecimal igstAmount;
+        private BigDecimal totalTax;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GstInvoiceItem {
+        private String invoiceNumber;
+        private LocalDate invoiceDate;
+        private String customerName;
+        private String gstin;
+        private BigDecimal taxableAmount;
+        private BigDecimal cgstAmount;
+        private BigDecimal sgstAmount;
+        private BigDecimal igstAmount;
+        private BigDecimal totalTax;
+        private BigDecimal invoiceTotal;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PaymentAgingReport {
+        private BigDecimal totalOutstanding;
+        private long totalCustomers;
+        private BigDecimal bucket0To30;
+        private BigDecimal bucket31To60;
+        private BigDecimal bucket61To90;
+        private BigDecimal bucket90Plus;
+        private List<CustomerAgingItem> items;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CustomerAgingItem {
+        private Long customerId;
+        private String customerName;
+        private String phoneNumber;
+        private String customerType;
+        private BigDecimal totalOutstanding;
+        private BigDecimal bucket0To30;
+        private BigDecimal bucket31To60;
+        private BigDecimal bucket61To90;
+        private BigDecimal bucket90Plus;
+        private LocalDate oldestUnpaidInvoiceDate;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DeadStockReport {
+        private long totalDormantProducts;
+        private long totalDormantStock;
+        private BigDecimal totalDormantValue;
+        private List<DeadStockItem> items;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DeadStockItem {
+        private Long productId;
+        private String productName;
+        private String sku;
+        private String brandName;
+        private String categoryName;
+        private int currentStock;
+        private BigDecimal unitPrice;
+        private BigDecimal stockValue;
+        private LocalDate lastSaleDate;
+        private long daysDormant;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BrandMarginReport {
+        private BigDecimal totalRevenue;
+        private BigDecimal totalCost;
+        private BigDecimal totalGrossMargin;
+        private BigDecimal overallMarginPercentage;
+        private List<BrandMarginItem> items;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BrandMarginItem {
+        private Long brandId;
+        private String brandName;
+        private long unitsSold;
+        private BigDecimal revenue;
+        private BigDecimal costOfGoodsSold;
+        private BigDecimal grossMargin;
+        private BigDecimal marginPercentage;
+    }
 }

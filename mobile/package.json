@@ -13,8 +13,8 @@
     "clean:android": "node scripts/android-build-env.mjs gradle clean",
     "ui:smoke": "node scripts/ui-smoke-test.mjs",
     "web": "expo start --web --port 8082",
-    "lint": "eslint .",
-    "test": "node --test src/utils/*.test.mjs"
+    "lint": "eslint . --max-warnings=0",
+    "test": "node --test src/utils/*.test.mjs src/api/*.test.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",

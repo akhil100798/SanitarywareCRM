@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Building2, Phone, MapPin } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
 import { useAuthStore } from '../../store/authStore';

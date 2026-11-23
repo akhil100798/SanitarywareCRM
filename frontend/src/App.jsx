@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import CustomerListPage from './pages/customers/CustomerListPage';
 import CustomerFormPage from './pages/customers/CustomerFormPage';
 import QuotationListPage from './pages/quotations/QuotationListPage';
@@ -25,15 +26,15 @@ import PurchaseOrderListPage from './pages/purchase-orders/PurchaseOrderListPage
 import DistributorPaymentListPage from './pages/distributor-payments/DistributorPaymentListPage';
 import DistributorPaymentFormPage from './pages/distributor-payments/DistributorPaymentFormPage';
 
+import ProductListPage from './pages/products/ProductListPage';
+import ReportsPage from './pages/reports/ReportsPage';
+import AuditLogsPage from './pages/audit/AuditLogsPage';
 import './index.css';
 
-const ProductListPage = lazy(() => import('./pages/products/ProductListPage'));
 const ProductFormPage = lazy(() => import('./pages/products/ProductFormPage'));
 const QuotationFormPage = lazy(() => import('./pages/quotations/QuotationFormPage'));
 const OrderFormPage = lazy(() => import('./pages/orders/OrderFormPage'));
 const PurchaseOrderFormPage = lazy(() => import('./pages/purchase-orders/PurchaseOrderFormPage'));
-const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
-const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage'));
 const UserManagementPage = lazy(() => import('./pages/users/UserManagementPage'));
 const CustomerPortalPage = lazy(() => import('./pages/portal/CustomerPortalPage'));
 
@@ -55,8 +56,9 @@ function App() {
     return (
         <>
             <Router>
-                <Suspense fallback={<div role="status" className="p-8 text-center text-slate-500">Loading page...</div>}>
-                <Routes>
+                <ErrorBoundary>
+                    <Suspense fallback={<div role="status" className="p-8 text-center text-slate-500">Loading page...</div>}>
+                        <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/portal/quotations/:token" element={<CustomerPortalPage />} />
@@ -232,8 +234,9 @@ function App() {
                     />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-                </Suspense>
+                    </Routes>
+                    </Suspense>
+                </ErrorBoundary>
             </Router>
             <ToastLimiter limit={3} />
             <Toaster

@@ -3,6 +3,8 @@ package com.sanitaryware.crm.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sanitaryware.crm.dto.QuotationDTO;
 import com.sanitaryware.crm.exception.GlobalExceptionHandler;
+import com.sanitaryware.crm.security.PortalRateLimiter;
+import com.sanitaryware.crm.security.TooManyRequestsException;
 import com.sanitaryware.crm.service.QuotationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,6 +36,9 @@ class CustomerPortalControllerTest {
 
     @Mock
     private QuotationService quotationService;
+
+    @Mock
+    private PortalRateLimiter portalRateLimiter;
 
     @InjectMocks
     private CustomerPortalController customerPortalController;
@@ -104,5 +111,16 @@ class CustomerPortalControllerTest {
                 .andExpect(jsonPath("$.status").value("ACCEPTED"));
 
         verify(quotationService).acceptQuotationByShareToken("token-abc-123");
+    }
+
+    @Test
+    @DisplayName("GET /api/portal/quotations/{token} returns 429 when rate limit is exceeded")
+    void testRateLimitExceededReturns429() throws Exception {
+        doThrow(new TooManyRequestsException()).when(portalRateLimiter).checkAllowed(anyString());
+
+        mockMvc.perform(get("/api/portal/quotations/token-abc-123")
+                        .header("X-Forwarded-For", "203.0.113.195"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429));
     }
 }

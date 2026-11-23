@@ -1,0 +1,43 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-dependencies:
+        patterns:
+          - "org.springframework*"
+          - "com.fasterxml.jackson*"
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+    groups:
+      mobile-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "npm"
+    directory: "/automation-tests"
+    schedule:
+      interval: "weekly"
+    groups:
+      automation-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"

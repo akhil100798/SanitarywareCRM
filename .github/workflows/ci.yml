@@ -62,7 +62,12 @@ jobs:
           cd frontend
           npm ci
 
-      - name: Build Frontend (Vite Production)
+      - name: Lint Frontend
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Test and Build Frontend (Vite Production)
         run: |
           cd frontend
           npm test
@@ -111,14 +116,17 @@ jobs:
           cd backend
           mvn package -DskipTests
           java -jar target/crm-backend-1.0.0.jar --spring.profiles.active=qa &
-          sleep 15
+          curl --fail --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:8081/api/health
+        env:
+          DATABASE_PASSWORD: ""
+          JWT_SECRET: "qa-only-change-me-qa-only-change-me-256-bit-secret"
 
       - name: Start Frontend Server
         run: |
           cd frontend
           npm ci
-          npm run dev -- --host 0.0.0.0 --port 5173 &
-          sleep 5
+          npm run dev -- --host 127.0.0.1 --port 5173 &
+          curl --fail --retry 30 --retry-delay 1 --retry-connrefused http://127.0.0.1:5173
 
       - name: Run Database Tests
         run: |
@@ -140,10 +148,20 @@ jobs:
           cd automation-tests
           npm run test:bughunt
 
+      - name: Seed Test Fixtures
+        run: |
+          cd automation-tests
+          npm run seed
+
       - name: Run Frontend E2E Tests
         run: |
           cd automation-tests
           npm run test:frontend
+
+      - name: Run Accessibility Smoke Tests
+        run: |
+          cd automation-tests
+          npm run test:a11y
 
       - name: Archive Playwright Reports
         if: always()
@@ -190,3 +208,77 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
           CI: "true"
+
+  security-and-vulnerability-scan:
+    name: Security & Vulnerability Scanning (Trivy & Audits)
+    runs-on: ubuntu-latest
+    needs: [backend-build-and-test]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Resolve Backend Maven Dependencies from Cache
+        run: |
+          cd backend
+          mvn -B dependency:resolve
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: NPM Security Audits
+        run: |
+          echo "Auditing frontend dependencies..."
+          cd frontend && npm audit --audit-level=high || true
+          echo "Auditing mobile dependencies..."
+          cd ../mobile && npm audit --audit-level=high || true
+          echo "Auditing automation-tests dependencies..."
+          cd ../automation-tests && npm audit --audit-level=high || true
+
+      - name: Run Trivy Filesystem Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'vuln'
+          trivyignores: '.trivyignore'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+
+      - name: Build Docker Images for Scanning
+        run: |
+          docker build -t sanitarywarecrm-backend:latest ./backend
+          docker build -t sanitarywarecrm-frontend:latest ./frontend
+
+      - name: Run Trivy Docker Image Scanner (Backend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'sanitarywarecrm-backend:latest'
+          scanners: 'vuln'
+          trivyignores: '.trivyignore'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+
+      - name: Run Trivy Docker Image Scanner (Frontend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'sanitarywarecrm-frontend:latest'
+          scanners: 'vuln'
+          trivyignores: '.trivyignore'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'

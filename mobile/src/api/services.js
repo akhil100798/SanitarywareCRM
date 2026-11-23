@@ -243,6 +243,16 @@ export const customerService = {
     return response.data;
   },
 
+  async update(customerId, payload) {
+    const response = await api.put(`/customers/${customerId}`, payload);
+    return response.data;
+  },
+
+  async getActive() {
+    const response = await api.get('/customers/active');
+    return unwrapPage(response.data);
+  },
+
   async getQuotations(customerId) {
     const response = await api.get(`/quotations/customer/${customerId}`);
     return unwrapPage(response.data);
@@ -363,6 +373,21 @@ export const orderService = {
     return response.data;
   },
 
+  async create(payload) {
+    const response = await api.post('/orders', payload);
+    return response.data;
+  },
+
+  async update(orderId, payload) {
+    const response = await api.put(`/orders/${orderId}`, payload);
+    return response.data;
+  },
+
+  async getAll(params = { size: 50, sort: 'id,desc' }) {
+    const response = await api.get('/orders', { params });
+    return unwrapPage(response.data);
+  },
+
   async createFromQuotation(quotationId) {
     const response = await api.post(`/orders/from-quotation/${quotationId}`);
     return response.data;
@@ -462,5 +487,49 @@ export const inventoryAnalyticsService = {
   async getReorderSuggestions() {
     const response = await api.get('/inventory-analytics/reorder-suggestions');
     return unwrapPage(response.data);
+  }
+};
+
+export const notificationService = {
+  async getDispatchLogs(params = {}) {
+    const response = await api.get('/notifications/logs', { params });
+    return response.data;
+  },
+
+  async retryDispatch(id) {
+    const response = await api.post(`/notifications/retry/${id}`);
+    return response.data;
+  },
+
+  async triggerLowStock() {
+    const response = await api.post('/notifications/trigger/low-stock');
+    return response.data;
+  },
+
+  async triggerPaymentDue() {
+    const response = await api.post('/notifications/trigger/payment-due');
+    return response.data;
+  }
+};
+
+export const reportService = {
+  async getGstTaxSummary(params = {}) {
+    const response = await api.get('/reports/gst-summary', { params });
+    return response.data;
+  },
+
+  async getPaymentAging(params = {}) {
+    const response = await api.get('/reports/payment-aging', { params });
+    return response.data;
+  },
+
+  async getDeadStock(params = {}) {
+    const response = await api.get('/reports/dead-stock', { params });
+    return response.data;
+  },
+
+  async getBrandMargins(params = {}) {
+    const response = await api.get('/reports/brand-margins', { params });
+    return response.data;
   }
 };

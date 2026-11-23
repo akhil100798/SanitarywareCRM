@@ -21,7 +21,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
     return (
         <DashboardLayout>
-            {children}
+            <React.Suspense fallback={<div role="status" className="p-8 text-center text-slate-500">Loading page...</div>}>
+                {children}
+            </React.Suspense>
         </DashboardLayout>
     );
 };

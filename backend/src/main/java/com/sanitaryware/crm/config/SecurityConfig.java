@@ -70,6 +70,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                         .requestMatchers("/api/health").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/prometheus", "/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/api/portal/**").permitAll()
                         .requestMatchers("/api/files/download/products/**").permitAll()
                         .anyRequest().authenticated()

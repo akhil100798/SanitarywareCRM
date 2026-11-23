@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2, ShoppingCart, Truck, CreditCard, Search, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Truck, CreditCard, Search, X } from 'lucide-react';
 import orderService from '../../services/orderService';
 import quotationService from '../../services/quotationService';
 import customerService from '../../services/customerService';
@@ -8,7 +8,6 @@ import { productService } from '../../services/productService';
 import fileUploadService from '../../services/fileUploadService';
 import { useFilePreview } from '../../hooks/useFilePreview';
 import toast from 'react-hot-toast';
-import { calculateDocumentTotals } from '../../utils/documentTotals';
 import ProductSearchSelect from '../../components/ProductSearchSelect';
 
 const OrderFormPage = () => {
@@ -76,17 +75,6 @@ const OrderFormPage = () => {
         }, 300);
         return () => clearTimeout(timer);
     }, [productSearchQuery]);
-
-    const filteredProducts = products.filter(p => {
-        if (!productSearchQuery.trim()) return true;
-        const q = productSearchQuery.toLowerCase();
-        return (
-            p.name?.toLowerCase().includes(q) ||
-            p.sku?.toLowerCase().includes(q) ||
-            p.barcode?.toLowerCase().includes(q) ||
-            p.hsnCode?.toLowerCase().includes(q)
-        );
-    });
 
     const handleProductsUpdate = (newProds) => {
         setProducts(prev => {
@@ -633,13 +621,18 @@ const OrderFormPage = () => {
                                         title="Click to enlarge"
                                     />
                                     <div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setLightboxImage(billPadPreview.url)}
+                                        <a
+                                            href={billPadPreview.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setLightboxImage(billPadPreview.url);
+                                            }}
                                             className="text-xs text-teal hover:underline font-extrabold text-left block"
                                         >
                                             View uploaded reference pad
-                                        </button>
+                                        </a>
                                         <div className="text-[10px] text-slate-400 mt-0.5 font-mono">{formData.billPadImageUrl}</div>
                                     </div>
                                 </div>

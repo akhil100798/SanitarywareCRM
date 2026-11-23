@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Upload, FileText, CheckCircle2, AlertTriangle, HelpCircle, Loader2, Package, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { X, Upload, FileText, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import quotationService from '../../services/quotationService';
 import toast from 'react-hot-toast';
 

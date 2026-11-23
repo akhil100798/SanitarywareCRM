@@ -1,36 +1,42 @@
 import axios from 'axios';
-import { API_BASE_URL } from './config';
-import { sessionStorage } from './storage';
+import { API_BASE_URL } from './config.js';
+import { sessionStorage } from './storage.js';
 
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-api.interceptors.request.use(async (config) => {
-  const token = await sessionStorage.getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  if (config.data instanceof FormData) {
-    delete config.headers['Content-Type'];
-    config.timeout = 180000;
-  }
-  return config;
-});
-
-api.interceptors.response.use((response) => response, async (error) => {
-  if (error.response?.status === 401 && error.config?.url !== '/auth/login') {
-    const authorization = error.config?.headers?.Authorization;
-    if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
-      await sessionStorage.rejectToken(authorization.slice(7));
+export const createApiClient = (baseURL = API_BASE_URL, storage = sessionStorage) => {
+  const instance = axios.create({
+    baseURL,
+    timeout: 20000,
+    headers: {
+      'Content-Type': 'application/json'
     }
-  }
-  return Promise.reject(error);
-});
+  });
+
+  instance.interceptors.request.use(async (config) => {
+    const token = await storage.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      config.timeout = 180000;
+    }
+    return config;
+  });
+
+  instance.interceptors.response.use((response) => response, async (error) => {
+    if (error.response?.status === 401 && error.config?.url !== '/auth/login') {
+      const authorization = error.config?.headers?.Authorization;
+      if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
+        await storage.rejectToken(authorization.slice(7));
+      }
+    }
+    return Promise.reject(error);
+  });
+
+  return instance;
+};
+
+export const api = createApiClient();
 
 export const getErrorMessage = (error) => {
   if (error.response?.data?.message) {

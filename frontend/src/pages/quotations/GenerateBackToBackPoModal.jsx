@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Truck, Package, AlertTriangle, CheckCircle2, Calendar, FileText, ArrowRight, Loader2, Sparkles, Building2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Truck, CheckCircle2, Calendar, ArrowRight, Loader2, Sparkles, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import quotationService from '../../services/quotationService';
 import distributorService from '../../services/distributorService';

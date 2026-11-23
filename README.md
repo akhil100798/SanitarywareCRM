@@ -44,8 +44,8 @@ Enterprise-level Customer Relationship Management system built specifically for 
 - ✅ **Order Management**: Full order lifecycle tracking from creation to delivery
 - ✅ **Payment Tracking**: Multiple payment methods with balance calculation
 - ✅ **Inventory Management**: Stock tracking with low stock alerts
-- 🚧 **Reports & Analytics**: Sales, customer, and inventory analytics
-- 🚧 **Notifications**: WhatsApp and Email integration
+- ✅ **Reports & Analytics**: Sales, customer receivables aging buckets (0-30, 31-60, 61-90, 90+ days), dead-stock SKU analysis, brand gross margins, and GSTR-1/3B tax compliance exports (CSV/Excel)
+- ✅ **Notifications**: Automated payment-due reminders and low-stock alerts with Twilio WhatsApp and Spring Mail dispatches, persistent audit logs (`notification_dispatch_logs`), and retry controls
 
 ## Prerequisites
 
@@ -207,6 +207,24 @@ After first run, create an admin user via the `/api/auth/register` endpoint:
 - `PUT /api/quotations/{id}` - Update quotation
 - `POST /api/quotations/{id}/convert` - Convert to order
 
+### Reports & Analytics Endpoints
+
+- `GET /api/reports/sales-summary` - Aggregate sales and revenue metrics
+- `GET /api/reports/gst-summary` - GSTR-1 / GSTR-3B tax metrics with HSN code breakdown
+- `GET /api/reports/gst-summary/export` - Export GST summary as CSV or Excel (.xlsx)
+- `GET /api/reports/payment-aging` - Customer receivables aging buckets (0-30, 31-60, 61-90, 90+ days)
+- `GET /api/reports/payment-aging/export` - Export payment aging as CSV or Excel (.xlsx)
+- `GET /api/reports/dead-stock` - Dormant SKUs and tied-up working capital analysis
+- `GET /api/reports/brand-margins` - Brand-wise sales, COGS, gross margin, and profitability %
+- `GET /api/reports/inventory-summary` - Inventory valuation and stock status
+
+### Automated Notification Endpoints
+
+- `GET /api/notifications/logs` - Paginated notification dispatch audit logs (channel, recipient, status, attempts)
+- `POST /api/notifications/retry/{id}` - Re-trigger manual dispatch for a failed/simulated notification
+- `POST /api/notifications/trigger/low-stock` - Manually trigger low-stock threshold inspection and alerts
+- `POST /api/notifications/trigger/payment-due` - Manually trigger payment-due reminder dispatches
+
 ## Project Structure
 
 ```
@@ -249,6 +267,13 @@ twilio.auth.token=your-twilio-token
 twilio.whatsapp.number=whatsapp:+14155238886
 ```
 
+### Scheduled Automations
+Automated reminder and low-stock cron jobs are managed by `NotificationScheduledTasks` and gated by:
+```properties
+notifications.scheduler.enabled=true
+```
+Set to `false` in development/QA to disable background execution during automated testing.
+
 ### JWT Secret
 **Important**: Production requires `JWT_SECRET` to be provided as an environment variable. It must be at least 32 characters.
 
@@ -262,6 +287,33 @@ twilio.whatsapp.number=whatsapp:+14155238886
 ```bash
 cd backend && mvn test
 cd frontend && npm run build
+```
+
+## Load & Performance Testing (k6)
+
+Sanitaryware CRM includes a repeatable load and stress testing script (`scripts/load-test/crm-smoke-load.js`) measuring API throughput, p95 latency (< 250ms), zero 5xx server errors, and rate-limiting resilience under 50 RPS bursts.
+
+### Prerequisites
+Install [k6](https://k6.io/docs/get-started/installation/):
+```bash
+# Windows
+winget install k6 --source winget
+
+# macOS
+brew install k6
+
+# Linux (Debian/Ubuntu)
+sudo apt-get install k6
+```
+
+### Running against Local QA Backend (`http://localhost:8081`)
+```bash
+k6 run scripts/load-test/crm-smoke-load.js
+```
+
+### Running against Staging or Custom Host
+```bash
+k6 run -e BASE_URL="https://staging.crm.example.com" -e ADMIN_USER="admin" -e ADMIN_PASSWORD="your-staging-password" scripts/load-test/crm-smoke-load.js
 ```
 
 ## License

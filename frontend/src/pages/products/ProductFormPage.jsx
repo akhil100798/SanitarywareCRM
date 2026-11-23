@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Upload, Trash2, Image as ImageIcon, Star } from 'lucide-react';
 import { productService, brandService, categoryService } from '../../services/productService';

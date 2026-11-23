@@ -42,11 +42,6 @@ public class AuthController {
     private final com.sanitaryware.crm.security.LoginRateLimiter loginRateLimiter;
     private final com.sanitaryware.crm.service.AuditService auditService;
 
-    @GetMapping("/test")
-    public ResponseEntity<?> test() {
-        return ResponseEntity.ok(new MessageResponse("API is reachable"));
-    }
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         if (request.getUsername() == null || request.getUsername().contains("\0") || (request.getPassword() != null && request.getPassword().contains("\0"))) {

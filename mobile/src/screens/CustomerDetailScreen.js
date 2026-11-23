@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getErrorMessage } from '../api/client';
 import { customerService } from '../api/services';
 import DetailSection from '../components/DetailSection';
@@ -49,9 +50,11 @@ const CustomerDetailScreen = ({ route, navigation }) => {
     }
   }, [customerId]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   if (loading) return <LoadingView label="Loading customer..." />;
   if (error) return <ErrorView message={error} onRetry={loadData} />;
@@ -75,58 +78,75 @@ const CustomerDetailScreen = ({ route, navigation }) => {
           <Text style={styles.subtitle}>{customer?.company || customer?.phoneNumber || 'Customer'}</Text>
         </View>
 
-        <DetailSection title="Customer Details">
-          <FieldRow label="Company" value={customer?.company} />
-          <FieldRow label="Phone" value={customer?.phoneNumber} />
-          <FieldRow label="Email" value={customer?.email} />
-          <FieldRow label="GSTIN" value={customer?.gstNumber} />
-          <FieldRow label="State" value={customer?.state} />
-          <FieldRow label="Address" value={joinAddress(customer)} />
-          <FieldRow label="City" value={customer?.city} />
-          <FieldRow label="Type" value={customer?.customerType} />
-          <FieldRow label="Status" value={customer?.isActive === false ? 'Inactive' : 'Active'} />
-        </DetailSection>
+          <DetailSection
+            title="Customer Details"
+            action={
+              <Pressable
+                style={styles.editBtn}
+                onPress={() => navigation.navigate('CustomerForm', { id: customer?.id })}
+              >
+                <Text style={styles.editBtnText}>Edit</Text>
+              </Pressable>
+            }
+          >
+            <FieldRow label="Company" value={customer?.company} />
+            <FieldRow label="Phone" value={customer?.phoneNumber} />
+            <FieldRow label="Email" value={customer?.email} />
+            <FieldRow label="GSTIN" value={customer?.gstNumber} />
+            <FieldRow label="State" value={customer?.state} />
+            <FieldRow label="Address" value={joinAddress(customer)} />
+            <FieldRow label="City" value={customer?.city} />
+            <FieldRow label="Type" value={customer?.customerType} />
+            <FieldRow label="Status" value={customer?.isActive === false ? 'Inactive' : 'Active'} />
+          </DetailSection>
 
-        <DetailSection title="Recent Quotations">
-          {quotations.length ? (
-            quotations.map((quotation) => (
-              <MiniCard
-                key={quotation.id}
-                title={quotation.quotationNumber || `Quotation #${quotation.id}`}
-                subtitle={formatDate(quotation.quotationDate)}
-                amount={formatMoney(quotation.total)}
-                badge={quotation.status}
-                onPress={() => navigation.navigate('QuotationDetail', { id: quotation.id })}
-              />
-            ))
-          ) : (
-            <EmptyView title="No quotations yet" message="Create the first quotation for this customer." />
-          )}
-        </DetailSection>
+          <DetailSection title="Recent Quotations">
+            {quotations.length ? (
+              quotations.map((quotation) => (
+                <MiniCard
+                  key={quotation.id}
+                  title={quotation.quotationNumber || `Quotation #${quotation.id}`}
+                  subtitle={formatDate(quotation.quotationDate)}
+                  amount={formatMoney(quotation.total)}
+                  badge={quotation.status}
+                  onPress={() => navigation.navigate('QuotationDetail', { id: quotation.id })}
+                />
+              ))
+            ) : (
+              <EmptyView title="No quotations yet" message="Create the first quotation for this customer." />
+            )}
+          </DetailSection>
 
-        <DetailSection title="Recent Orders">
-          {orders.length ? (
-            orders.map((order) => (
-              <MiniCard
-                key={order.id}
-                title={order.orderNumber || `Order #${order.id}`}
-                subtitle={formatDate(order.orderDate)}
-                amount={formatMoney(order.total)}
-                badge={order.paymentStatus || order.status}
-                onPress={() => navigation.navigate('OrderDetail', { id: order.id })}
-              />
-            ))
-          ) : (
-            <EmptyView title="No orders yet" message="Converted quotations will appear here." />
-          )}
-        </DetailSection>
+          <DetailSection title="Recent Orders">
+            {orders.length ? (
+              orders.map((order) => (
+                <MiniCard
+                  key={order.id}
+                  title={order.orderNumber || `Order #${order.id}`}
+                  subtitle={formatDate(order.orderDate)}
+                  amount={formatMoney(order.total)}
+                  badge={order.paymentStatus || order.status}
+                  onPress={() => navigation.navigate('OrderDetail', { id: order.id })}
+                />
+              ))
+            ) : (
+              <EmptyView title="No orders yet" message="Converted quotations will appear here." />
+            )}
+          </DetailSection>
       </ScrollView>
       <PrimaryActionBar
+        secondaryLabel="Create Order"
+        onSecondaryPress={() =>
+          navigation.navigate('OrderForm', {
+            customerId: customer?.id,
+            customerName: customer?.name
+          })
+        }
         label="Create Quotation"
         onPress={() =>
           navigation.navigate('QuotationForm', {
-            customerId: customer.id,
-            customerName: customer.name
+            customerId: customer?.id,
+            customerName: customer?.name
           })
         }
       />
@@ -185,6 +205,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginTop: 4
+  },
+  editBtn: {
+    backgroundColor: '#ccfbf1',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  editBtnText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800'
   }
 });
 

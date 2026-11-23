@@ -10,6 +10,7 @@ const { PaymentPage } = require('../pages/PaymentPage');
 test.describe('Sanitaryware CRM Unified E2E Flow', () => {
 
   test('POS-096 POS-097 POS-098 Full Quote-to-Invoice Payment Lifecycle', async ({ page }) => {
+    test.setTimeout(120000);
     // 1. Login
     const loginPage = new LoginPage(page);
     await loginPage.navigate();

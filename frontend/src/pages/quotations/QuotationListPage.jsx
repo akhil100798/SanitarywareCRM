@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, FileText, Download, CheckCircle, XCircle, Share2, MessageCircle, Sparkles, Truck, X, RotateCcw, AlertCircle } from 'lucide-react';
 import quotationService from '../../services/quotationService';
@@ -48,34 +48,6 @@ const QuotationListPage = () => {
             toast.success('PDF downloaded successfully', { id: toastId });
         } catch (error) {
             toast.error('Failed to download PDF', { id: toastId });
-        }
-    };
-
-    const handleCopyShareLink = (shareToken) => {
-        if (!shareToken) {
-            toast.error('Quotation link is being prepared. Please refresh in a moment.');
-            return;
-        }
-        const url = `${window.location.origin}/portal/quotations/${shareToken}`;
-        navigator.clipboard.writeText(url).then(
-            () => toast.success('Customer portal link copied to clipboard!'),
-            () => toast.error('Failed to copy link')
-        );
-    };
-
-    const handleSendWhatsApp = async (id, customerName) => {
-        const toastId = toast.loading(`Sending WhatsApp notification to ${customerName || 'customer'}...`);
-        try {
-            const response = await quotationService.sendWhatsApp(id, {});
-            if (response.data.status === 'SENT') {
-                toast.success('Quotation dispatched via WhatsApp!', { id: toastId });
-            } else if (response.data.status === 'SIMULATED') {
-                toast.success('Sandbox mode: WhatsApp notification simulated successfully!', { id: toastId });
-            } else {
-                toast.error(response.data.detail || 'WhatsApp transmission failed', { id: toastId });
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send WhatsApp message', { id: toastId });
         }
     };
 
@@ -225,7 +197,7 @@ const QuotationListPage = () => {
                                                     </div>
                                                     <div>
                                                         <Link to={`/quotations/edit/${q.id}`} className="text-teal hover:underline font-extrabold">{q.quotationNumber}</Link>
-                                                        <div className="text-xxs text-slate-400 font-medium tracking-wide mt-0.5">ID: {q.id}</div>
+                                                        <div className="text-xxs text-slate-600 font-medium tracking-wide mt-0.5">ID: {q.id}</div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -234,11 +206,11 @@ const QuotationListPage = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-xs text-slate-700 font-medium">Issued: {q.quotationDate}</div>
-                                                <div className="text-xxs text-slate-400 mt-0.5">Expires: {q.validUntil}</div>
+                                                <div className="text-xxs text-slate-600 mt-0.5">Expires: {q.validUntil}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="font-extrabold text-slate-900">₹{q.total.toLocaleString()}</div>
-                                                <div className="text-xxs text-slate-400 mt-0.5">Excl. Tax: ₹{q.subtotal.toLocaleString()}</div>
+                                                <div className="text-xxs text-slate-600 mt-0.5">Excl. Tax: ₹{q.subtotal.toLocaleString()}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider ${getStatusColor(q.status)}`}>
@@ -250,28 +222,28 @@ const QuotationListPage = () => {
                                                     <button
                                                         onClick={() => setSelectedQuotationForWhatsApp(q)}
                                                         title="Share Quotation & Portal Link"
-                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                        className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-all"
                                                     >
                                                         <Share2 size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => setSelectedQuotationForWhatsApp(q)}
                                                         title="Share via WhatsApp & Dynamic QR"
-                                                        className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                        className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                                                     >
                                                         <MessageCircle size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDownloadPdf(q.id, q.quotationNumber)}
                                                         title="Download PDF"
-                                                        className="p-2 text-slate-400 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
+                                                        className="p-2 text-slate-600 hover:text-teal hover:bg-slate-50 rounded-xl transition-all"
                                                     >
                                                         <Download size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => setSelectedQuotationForPo(q)}
                                                         title="Generate Back-to-Back Purchase Orders"
-                                                        className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
+                                                        className="p-2 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
                                                     >
                                                         <Truck size={16} />
                                                     </button>
@@ -279,7 +251,7 @@ const QuotationListPage = () => {
                                                         <button
                                                             onClick={() => handleStatusUpdate(q.id, 'ACCEPTED')}
                                                             title="Mark Accepted"
-                                                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                            className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all"
                                                         >
                                                             <CheckCircle size={16} />
                                                         </button>
@@ -288,7 +260,7 @@ const QuotationListPage = () => {
                                                         <button
                                                             onClick={() => handleStatusUpdate(q.id, 'REJECTED')}
                                                             title="Mark Rejected"
-                                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition-all"
+                                                            className="p-2 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition-all"
                                                         >
                                                             <XCircle size={16} />
                                                         </button>
