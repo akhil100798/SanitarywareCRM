@@ -258,7 +258,8 @@ jobs:
 
       - name: Build Docker Images for Scanning
         run: |
-          docker compose -f docker-compose.prod.yml build
+          docker build -t sanitarywarecrm-backend:latest ./backend
+          docker build -t sanitarywarecrm-frontend:latest ./frontend
 
       - name: Run Trivy Docker Image Scanner (Backend)
         uses: aquasecurity/trivy-action@master
