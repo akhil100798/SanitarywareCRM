@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import {
   BarChart3,
   Bell,
+  Boxes,
   Building2,
   CloudOff,
   CreditCard,
@@ -11,7 +12,8 @@ import {
   ReceiptIndianRupee,
   Settings,
   Tags,
-  Truck
+  Truck,
+  UserCheck
 } from 'lucide-react-native';
 import Screen from '../components/Screen';
 import { colors } from '../theme/colors';
@@ -26,6 +28,24 @@ const modules = [
     icon: CloudOff,
     isDirectScreen: true,
     screen: 'OfflineSync',
+    roles: ['ADMIN', 'MANAGER', 'SALES']
+  },
+  {
+    resource: 'stockReceive',
+    title: 'Stock Receiving',
+    subtitle: 'Warehouse PO receiving & stock-in',
+    icon: Boxes,
+    isDirectScreen: true,
+    screen: 'StockReceive',
+    roles: ['ADMIN', 'MANAGER', 'WAREHOUSE']
+  },
+  {
+    resource: 'paymentLedger',
+    title: 'Payment Ledger',
+    subtitle: 'Collections, UTR receipts & aging schedule',
+    icon: CreditCard,
+    isDirectScreen: true,
+    screen: 'PaymentLedger',
     roles: ['ADMIN', 'MANAGER', 'SALES']
   },
   { resource: 'quotations', title: 'Quotations', subtitle: 'Customer estimates and quote status', icon: FileText, roles: ['ADMIN', 'MANAGER', 'SALES'] },
@@ -53,7 +73,16 @@ const modules = [
   { resource: 'distributorPayments', title: 'Distributor Payments', subtitle: 'Payments made to suppliers', icon: Building2, roles: ['ADMIN', 'MANAGER'] },
   { resource: 'brands', title: 'Brands', subtitle: 'Product brand catalog', icon: Tags, roles: ['ADMIN', 'MANAGER', 'SALES'] },
   { resource: 'categories', title: 'Categories', subtitle: 'Product category tree', icon: FolderTree, roles: ['ADMIN', 'MANAGER', 'SALES'] },
-  { resource: 'settings', title: 'Settings', subtitle: 'Company profile and billing settings', icon: Settings, roles: ['ADMIN', 'MANAGER'] }
+  { resource: 'settings', title: 'Settings', subtitle: 'Company profile and billing settings', icon: Settings, roles: ['ADMIN', 'MANAGER'] },
+  {
+    resource: 'profileSettings',
+    title: 'Profile & Settings',
+    subtitle: 'Account details, API status & app configuration',
+    icon: UserCheck,
+    isDirectScreen: true,
+    screen: 'ProfileSettings',
+    roles: ['ADMIN', 'MANAGER', 'SALES', 'WAREHOUSE']
+  }
 ];
 
 const ModuleMenuScreen = ({ navigation }) => {

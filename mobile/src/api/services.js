@@ -270,6 +270,21 @@ export const productService = {
     return unwrapPage(response.data);
   },
 
+  async getAll(params = {}) {
+    const response = await api.get('/products', { params });
+    return unwrapPage(response.data);
+  },
+
+  async getLowStock() {
+    const response = await api.get('/products/low-stock');
+    return unwrapPage(response.data);
+  },
+
+  async search(query, params = {}) {
+    const response = await api.get('/products/search', { params: { ...params, query } });
+    return unwrapPage(response.data);
+  },
+
   async searchProducts(query, params = { size: 50 }) {
     const trimmed = query?.trim();
     if (!trimmed) {
@@ -290,6 +305,13 @@ export const productService = {
       params: { brandId, query: query?.trim(), size: 30 }
     });
     return unwrapPage(response.data);
+  },
+
+  async updateStock(productId, quantity, reason = 'PO_RECEIVING', rmaCode = null) {
+    const response = await api.patch(`/products/${productId}/stock`, null, {
+      params: { quantity, reason, ...(rmaCode ? { rmaCode } : {}) }
+    });
+    return response.data;
   }
 };
 
@@ -457,6 +479,11 @@ export const orderService = {
 };
 
 export const paymentService = {
+  async getAll(params = {}) {
+    const response = await api.get('/payments', { params });
+    return unwrapPage(response.data);
+  },
+
   async getByOrder(orderId) {
     const response = await api.get(`/payments/order/${orderId}`);
     return unwrapPage(response.data);

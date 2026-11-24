@@ -26,6 +26,9 @@ import ProductPickerScreen from '../screens/ProductPickerScreen';
 import QuotationDetailScreen from '../screens/QuotationDetailScreen';
 import QuotationFormScreen from '../screens/QuotationFormScreen';
 import ReportsScreen from '../screens/ReportsScreen';
+import StockReceiveScreen from '../screens/StockReceiveScreen';
+import PaymentLedgerScreen from '../screens/PaymentLedgerScreen';
+import ProfileSettingsScreen from '../screens/ProfileSettingsScreen';
 import OfflineSyncScreen from '../screens/OfflineSyncScreen';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
@@ -102,6 +105,9 @@ const MoreNavigator = () => (
     <MoreStack.Screen name="ModuleList" component={ListScreen} options={{ title: '' }} />
     <MoreStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications & Alerts' }} />
     <MoreStack.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports & Analytics' }} />
+    <MoreStack.Screen name="StockReceive" component={StockReceiveScreen} options={{ title: 'Stock Receiving' }} />
+    <MoreStack.Screen name="PaymentLedger" component={PaymentLedgerScreen} options={{ title: 'Payment Ledger' }} />
+    <MoreStack.Screen name="ProfileSettings" component={ProfileSettingsScreen} options={{ title: 'Profile & Settings' }} />
     <MoreStack.Screen name="OfflineSync" component={OfflineSyncScreen} options={{ title: 'Offline Outbox & Sync' }} />
   </MoreStack.Navigator>
 );
@@ -134,6 +140,9 @@ const AppNavigator = () => {
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
           <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
           <Stack.Screen name="PaymentForm" component={PaymentFormScreen} />
+          <Stack.Screen name="StockReceive" component={StockReceiveScreen} />
+          <Stack.Screen name="PaymentLedger" component={PaymentLedgerScreen} />
+          <Stack.Screen name="ProfileSettings" component={ProfileSettingsScreen} />
           <Stack.Screen name="OfflineSync" component={OfflineSyncScreen} />
         </>
       ) : (
