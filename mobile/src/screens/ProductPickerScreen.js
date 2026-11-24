@@ -163,13 +163,13 @@ const ProductPickerScreen = ({ route, navigation }) => {
         renderItem={({ item }) => (
           <ListCard
             item={item}
-            onPress={() =>
-              navigation.navigate(
-                targetScreen,
-                { selectedProduct: item.raw },
-                { merge: true, pop: true }
-              )
-            }
+            onPress={() => {
+              navigation.navigate({
+                name: targetScreen,
+                params: { selectedProduct: item.raw },
+                merge: true
+              });
+            }}
           />
         )}
       />

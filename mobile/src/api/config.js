@@ -6,7 +6,7 @@ const isWebLocalhost =
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 export const API_BASE_URL =
-  configuredApiBaseUrl || (isWebLocalhost ? '/api' : 'http://10.0.2.2:8081/api');
+  configuredApiBaseUrl || (isWebLocalhost ? '/api' : 'http://10.0.2.2:8085/api');
 
 if (
   !isDevelopment &&

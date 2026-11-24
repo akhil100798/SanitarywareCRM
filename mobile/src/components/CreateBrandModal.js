@@ -15,7 +15,7 @@ import { brandService } from '../api/services';
 import { getErrorMessage } from '../api/client';
 import { colors } from '../theme/colors';
 
-const CreateBrandModal = ({ visible, onClose, onSuccess }) => {
+const CreateBrandModal = ({ visible, onClose, onSuccess, onCreated }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,10 @@ const CreateBrandModal = ({ visible, onClose, onSuccess }) => {
 
       const created = await brandService.create(payload);
       resetForm();
-      onSuccess(created);
+      const callback = onSuccess || onCreated;
+      if (callback) {
+        callback(created);
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -80,6 +83,8 @@ const CreateBrandModal = ({ visible, onClose, onSuccess }) => {
               placeholder="e.g. Kohler Premium or Ashirwad Pipes"
               value={name}
               onChangeText={setName}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
             />
 
             <AppTextInput

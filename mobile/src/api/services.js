@@ -7,7 +7,7 @@ import { API_BASE_URL } from './config';
 export const resolveMediaUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
-  const base = (API_BASE_URL || 'http://10.0.2.2:8081/api').replace(/\/api\/?$/, '');
+  const base = (API_BASE_URL || 'http://10.0.2.2:8085/api').replace(/\/api\/?$/, '');
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
@@ -233,6 +233,11 @@ export const fetchList = async (resource, query) => {
   return items.map(config.mapItem);
 };
 export const customerService = {
+  async getAll(params = { size: 100 }) {
+    const response = await api.get('/customers', { params });
+    return unwrapPage(response.data);
+  },
+
   async getById(customerId) {
     const response = await api.get(`/customers/${customerId}`);
     return response.data;

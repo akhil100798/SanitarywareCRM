@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Camera, Plus, Trash2 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
-import { quotationService } from '../api/services';
+import { customerService, quotationService } from '../api/services';
 import AppHeader from '../components/AppHeader';
 import AppTextInput from '../components/AppTextInput';
 import ContractorNoteScannerModal from '../components/ContractorNoteScannerModal';
@@ -19,6 +19,7 @@ import { offlineSyncManager } from '../utils/offlineSyncManager';
 const defaultTerms = '1. Quotation valid for 7 days.\n2. 50% advance for orders.\n3. Delivery within 3-5 days of order confirmation.';
 
 const validateForm = (form) => {
+  if (!form.customerId) return 'Select a customer for this quotation.';
   if (!form.items.length) return 'Add at least one product line.';
   const invalidItem = form.items.find((item) => {
     const quantity = Number(item.quantity);
@@ -54,6 +55,19 @@ const QuotationFormScreen = ({ route, navigation }) => {
     termsAndConditions: defaultTerms,
     items: []
   });
+
+  useEffect(() => {
+    if (customerId) return;
+    customerService.getActive().then((list) => {
+      if (list && list.length > 0) {
+        setForm((prev) => ({
+          ...prev,
+          customerId: list[0].id,
+          customerName: list[0].name
+        }));
+      }
+    }).catch(() => {});
+  }, [customerId]);
 
   useEffect(() => {
     if (!selectedProduct) return;

@@ -154,7 +154,7 @@ const ProfileSettingsScreen = ({ navigation }) => {
             <Globe color={colors.muted} size={14} />
             <Text numberOfLines={1} style={styles.infoLabel}>Endpoint Base URL:</Text>
             <Text numberOfLines={1} style={styles.infoValue}>
-              {API_BASE_URL || 'http://10.0.2.2:8081/api'}
+              {API_BASE_URL || 'http://10.0.2.2:8085/api'}
             </Text>
           </View>
         </View>

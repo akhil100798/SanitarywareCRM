@@ -99,7 +99,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const handleAddToQuotation = () => {
     if (!product) return;
-    navigation.navigate('QuotationForm', { selectedProduct: product }, { merge: true, pop: true });
+    navigation.navigate('QuotationForm', { selectedProduct: product });
   };
 
   if (loading) return <LoadingView label="Loading product specifications..." />;

@@ -32,10 +32,15 @@ const ListCard = ({ item, onPress, onNavigateDetail }) => {
   const badgeColors = getBadgeColors(item.badge);
 
   const handlePress = () => {
-    setExpanded((prev) => !prev);
     if (onPress) {
       onPress();
+      return;
     }
+    if (onNavigateDetail) {
+      handleNavigateDetail();
+      return;
+    }
+    setExpanded((prev) => !prev);
   };
 
   const handleNavigateDetail = () => {
@@ -56,70 +61,71 @@ const ListCard = ({ item, onPress, onNavigateDetail }) => {
   const showImage = !imageError && Boolean(targetImageUrl);
 
   return (
-    <Pressable
-      accessible={true}
-      accessibilityRole="button"
-      onPress={handlePress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed, expanded && styles.cardExpanded]}
-    >
-      {/* Top Row: Side-by-side Product Image and Details */}
-      <View style={styles.compactRow}>
-        {/* Left Side: Product Image Box */}
-        <View style={styles.imageBox}>
-          {showImage ? (
-            <Image
-              source={{ uri: targetImageUrl }}
-              style={styles.thumbnail}
-              resizeMode="cover"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <View style={styles.placeholderBox}>
-              <Package size={26} color={colors.primary} />
-              <Text style={styles.placeholderLabel}>FIXTURE</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Right Side: Product Details */}
-        <View style={styles.detailsBlock}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={2}>
-              {item.title}
-            </Text>
-            {item.amount ? <Text style={styles.amount}>{item.amount}</Text> : null}
+    <View style={[styles.card, expanded && styles.cardExpanded]}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={handlePress}
+        style={({ pressed }) => [pressed && styles.pressed]}
+      >
+        {/* Top Row: Side-by-side Product Image and Details */}
+        <View style={styles.compactRow}>
+          {/* Left Side: Product Image Box */}
+          <View style={styles.imageBox}>
+            {showImage ? (
+              <Image
+                source={{ uri: targetImageUrl }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <View style={styles.placeholderBox}>
+                <Package size={26} color={colors.primary} />
+                <Text style={styles.placeholderLabel}>FIXTURE</Text>
+              </View>
+            )}
           </View>
 
-          {item.subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {item.subtitle}
-            </Text>
-          ) : null}
+          {/* Right Side: Product Details */}
+          <View style={styles.detailsBlock}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title} numberOfLines={2}>
+                {item.title}
+              </Text>
+              {item.amount ? <Text style={styles.amount}>{item.amount}</Text> : null}
+            </View>
 
-          <View style={styles.footerRow}>
-            {item.meta ? (
-              <Text style={styles.meta} numberOfLines={1}>
-                {item.meta}
+            {item.subtitle ? (
+              <Text style={styles.subtitle} numberOfLines={1}>
+                {item.subtitle}
               </Text>
             ) : null}
 
-            <View style={styles.badgeWrap}>
-              {item.badge ? (
-                <View style={[styles.badge, { backgroundColor: badgeColors.bg }]}>
-                  <Text style={[styles.badgeText, { color: badgeColors.fg }]} numberOfLines={1}>
-                    {item.badge}
-                  </Text>
-                </View>
+            <View style={styles.footerRow}>
+              {item.meta ? (
+                <Text style={styles.meta} numberOfLines={1}>
+                  {item.meta}
+                </Text>
               ) : null}
-              {expanded ? (
-                <ChevronUp size={16} color={colors.primary} />
-              ) : (
-                <ChevronDown size={16} color={colors.muted} />
-              )}
+
+              <View style={styles.badgeWrap}>
+                {item.badge ? (
+                  <View style={[styles.badge, { backgroundColor: badgeColors.bg }]}>
+                    <Text style={[styles.badgeText, { color: badgeColors.fg }]} numberOfLines={1}>
+                      {item.badge}
+                    </Text>
+                  </View>
+                ) : null}
+                {expanded ? (
+                  <ChevronUp size={16} color={colors.primary} />
+                ) : (
+                  <ChevronDown size={16} color={colors.muted} />
+                )}
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      </Pressable>
 
       {/* Expanded Details Section: Prominent Image and Comprehensive Info Below */}
       {expanded ? (
@@ -245,7 +251,7 @@ const ListCard = ({ item, onPress, onNavigateDetail }) => {
           </View>
         </View>
       ) : null}
-    </Pressable>
+    </View>
   );
 };
 
