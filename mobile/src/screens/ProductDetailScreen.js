@@ -11,19 +11,17 @@ import {
   View
 } from 'react-native';
 import {
-  ArrowLeft,
-  CheckCircle2,
   FileSpreadsheet,
   Package,
   Layers,
   Share2,
-  Sparkles,
-  Tag,
-  XCircle
+  Tag
 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { productService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { colors, spacing } from '../theme/colors';
 import { formatMoney } from '../utils/formatters';
@@ -116,26 +114,13 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
-      {/* App Bar */}
-      <View style={styles.appBar}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-          accessibilityLabel="Go back"
-        >
-          <ArrowLeft color={colors.text} size={22} />
-        </TouchableOpacity>
-        <Text style={styles.appBarTitle} numberOfLines={1}>
-          {product.brandName || 'Product Details'}
-        </Text>
-        <TouchableOpacity
-          onPress={handleShare}
-          style={styles.shareBtn}
-          accessibilityLabel="Share product"
-        >
-          <Share2 color={colors.primary} size={20} />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title={product.brandName || 'Product Details'}
+        subtitle={product.name}
+        onBack={() => navigation.goBack()}
+        rightIcon={Share2}
+        onRightPress={handleShare}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Product Image Area */}
@@ -149,180 +134,174 @@ const ProductDetailScreen = ({ route, navigation }) => {
             />
           ) : (
             <View style={styles.noImagePlaceholder}>
-              <Package color={colors.muted} size={48} />
-              <Text style={styles.noImageText}>Product Photo</Text>
+              <Package color={colors.primary} size={48} strokeWidth={1.8} />
+              <Text style={styles.noImageText}>Product Fixture Photo</Text>
             </View>
           )}
 
           {/* Availability & Featured Badges */}
           <View style={styles.floatingBadges}>
             {product.isFeatured ? (
-              <View style={[styles.pillBadge, { backgroundColor: '#fef3c7' }]}>
-                <Sparkles color="#b45309" size={12} />
-                <Text style={[styles.pillBadgeText, { color: '#92400e' }]}>Featured</Text>
-              </View>
+              <StatusPill label="Featured" type="warning" size="sm" />
             ) : null}
-            <View
-              style={[
-                styles.pillBadge,
-                { backgroundColor: product.isAvailable !== false ? '#ecfdf5' : '#f1f5f9' }
-              ]}
-            >
-              {product.isAvailable !== false ? (
-                <CheckCircle2 color="#047857" size={12} />
-              ) : (
-                <XCircle color="#64748b" size={12} />
-              )}
-              <Text
-                style={[
-                  styles.pillBadgeText,
-                  { color: product.isAvailable !== false ? '#065f46' : '#475569' }
-                ]}
-              >
-                {product.isAvailable !== false ? 'Available' : 'Unavailable'}
-              </Text>
-            </View>
+            <StatusPill
+              label={product.isAvailable !== false ? 'Catalog Active' : 'Unavailable'}
+              type={product.isAvailable !== false ? 'success' : 'neutral'}
+              size="sm"
+            />
           </View>
         </View>
 
-        {/* Title & Brand Section */}
+        {/* Pricing & Stock Card */}
         <View style={styles.sectionCard}>
-          <View style={styles.tagsRow}>
-            {product.brandName ? (
-              <View style={styles.brandTag}>
-                <Tag color={colors.primary} size={12} />
-                <Text style={styles.brandTagText}>{product.brandName}</Text>
-              </View>
-            ) : null}
-            {product.categoryName ? (
-              <View style={styles.categoryTag}>
-                <Layers color="#475569" size={12} />
-                <Text style={styles.categoryTagText}>{product.categoryName}</Text>
-              </View>
-            ) : null}
-          </View>
-
           <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.productSku}>SKU: {product.sku}</Text>
+          <Text style={styles.brandSubtitle}>
+            {product.brandName || 'Sanitaryware'} {product.categoryName ? `• ${product.categoryName}` : ''}
+          </Text>
 
-          {/* Pricing Row */}
-          <View style={styles.pricingRow}>
+          <View style={styles.priceRow}>
             <View>
-              <Text style={styles.priceLabel}>Selling Price</Text>
+              <Text style={styles.sellingPriceLabel}>Showroom Price</Text>
               <Text style={styles.sellingPrice}>{formatMoney(product.sellingPrice)}</Text>
             </View>
-            {product.mrp && Number(product.mrp) > Number(product.sellingPrice) ? (
-              <View style={styles.mrpContainer}>
-                <Text style={styles.priceLabel}>MRP</Text>
-                <Text style={styles.mrpText}>{formatMoney(product.mrp)}</Text>
+            {product.mrp ? (
+              <View style={styles.mrpBox}>
+                <Text style={styles.mrpLabel}>MRP</Text>
+                <Text style={styles.mrpValue}>{formatMoney(product.mrp)}</Text>
               </View>
             ) : null}
-            <View style={styles.stockContainer}>
-              <Text style={styles.priceLabel}>Stock Status</Text>
-              <Text
-                style={[
-                  styles.stockBadgeText,
-                  { color: inStock ? (isLowStock ? '#b45309' : '#047857') : '#dc2626' }
-                ]}
-              >
-                {inStock
-                  ? `${product.stockQuantity} ${product.unit || 'Piece'}${isLowStock ? ' (Low)' : ''}`
-                  : 'Out of Stock'}
+          </View>
+
+          <View style={styles.stockStatusRow}>
+            <View style={styles.stockLeft}>
+              <Text style={styles.stockLabel}>Available Stock:</Text>
+              <Text style={styles.stockQty}>
+                {product.stockQuantity ?? 0} {product.unit || 'Piece'}
               </Text>
             </View>
+            <StatusPill
+              label={
+                !inStock
+                  ? 'Out of Stock'
+                  : isLowStock
+                    ? 'Low Stock Alert'
+                    : 'In Stock'
+              }
+              type={
+                !inStock
+                  ? 'danger'
+                  : isLowStock
+                    ? 'warning'
+                    : 'success'
+              }
+              size="sm"
+            />
           </View>
         </View>
 
-        {/* Multi-Variant Selector (Color & Size Matrix) */}
+        {/* Sibling Model Variants */}
         {variants.length > 1 ? (
           <View style={styles.sectionCard}>
-            <View style={styles.variantHeader}>
+            <View style={styles.cardHeader}>
               <Text style={styles.sectionTitle}>Model Variants ({variants.length})</Text>
-              {loadingVariants ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+              <Layers color={colors.primary} size={18} />
             </View>
-            <Text style={styles.variantSubtitle}>Tap a size or finish to switch variant:</Text>
-
-            <View style={styles.chipsContainer}>
-              {variants.map((v) => {
-                const isSelected = v.id === product.id;
-                const label = (v.size && v.size !== '--' ? v.size : '')
-                  || (v.color && v.color !== '--' ? v.color : '')
-                  || v.sku;
-
-                return (
-                  <TouchableOpacity
-                    key={v.id}
-                    onPress={() => handleSelectVariant(v)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.variantChip,
-                      isSelected ? styles.variantChipSelected : styles.variantChipDefault
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.variantChipText,
-                        isSelected ? styles.variantChipTextSelected : styles.variantChipTextDefault
-                      ]}
+            {loadingVariants ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 12 }} />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.variantsRow}>
+                {variants.map((v) => {
+                  const isCurrent = v.id === product.id;
+                  return (
+                    <TouchableOpacity
+                      key={v.id}
+                      onPress={() => handleSelectVariant(v)}
+                      style={[styles.variantChip, isCurrent && styles.variantChipSelected]}
                     >
-                      {label} · {formatMoney(v.sellingPrice || v.mrp)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                      <Text style={[styles.variantSku, isCurrent && styles.variantSkuSelected]}>
+                        {v.sku}
+                      </Text>
+                      <Text style={[styles.variantDetail, isCurrent && styles.variantDetailSelected]}>
+                        {v.color || v.size || formatMoney(v.sellingPrice)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
         ) : null}
 
-        {/* Specifications Grid */}
+        {/* Specifications Table */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Technical Specifications</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionTitle}>Technical Specifications</Text>
+            <FileSpreadsheet color={colors.primary} size={18} />
+          </View>
 
-          <View style={styles.specsList}>
+          <View style={styles.specTable}>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>Model / SKU</Text>
+              <Text style={styles.specValue}>{product.sku}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>Brand</Text>
+              <Text style={styles.specValue}>{product.brandName || '--'}</Text>
+            </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>Category</Text>
+              <Text style={styles.specValue}>{product.categoryName || '--'}</Text>
+            </View>
             {product.size && product.size !== '--' ? (
-              <SpecRow label="Dimensions / Size" value={product.size} />
+              <View style={styles.specRow}>
+                <Text style={styles.specLabel}>Dimensions / Size</Text>
+                <Text style={styles.specValue}>{product.size}</Text>
+              </View>
             ) : null}
-            {product.material && product.material !== '--' ? (
-              <SpecRow label="Material / Finish" value={product.material} />
+            {product.color ? (
+              <View style={styles.specRow}>
+                <Text style={styles.specLabel}>Finish / Color</Text>
+                <Text style={styles.specValue}>{product.color}</Text>
+              </View>
             ) : null}
-            {product.color && product.color !== '--' ? (
-              <SpecRow label="Color" value={product.color} />
+            {product.material ? (
+              <View style={styles.specRow}>
+                <Text style={styles.specLabel}>Material</Text>
+                <Text style={styles.specValue}>{product.material}</Text>
+              </View>
             ) : null}
-            {product.hsnCode && product.hsnCode !== '--' ? (
-              <SpecRow label="HSN Code" value={product.hsnCode} />
+            {product.hsnCode ? (
+              <View style={styles.specRow}>
+                <Text style={styles.specLabel}>HSN Code</Text>
+                <Text style={styles.specValue}>{product.hsnCode}</Text>
+              </View>
             ) : null}
-            {product.itemCode && product.itemCode !== '--' ? (
-              <SpecRow label="Item Code" value={product.itemCode} />
-            ) : null}
-            {product.materialCode && product.materialCode !== '--' ? (
-              <SpecRow label="Material Code" value={product.materialCode} />
-            ) : null}
-            {product.barcode ? (
-              <SpecRow label="Barcode" value={product.barcode} />
-            ) : null}
-            {product.reorderLevel != null ? (
-              <SpecRow label="Reorder Level" value={`${product.reorderLevel} ${product.unit || 'Piece'}`} />
+            {product.reorderLevel !== undefined ? (
+              <View style={styles.specRow}>
+                <Text style={styles.specLabel}>Reorder Threshold</Text>
+                <Text style={styles.specValue}>{product.reorderLevel} {product.unit || 'Piece'}</Text>
+              </View>
             ) : null}
           </View>
 
           {product.description && product.description !== '--' ? (
             <View style={styles.descriptionBox}>
-              <Text style={styles.descriptionLabel}>Product Details</Text>
+              <Text style={styles.descriptionLabel}>Product Overview</Text>
               <Text style={styles.descriptionText}>{product.description}</Text>
             </View>
           ) : null}
         </View>
       </ScrollView>
 
-      {/* Bottom Action Footer */}
+      {/* Bottom Sticky Action Bar */}
       <View style={styles.footerBar}>
         <TouchableOpacity
           onPress={handleShare}
           style={styles.shareActionButton}
           activeOpacity={0.8}
         >
-          <Share2 color={colors.primary} size={18} />
-          <Text style={styles.shareActionText}>Share</Text>
+          <Share2 color={colors.primary} size={16} />
+          <Text style={styles.shareActionText}>Share Spec</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -330,7 +309,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           style={styles.quoteActionButton}
           activeOpacity={0.8}
         >
-          <FileSpreadsheet color="#ffffff" size={18} />
+          <Tag color={colors.white} size={16} />
           <Text style={styles.quoteActionText}>Add to Quotation</Text>
         </TouchableOpacity>
       </View>
@@ -338,270 +317,211 @@ const ProductDetailScreen = ({ route, navigation }) => {
   );
 };
 
-const SpecRow = ({ label, value }) => (
-  <View style={styles.specRow}>
-    <Text style={styles.specLabel}>{label}</Text>
-    <Text style={styles.specValue}>{value}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
-  appBar: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12
-  },
-  backBtn: {
-    padding: 6
-  },
-  appBarTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 12
-  },
-  shareBtn: {
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-    padding: 8
-  },
   scrollContent: {
-    padding: spacing.lg,
-    paddingBottom: 90
+    padding: spacing.md,
+    paddingBottom: 100
   },
   imageBox: {
-    alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     height: 240,
     justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: spacing.md,
     overflow: 'hidden',
     position: 'relative'
   },
   productImg: {
-    height: '90%',
-    width: '90%'
+    width: '90%',
+    height: '90%'
   },
   noImagePlaceholder: {
     alignItems: 'center',
-    justifyContent: 'center'
+    gap: 8
   },
   noImageText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: '600',
-    marginTop: 6
+    fontWeight: '700'
   },
   floatingBadges: {
-    bottom: 12,
+    position: 'absolute',
+    top: 10,
+    left: 10,
     flexDirection: 'row',
-    gap: 8,
-    left: 12,
-    position: 'absolute'
-  },
-  pillBadge: {
-    alignItems: 'center',
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4
-  },
-  pillBadgeText: {
-    fontSize: 11,
-    fontWeight: '700'
+    gap: 6
   },
   sectionCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     marginBottom: spacing.md,
-    padding: spacing.lg
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: spacing.sm
-  },
-  brandTag: {
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderRadius: 6,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3
-  },
-  brandTagText: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  categoryTag: {
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    borderColor: '#cbd5e1',
-    borderRadius: 6,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3
-  },
-  categoryTagText: {
-    color: '#334155',
-    fontSize: 11,
-    fontWeight: '600'
+    padding: spacing.md
   },
   productName: {
     color: colors.text,
     fontSize: 18,
     fontWeight: '900',
-    lineHeight: 24
+    letterSpacing: -0.2
   },
-  productSku: {
+  brandSubtitle: {
     color: colors.muted,
-    fontFamily: 'monospace',
     fontSize: 12,
-    marginTop: 4
-  },
-  pricingRow: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    paddingTop: spacing.md
-  },
-  priceLabel: {
-    color: colors.muted,
-    fontSize: 11,
     fontWeight: '600',
-    textTransform: 'uppercase'
+    marginTop: 2,
+    marginBottom: 12
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    borderTopColor: colors.borderLight,
+    borderTopWidth: 1,
+    paddingTop: 10,
+    marginBottom: 10
+  },
+  sellingPriceLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4
   },
   sellingPrice: {
     color: colors.primary,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
+    letterSpacing: -0.5,
     marginTop: 2
   },
-  mrpContainer: {
-    alignItems: 'center'
-  },
-  mrpText: {
-    color: colors.muted,
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 2,
-    textDecorationLine: 'line-through'
-  },
-  stockContainer: {
+  mrpBox: {
     alignItems: 'flex-end'
   },
-  stockBadgeText: {
+  mrpLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase'
+  },
+  mrpValue: {
+    color: colors.muted,
     fontSize: 14,
     fontWeight: '700',
-    marginTop: 2
+    textDecorationLine: 'line-through'
   },
-  variantHeader: {
+  stockStatusRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800'
-  },
-  variantSubtitle: {
-    color: colors.muted,
-    fontSize: 12,
-    marginBottom: spacing.sm,
-    marginTop: 2
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: spacing.xs
-  },
-  variantChip: {
-    borderRadius: 10,
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    borderColor: colors.border,
     borderWidth: 1,
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 7
+    paddingVertical: 8
   },
-  variantChipDefault: {
-    backgroundColor: '#f8fafc',
-    borderColor: colors.border
+  stockLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
   },
-  variantChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
-  },
-  variantChipText: {
+  stockLabel: {
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '600'
   },
-  variantChipTextDefault: {
-    color: colors.text
-  },
-  variantChipTextSelected: {
-    color: '#ffffff',
+  stockQty: {
+    color: colors.text,
+    fontSize: 13,
     fontWeight: '800'
   },
-  specsList: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    marginTop: spacing.sm,
-    paddingTop: spacing.xs
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800'
+  },
+  variantsRow: {
+    gap: 8,
+    paddingVertical: 4
+  },
+  variantChip: {
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  variantChipSelected: {
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.primary
+  },
+  variantSku: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800'
+  },
+  variantSkuSelected: {
+    color: colors.primary
+  },
+  variantDetail: {
+    color: colors.muted,
+    fontSize: 11,
+    marginTop: 2
+  },
+  variantDetailSelected: {
+    color: colors.primaryDark
+  },
+  specTable: {
+    borderTopColor: colors.borderLight,
+    borderTopWidth: 1
   },
   specRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    borderBottomColor: colors.borderLight,
+    borderBottomWidth: 1,
     paddingVertical: 8
   },
   specLabel: {
     color: colors.muted,
-    fontSize: 13,
-    fontWeight: '500'
+    fontSize: 12,
+    fontWeight: '600'
   },
   specValue: {
     color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'right'
+    fontSize: 12,
+    fontWeight: '800'
   },
   descriptionBox: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 8,
-    marginTop: spacing.md,
-    padding: spacing.md
+    marginTop: 12,
+    padding: 10
   },
   descriptionLabel: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase'
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginBottom: 4
   },
   descriptionText: {
-    color: colors.text,
+    color: colors.textSecondary,
     fontSize: 12,
-    lineHeight: 18,
-    marginTop: 4
+    lineHeight: 18
   },
   footerBar: {
     backgroundColor: colors.surface,
@@ -609,42 +529,42 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     bottom: 0,
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     left: 0,
-    padding: 16,
+    padding: 12,
     position: 'absolute',
     right: 0
   },
   shareActionButton: {
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12
   },
   shareActionText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '700'
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800'
   },
   quoteActionButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: 8,
     flex: 1,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     justifyContent: 'center',
     paddingVertical: 12
   },
   quoteActionText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: colors.white,
+    fontSize: 13,
     fontWeight: '800'
   }
 });

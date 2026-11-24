@@ -19,10 +19,12 @@ import {
   Wallet
 } from 'lucide-react-native';
 import { paymentService, reportService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing } from '../theme/colors';
+import { colors } from '../theme/colors';
 import { formatDate, formatMoney } from '../utils/formatters';
 import {
   calculatePaymentLedgerStats,
@@ -83,7 +85,7 @@ const PaymentLedgerScreen = ({ navigation }) => {
 
   const handleRowPress = (item) => {
     if (item.orderId) {
-      navigation.navigate('OrderDetail', { orderId: item.orderId });
+      navigation.navigate('OrderDetail', { id: item.orderId });
     }
   };
 
@@ -93,26 +95,18 @@ const PaymentLedgerScreen = ({ navigation }) => {
 
   return (
     <Screen padded={false}>
-      {/* Header Bar with Action Button */}
-      <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.headerTitleWrap}>
-            <Text style={styles.title}>Payment Ledger</Text>
-            <Text style={styles.subtitle}>Collections, aging schedule & customer UTRs</Text>
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleRecordPayment}
-            style={styles.recordPaymentBtn}
-          >
-            <Plus color={colors.surface} size={16} />
-            <Text style={styles.recordPaymentBtnText}>Record</Text>
-          </TouchableOpacity>
-        </View>
+      <AppHeader
+        title="Payment Ledger"
+        subtitle="Collections & UTR Receipts"
+        onBack={() => navigation?.goBack()}
+        rightIcon={Plus}
+        onRightPress={handleRecordPayment}
+      />
 
-        {/* Search Input */}
+      {/* Search & Filter Header */}
+      <View style={styles.header}>
         <View style={styles.searchWrap}>
-          <Search color={colors.muted} size={18} style={styles.searchIcon} />
+          <Search color={colors.muted} size={16} strokeWidth={2.2} />
           <TextInput
             accessibilityLabel="Search customer, order, or reference"
             placeholder="Search customer, order ID, or UTR / reference..."
@@ -141,157 +135,111 @@ const PaymentLedgerScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Top KPI & Aging Summary Strip */}
+      {/* Top KPI Strip */}
       <View style={styles.kpiContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.kpiScroll}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kpiScroll}>
           {/* Total Collected */}
-          <View style={[styles.kpiCard, styles.kpiCardCollected]}>
-            <View style={styles.kpiIconWrapCollected}>
-              <Wallet color={colors.success} size={18} />
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiTopRow}>
+              <Text style={styles.kpiLabel}>Total Collected</Text>
+              <View style={styles.kpiIconWrap}>
+                <Wallet color={colors.success} size={15} />
+              </View>
             </View>
-            <Text style={styles.kpiLabel}>Total Collected</Text>
             <Text style={[styles.kpiAmount, { color: colors.success }]}>
               {formatMoney(stats.totalCollected)}
             </Text>
-            <Text style={styles.kpiMeta}>{payments.length} transactions</Text>
+            <Text style={styles.kpiMeta}>{payments.length} receipts</Text>
           </View>
 
           {/* Total Outstanding */}
-          <View style={[styles.kpiCard, styles.kpiCardOutstanding]}>
-            <View style={styles.kpiIconWrapOutstanding}>
-              <Clock color={colors.warning} size={18} />
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiTopRow}>
+              <Text style={styles.kpiLabel}>Outstanding</Text>
+              <View style={styles.kpiIconWrap}>
+                <Clock color={colors.warning} size={15} />
+              </View>
             </View>
-            <Text style={styles.kpiLabel}>Total Outstanding</Text>
             <Text style={[styles.kpiAmount, { color: colors.warning }]}>
               {formatMoney(stats.totalOutstanding)}
             </Text>
-            <Text style={styles.kpiMeta}>Overdue balance</Text>
+            <Text style={styles.kpiMeta}>Overdue aging balance</Text>
           </View>
 
-          {/* Aging 0-30 Days */}
+          {/* Critical Overdue (>90 days) */}
           <View style={styles.kpiCard}>
-            <Text style={styles.agingTitle}>0–30 Days</Text>
-            <Text style={styles.agingAmount}>
-              {formatMoney(stats.agingBuckets['0-30'])}
+            <View style={styles.kpiTopRow}>
+              <Text style={styles.kpiLabel}>Critical Overdue</Text>
+              <View style={styles.kpiIconWrap}>
+                <CreditCard color={colors.danger} size={15} />
+              </View>
+            </View>
+            <Text style={[styles.kpiAmount, { color: colors.danger }]}>
+              {formatMoney(stats.overdueOver90Days)}
             </Text>
-            <Text style={styles.agingSub}>Current</Text>
-          </View>
-
-          {/* Aging 31-60 Days */}
-          <View style={styles.kpiCard}>
-            <Text style={styles.agingTitle}>31–60 Days</Text>
-            <Text style={styles.agingAmount}>
-              {formatMoney(stats.agingBuckets['31-60'])}
-            </Text>
-            <Text style={styles.agingSub}>Follow-up</Text>
-          </View>
-
-          {/* Aging 61-90 Days */}
-          <View style={styles.kpiCard}>
-            <Text style={styles.agingTitle}>61–90 Days</Text>
-            <Text style={[styles.agingAmount, { color: '#c2410c' }]}>
-              {formatMoney(stats.agingBuckets['61-90'])}
-            </Text>
-            <Text style={styles.agingSub}>Critical</Text>
-          </View>
-
-          {/* Aging 90+ Days */}
-          <View style={[styles.kpiCard, { marginRight: spacing.lg }]}>
-            <Text style={styles.agingTitle}>90+ Days</Text>
-            <Text style={[styles.agingAmount, { color: colors.danger }]}>
-              {formatMoney(stats.agingBuckets['90+'])}
-            </Text>
-            <Text style={styles.agingSub}>Severe Overdue</Text>
+            <Text style={styles.kpiMeta}>&gt;90 days overdue</Text>
           </View>
         </ScrollView>
       </View>
 
-      {/* Ledger Transactions List */}
+      {/* Transaction List */}
       {loading ? (
-        <LoadingView message="Loading payment transactions & ledger..." />
+        <LoadingView label="Loading payment ledger..." />
       ) : error ? (
         <ErrorView message={error} onRetry={loadLedgerData} />
-      ) : filteredPayments.length === 0 ? (
-        <EmptyView
-          actionLabel="Record Payment"
-          message={
-            searchQuery
-              ? `No transactions matching "${searchQuery}"`
-              : selectedMode !== 'All'
-              ? `No ${selectedMode} payments found.`
-              : 'No recorded payments found.'
-          }
-          onAction={handleRecordPayment}
-        />
       ) : (
         <FlatList
-          contentContainerStyle={styles.listContent}
           data={filteredPayments}
-          keyExtractor={(item, index) => String(item.id || item.transactionId || index)}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl
-              colors={[colors.primary]}
-              refreshing={refreshing}
-              tintColor={colors.primary}
-              onRefresh={onRefresh}
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <EmptyView
+              icon={Receipt}
+              title="No transactions found"
+              message="No payments match your current search and filter settings."
             />
           }
-          renderItem={({ item }) => {
-            const method = (item.paymentMethod || 'PAYMENT').toUpperCase();
-            const dateStr = item.paymentDate || item.createdAt;
-
-            return (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => handleRowPress(item)}
-                style={styles.transactionCard}
-              >
-                <View style={styles.transactionTopRow}>
-                  <View style={styles.customerInfoWrap}>
-                    <View style={styles.methodIconWrap}>
-                      <CreditCard color={colors.primary} size={16} />
-                    </View>
-                    <View style={styles.customerTextWrap}>
-                      <Text numberOfLines={1} style={styles.customerName}>
-                        {item.customerName || item.customer?.name || `Customer #${item.customerId || 'N/A'}`}
-                      </Text>
-                      <Text style={styles.transactionDate}>{formatDate(dateStr)}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.amountWrap}>
-                    <Text style={styles.amountText}>{formatMoney(item.amount)}</Text>
-                    <View style={styles.methodBadge}>
-                      <Text style={styles.methodBadgeText}>{method}</Text>
-                    </View>
-                  </View>
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => handleRowPress(item)}
+              style={styles.transactionCard}
+            >
+              <View style={styles.transactionTopRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.customerName} numberOfLines={1}>
+                    {item.customerName || `Order #${item.orderId || item.id}`}
+                  </Text>
+                  <Text style={styles.transactionDate}>
+                    {formatDate(item.paymentDate || item.createdAt)}
+                  </Text>
                 </View>
 
-                {/* Sub row with Order ID, Reference / UTR and navigation hint */}
-                <View style={styles.transactionBottomRow}>
-                  <View style={styles.refInfo}>
-                    {item.orderId ? (
-                      <View style={styles.orderPill}>
-                        <Receipt color={colors.muted} size={12} />
-                        <Text style={styles.orderPillText}>Order #{item.orderId}</Text>
-                      </View>
-                    ) : null}
-                    {(item.referenceNumber || item.transactionId) ? (
-                      <Text numberOfLines={1} style={styles.refText}>
-                        Ref: {item.referenceNumber || item.transactionId}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  {item.orderId ? (
-                    <View style={styles.viewOrderLink}>
-                      <Text style={styles.viewOrderLinkText}>View Order</Text>
-                      <ArrowUpRight color={colors.primary} size={13} />
-                    </View>
-                  ) : null}
+                <View style={styles.amountWrap}>
+                  <Text style={styles.amountText}>{formatMoney(item.amount)}</Text>
+                  <StatusPill label={item.paymentMethod || 'CASH'} type="info" size="sm" />
                 </View>
-              </TouchableOpacity>
-            );
-          }}
+              </View>
+
+              <View style={styles.transactionBottomRow}>
+                <View style={styles.refInfo}>
+                  <Text style={styles.refText} numberOfLines={1}>
+                    Ref: {item.transactionReference || item.referenceNumber || 'Direct Payment'}
+                  </Text>
+                </View>
+
+                {item.orderId ? (
+                  <View style={styles.viewOrderLink}>
+                    <Text style={styles.viewOrderLinkText}>Order #{item.orderId}</Text>
+                    <ArrowUpRight color={colors.primary} size={14} />
+                  </View>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          )}
         />
       )}
     </Screen>
@@ -303,71 +251,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
-    padding: spacing.lg
-  },
-  headerTopRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md
-  },
-  headerTitleWrap: {
-    flex: 1
-  },
-  title: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900'
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 2
-  },
-  recordPaymentBtn: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8
-  },
-  recordPaymentBtnText: {
-    color: colors.surface,
-    fontSize: 13,
-    fontWeight: '800'
+    padding: 12
   },
   searchWrap: {
     alignItems: 'center',
     backgroundColor: colors.background,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
-    marginBottom: spacing.sm,
-    paddingHorizontal: 10
-  },
-  searchIcon: {
-    marginRight: 6
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6
   },
   searchInput: {
     color: colors.text,
     flex: 1,
-    fontSize: 14,
-    paddingVertical: 8
+    fontSize: 13,
+    paddingVertical: 2
   },
   chipsRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: 4
+    gap: 6,
+    marginTop: 8
   },
   chip: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 6,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5
   },
   chipActive: {
@@ -375,130 +288,85 @@ const styles = StyleSheet.create({
     borderColor: colors.primary
   },
   chipText: {
-    color: colors.text,
-    fontSize: 12,
+    color: colors.muted,
+    fontSize: 11,
     fontWeight: '700'
   },
   chipTextActive: {
-    color: colors.surface
+    color: colors.white
   },
   kpiContainer: {
     backgroundColor: colors.surface,
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
-    paddingVertical: spacing.md
+    paddingVertical: 10
   },
   kpiScroll: {
-    paddingLeft: spacing.lg
+    paddingHorizontal: 12,
+    gap: 8
   },
   kpiCard: {
     backgroundColor: colors.background,
     borderColor: colors.border,
     borderRadius: 10,
     borderWidth: 1,
-    marginRight: spacing.sm,
-    minWidth: 130,
-    padding: spacing.md
+    minWidth: 140,
+    padding: 10
   },
-  kpiCardCollected: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0'
-  },
-  kpiCardOutstanding: {
-    backgroundColor: '#fffbeb',
-    borderColor: '#fde68a'
-  },
-  kpiIconWrapCollected: {
+  kpiTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#dcfce7',
-    borderRadius: 6,
-    height: 28,
-    justifyContent: 'center',
-    marginBottom: 6,
-    width: 28
-  },
-  kpiIconWrapOutstanding: {
-    alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    borderRadius: 6,
-    height: 28,
-    justifyContent: 'center',
-    marginBottom: 6,
-    width: 28
+    justifyContent: 'space-between',
+    marginBottom: 4
   },
   kpiLabel: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700'
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase'
+  },
+  kpiIconWrap: {
+    alignItems: 'center',
+    borderRadius: 4,
+    height: 22,
+    justifyContent: 'center',
+    width: 22
   },
   kpiAmount: {
     fontSize: 16,
     fontWeight: '900',
-    marginTop: 2
+    letterSpacing: -0.3
   },
   kpiMeta: {
-    color: colors.muted,
-    fontSize: 11,
-    marginTop: 2
-  },
-  agingTitle: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  agingAmount: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '900',
-    marginTop: 4
-  },
-  agingSub: {
     color: colors.muted,
     fontSize: 10,
     marginTop: 2
   },
   listContent: {
-    padding: spacing.md
+    padding: 12,
+    paddingBottom: 28
   },
   transactionCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: spacing.sm,
-    padding: spacing.md
+    marginBottom: 8,
+    padding: 12
   },
   transactionTopRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
-  customerInfoWrap: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    marginRight: spacing.sm
-  },
-  methodIconWrap: {
-    alignItems: 'center',
-    backgroundColor: '#f0fdfa',
-    borderRadius: 8,
-    height: 36,
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-    width: 36
-  },
-  customerTextWrap: {
-    flex: 1
-  },
   customerName: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800'
   },
   transactionDate: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2
   },
   amountWrap: {
@@ -507,53 +375,23 @@ const styles = StyleSheet.create({
   },
   amountText: {
     color: colors.primary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900'
-  },
-  methodBadge: {
-    backgroundColor: '#e0f2fe',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2
-  },
-  methodBadgeText: {
-    color: '#0369a1',
-    fontSize: 10,
-    fontWeight: '800'
   },
   transactionBottomRow: {
     alignItems: 'center',
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    paddingTop: spacing.xs
+    marginTop: 8,
+    paddingTop: 6
   },
   refInfo: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 8,
-    marginRight: spacing.sm
-  },
-  orderPill: {
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 6,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2
-  },
-  orderPillText: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700'
+    flex: 1
   },
   refText: {
     color: colors.muted,
-    flex: 1,
     fontSize: 11
   },
   viewOrderLink: {

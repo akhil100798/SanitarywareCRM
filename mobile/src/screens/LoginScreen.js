@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { Droplet, ShieldCheck } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import Screen from '../components/Screen';
 import { useAuth } from '../context/AuthContext';
@@ -43,8 +44,11 @@ const LoginScreen = () => {
         style={styles.keyboard}
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>Sanitaryware CRM</Text>
-          <Text style={styles.subtitle}>Sign in to manage orders, products, payments, and customers.</Text>
+          <View style={styles.iconCircle}>
+            <Droplet color={colors.primary} size={32} strokeWidth={2.2} />
+          </View>
+          <Text style={styles.brand}>HydroSleek CRM</Text>
+          <Text style={styles.subtitle}>Sanitaryware & Bathware Showroom Management</Text>
         </View>
 
         <View style={styles.card}>
@@ -84,6 +88,11 @@ const LoginScreen = () => {
             <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.footerNote}>
+          <ShieldCheck size={14} color={colors.muted} />
+          <Text style={styles.footerText}>Secure JWT session with encrypted device storage</Text>
+        </View>
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -92,42 +101,59 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   keyboard: {
     flex: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
+    paddingHorizontal: 8
   },
   header: {
-    marginBottom: 24
+    alignItems: 'center',
+    marginBottom: 28
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14
   },
   brand: {
     color: colors.text,
-    fontSize: 30,
-    fontWeight: '800'
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.5
   },
   subtitle: {
     color: colors.muted,
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 8
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 6,
+    textAlign: 'center'
   },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 18
+    padding: 20
   },
   label: {
     color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
     marginBottom: 16,
     paddingHorizontal: 12,
     paddingVertical: 12
@@ -135,6 +161,7 @@ const styles = StyleSheet.create({
   error: {
     color: colors.danger,
     fontSize: 13,
+    fontWeight: '600',
     marginBottom: 14
   },
   button: {
@@ -144,12 +171,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14
   },
   buttonDisabled: {
+    backgroundColor: colors.primaryDark,
     opacity: 0.7
   },
   buttonText: {
-    color: colors.surface,
-    fontSize: 16,
+    color: colors.white,
+    fontSize: 15,
     fontWeight: '800'
+  },
+  footerNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 20
+  },
+  footerText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '500'
   }
 });
 

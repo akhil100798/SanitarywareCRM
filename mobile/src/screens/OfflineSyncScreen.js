@@ -13,11 +13,8 @@ import {
 } from 'react-native';
 import {
   CheckCircle2,
-  Clock,
-  CloudOff,
   Database,
   DownloadCloud,
-  FileText,
   RefreshCw,
   Trash2,
   Wifi,
@@ -25,12 +22,13 @@ import {
 } from 'lucide-react-native';
 import { customerService, productService, quotationService } from '../api/services';
 import { offlineSyncManager } from '../utils/offlineSyncManager';
+import AppHeader from '../components/AppHeader';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { colors } from '../theme/colors';
 import { formatMoney } from '../utils/formatters';
 
 const OfflineSyncScreen = ({ navigation }) => {
-  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [cachingMaster, setCachingMaster] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,7 +56,6 @@ const OfflineSyncScreen = ({ navigation }) => {
     } catch (err) {
       if (typeof console !== 'undefined') console.error('Failed to load offline sync data', err);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   }, []);
@@ -158,7 +155,7 @@ const OfflineSyncScreen = ({ navigation }) => {
     } else {
       Alert.alert(
         'Delete Offline Draft',
-        'Are you sure you want to remove this quotation from the sync outbox?',
+        'Are you sure you want to discard this unsynced quote draft?',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Delete', style: 'destructive', onPress: doDelete }
@@ -167,548 +164,447 @@ const OfflineSyncScreen = ({ navigation }) => {
     }
   };
 
-  const pendingCount = queue.filter(
-    (i) => i.syncStatus === 'PENDING_SYNC' || i.syncStatus === 'SYNC_ERROR'
-  ).length;
-
-  if (loading) {
-    return (
-      <Screen padded={false}>
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.loadingText}>Loading offline outbox...</Text>
-        </View>
-      </Screen>
-    );
-  }
-
   return (
     <Screen padded={false}>
+      <AppHeader
+        title="Offline Outbox & Sync"
+        subtitle="Catalog Cache & Field Sync"
+        onBack={() => navigation?.goBack()}
+      />
+
       <FlatList
-        contentContainerStyle={styles.container}
         data={queue}
         keyExtractor={(item) => item.localId}
+        contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              loadData();
+            }}
+          />
         }
         ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <Text style={styles.title}>Offline Outbox & Sync</Text>
-              <Text style={styles.subtitle}>
-                Create and manage quotes even in basements or offline job sites.
-              </Text>
-            </View>
-
-            {syncFeedback && (
+          <>
+            {/* Status Feedback Banner */}
+            {syncFeedback ? (
               <View
                 style={[
-                  styles.feedbackBox,
+                  styles.feedbackCard,
                   syncFeedback.type === 'success' && styles.feedbackSuccess,
-                  syncFeedback.type === 'error' && styles.feedbackError,
                   syncFeedback.type === 'warning' && styles.feedbackWarning,
-                  syncFeedback.type === 'info' && styles.feedbackInfo
+                  syncFeedback.type === 'error' && styles.feedbackError
                 ]}
               >
-                <Text style={styles.feedbackText}>{syncFeedback.message}</Text>
+                <Text
+                  style={[
+                    styles.feedbackText,
+                    syncFeedback.type === 'success' && styles.feedbackSuccessText,
+                    syncFeedback.type === 'warning' && styles.feedbackWarningText,
+                    syncFeedback.type === 'error' && styles.feedbackErrorText
+                  ]}
+                >
+                  {syncFeedback.message}
+                </Text>
               </View>
-            )}
+            ) : null}
 
-            {/* Offline Simulation Card */}
+            {/* Offline Mode Switch Card */}
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.row}>
-                  {isForcedOffline ? <WifiOff color={colors.danger} size={20} /> : <Wifi color={colors.success} size={20} />}
-                  <Text style={styles.cardTitle}>Connection Mode</Text>
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleLeft}>
+                  <View style={[styles.modeIconBox, isForcedOffline && styles.modeIconBoxOffline]}>
+                    {isForcedOffline ? (
+                      <WifiOff size={20} color={colors.warning} />
+                    ) : (
+                      <Wifi size={20} color={colors.success} />
+                    )}
+                  </View>
+                  <View>
+                    <Text style={styles.cardTitle}>
+                      {isForcedOffline ? 'Forced Offline Mode' : 'Connected Mode'}
+                    </Text>
+                    <Text style={styles.cardSubtitle}>
+                      {isForcedOffline
+                        ? 'Simulating disconnected field mode'
+                        : 'Active connection to server'}
+                    </Text>
+                  </View>
                 </View>
                 <Switch
-                  onValueChange={handleToggleOffline}
-                  thumbColor={isForcedOffline ? colors.danger : colors.primary}
-                  trackColor={{ false: '#cbd5e1', true: '#fca5a5' }}
                   value={isForcedOffline}
+                  onValueChange={handleToggleOffline}
+                  thumbColor={isForcedOffline ? colors.warning : colors.primary}
+                  trackColor={{ false: colors.border, true: colors.primarySubtle }}
                 />
               </View>
-              <Text style={styles.cardMeta}>
-                {isForcedOffline
-                  ? 'Forced Offline Mode is active. New quotations will be saved directly to the local outbox without contacting the server.'
-                  : 'Online Mode is active. Quotations are created immediately on the backend server with automatic outbox fallback on failure.'}
-              </Text>
             </View>
 
-            {/* Master Catalog Cache Card */}
+            {/* Catalog Cache Status Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={styles.row}>
-                  <Database color={colors.primary} size={20} />
-                  <Text style={styles.cardTitle}>Master Catalog Cache</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Database size={18} color={colors.primary} />
+                  <Text style={styles.cardTitle}>Local Catalog Cache</Text>
                 </View>
                 <TouchableOpacity
-                  disabled={cachingMaster || isForcedOffline}
                   onPress={handleRefreshCatalog}
-                  style={[styles.smallBtn, (cachingMaster || isForcedOffline) && styles.btnDisabled]}
+                  disabled={cachingMaster || isForcedOffline}
+                  style={[
+                    styles.refreshBtn,
+                    (cachingMaster || isForcedOffline) && styles.btnDisabled
+                  ]}
                 >
                   {cachingMaster ? (
-                    <ActivityIndicator color={colors.primary} size="small" />
+                    <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <>
-                      <DownloadCloud color={colors.primary} size={14} />
-                      <Text style={styles.smallBtnText}>Update Cache</Text>
+                      <DownloadCloud size={13} color={colors.primary} />
+                      <Text style={styles.refreshBtnText}>Update</Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
-              <View style={styles.statsRow}>
-                <View style={styles.statBox}>
-                  <Text style={styles.statVal}>{cachedProductsCount}</Text>
-                  <Text style={styles.statLabel}>Products</Text>
+
+              <View style={styles.cacheStatsRow}>
+                <View style={styles.cacheStat}>
+                  <Text style={styles.cacheStatNumber}>{cachedProductsCount}</Text>
+                  <Text style={styles.cacheStatLabel}>Products Cached</Text>
                 </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statVal}>{cachedCustomersCount}</Text>
-                  <Text style={styles.statLabel}>Customers</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statVal}>
-                    {lastSyncTime ? new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
-                  </Text>
-                  <Text style={styles.statLabel}>Last Cache Sync</Text>
+                <View style={styles.cacheDivider} />
+                <View style={styles.cacheStat}>
+                  <Text style={styles.cacheStatNumber}>{cachedCustomersCount}</Text>
+                  <Text style={styles.cacheStatLabel}>Customers Cached</Text>
                 </View>
               </View>
+
+              {lastSyncTime ? (
+                <Text style={styles.lastSyncText}>
+                  Last cached: {new Date(lastSyncTime).toLocaleTimeString()}
+                </Text>
+              ) : null}
             </View>
 
-            {/* Outbox Actions Bar */}
-            <View style={styles.outboxHeader}>
-              <View style={styles.row}>
-                <FileText color={colors.text} size={18} />
-                <Text style={styles.sectionTitle}>Local Quotation Outbox</Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{pendingCount} Pending</Text>
-                </View>
-              </View>
-              <View style={styles.row}>
-                {queue.some((i) => i.syncStatus === 'SYNCED') && (
+            {/* Queue Actions Header */}
+            <View style={styles.queueHeaderRow}>
+              <Text style={styles.queueTitle}>Pending Outbox ({queue.length})</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={handleSyncOutbox}
+                  disabled={syncing || isForcedOffline}
+                  style={[styles.syncAllBtn, (syncing || isForcedOffline) && styles.btnDisabled]}
+                >
+                  {syncing ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <>
+                      <RefreshCw size={13} color={colors.white} />
+                      <Text style={styles.syncAllBtnText}>Sync All</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {queue.some((i) => i.status === 'SYNCED') && (
                   <TouchableOpacity onPress={handleClearSynced} style={styles.clearBtn}>
                     <Text style={styles.clearBtnText}>Clear Synced</Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity
-                  disabled={syncing || pendingCount === 0 || isForcedOffline}
-                  onPress={handleSyncOutbox}
-                  style={[
-                    styles.syncNowBtn,
-                    (syncing || pendingCount === 0 || isForcedOffline) && styles.btnDisabled
-                  ]}
-                >
-                  {syncing ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <>
-                      <RefreshCw color="#fff" size={14} />
-                      <Text style={styles.syncNowBtnText}>Sync All</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </>
         }
         ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <CloudOff color={colors.muted} size={32} />
-            <Text style={styles.emptyTitle}>Outbox is Empty</Text>
-            <Text style={styles.emptySub}>
-              Quotations drafted when offline will appear here and sync automatically when network is available.
-            </Text>
+          <View style={styles.emptyWrap}>
+            <CheckCircle2 size={36} color={colors.success} />
+            <Text style={styles.emptyTitle}>Outbox is completely clear</Text>
+            <Text style={styles.emptySubtitle}>All offline quotations are synchronized with the CRM.</Text>
           </View>
         }
-        renderItem={({ item }) => {
-          const isSynced = item.syncStatus === 'SYNCED';
-          const isError = item.syncStatus === 'SYNC_ERROR';
-          const isSyncing = item.syncStatus === 'SYNCING';
-
-          return (
-            <View style={styles.quoteCard}>
-              <View style={styles.quoteHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.quoteCustomer}>{item.customerName}</Text>
-                  <Text style={styles.quoteSub}>
-                    Drafted: {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
-                <View style={styles.statusWrap}>
-                  {isSynced && (
-                    <TouchableOpacity
-                      onPress={() => navigation?.navigate('QuotationDetail', { id: item.remoteQuotationId })}
-                      style={[styles.statusBadge, styles.statusSynced]}
-                    >
-                      <CheckCircle2 color="#166534" size={12} />
-                      <Text style={styles.statusSyncedText}>
-                        Synced ({item.remoteQuotationNumber || `#${item.remoteQuotationId}`})
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  {isError && (
-                    <View style={[styles.statusBadge, styles.statusError]}>
-                      <Text style={styles.statusErrorText}>Sync Failed</Text>
-                    </View>
-                  )}
-                  {isSyncing && (
-                    <View style={[styles.statusBadge, styles.statusSyncing]}>
-                      <ActivityIndicator color="#1d4ed8" size="small" />
-                      <Text style={styles.statusSyncingText}>Syncing...</Text>
-                    </View>
-                  )}
-                  {!isSynced && !isError && !isSyncing && (
-                    <View style={[styles.statusBadge, styles.statusPending]}>
-                      <Clock color="#854d0e" size={12} />
-                      <Text style={styles.statusPendingText}>Waiting to Sync</Text>
-                    </View>
-                  )}
-                  <TouchableOpacity onPress={() => handleDeleteItem(item.localId)} style={styles.deleteBtn}>
-                    <Trash2 color={colors.danger} size={16} />
-                  </TouchableOpacity>
-                </View>
+        renderItem={({ item }) => (
+          <View style={styles.queueCard}>
+            <View style={styles.queueTopRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.queueCustomer}>{item.customerName || 'Offline Estimate'}</Text>
+                <Text style={styles.queueDate}>{new Date(item.enqueuedAt).toLocaleString()}</Text>
               </View>
-
-              {isError && item.syncError && (
-                <View style={styles.errorBanner}>
-                  <Text style={styles.errorText}>Error: {item.syncError}</Text>
-                </View>
-              )}
-
-              <View style={styles.quoteBody}>
-                <Text style={styles.quoteItemsCount}>
-                  {item.items.length} line item{item.items.length > 1 ? 's' : ''}:
-                </Text>
-                {item.items.map((line, idx) => (
-                  <Text key={idx} numberOfLines={1} style={styles.quoteLineItem}>
-                    • {line.productName} ({line.quantity} × {formatMoney(line.unitPrice)}) = {formatMoney(line.lineTotal)}
-                  </Text>
-                ))}
-              </View>
-
-              <View style={styles.quoteFooter}>
-                <Text style={styles.quoteLocalId}>ID: {item.localId}</Text>
-                <Text style={styles.quoteTotal}>{formatMoney(item.total)}</Text>
+              <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                <StatusPill status={item.status} size="sm" />
+                <Text style={styles.queueTotal}>{formatMoney(item.payload?.total)}</Text>
               </View>
             </View>
-          );
-        }}
+
+            {item.error ? (
+              <View style={styles.queueErrorBox}>
+                <Text style={styles.queueErrorText}>{item.error}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.queueBottomRow}>
+              <Text style={styles.queueItemsCount}>
+                {item.payload?.items?.length || 0} items
+              </Text>
+              <TouchableOpacity onPress={() => handleDeleteItem(item.localId)}>
+                <Trash2 size={15} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       />
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 40
-  },
-  header: {
-    marginBottom: 16
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900'
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4
-  },
-  feedbackBox: {
-    borderRadius: 8,
-    marginBottom: 14,
-    padding: 12
-  },
-  feedbackSuccess: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#86efac',
-    borderWidth: 1
-  },
-  feedbackError: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#fca5a5',
-    borderWidth: 1
-  },
-  feedbackWarning: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fde047',
-    borderWidth: 1
-  },
-  feedbackInfo: {
-    backgroundColor: '#e0f2fe',
-    borderColor: '#7dd3fc',
-    borderWidth: 1
-  },
-  feedbackText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600'
+  listContent: {
+    padding: 12,
+    paddingBottom: 28
   },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 14,
-    padding: 14
+    marginBottom: 10,
+    padding: 12
   },
-  cardHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800'
-  },
-  cardMeta: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18
-  },
-  smallBtn: {
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderRadius: 6,
+  feedbackCard: {
+    borderRadius: 8,
     borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5
+    marginBottom: 10,
+    padding: 10
   },
-  smallBtnText: {
-    color: colors.primary,
+  feedbackSuccess: {
+    backgroundColor: colors.successBg,
+    borderColor: colors.successBorder
+  },
+  feedbackSuccessText: {
+    color: colors.success,
     fontSize: 12,
     fontWeight: '700'
   },
-  statsRow: {
+  feedbackWarning: {
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder
+  },
+  feedbackWarningText: {
+    color: colors.warning,
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  feedbackError: {
+    backgroundColor: colors.dangerBg,
+    borderColor: colors.dangerBorder
+  },
+  feedbackErrorText: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  feedbackText: {
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  toggleRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 10
-  },
-  statBox: {
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    justifyContent: 'space-between'
+  },
+  toggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10
+  },
+  modeIconBox: {
+    alignItems: 'center',
+    backgroundColor: colors.successBg,
+    borderColor: colors.successBorder,
     borderRadius: 8,
-    flex: 1,
-    padding: 10
+    borderWidth: 1,
+    height: 38,
+    justifyContent: 'center',
+    width: 38
   },
-  statVal: {
+  modeIconBoxOffline: {
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder
+  },
+  cardTitle: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '900'
+    fontSize: 14,
+    fontWeight: '800'
   },
-  statLabel: {
+  cardSubtitle: {
     color: colors.muted,
     fontSize: 11,
     marginTop: 2
   },
-  outboxHeader: {
-    alignItems: 'center',
+  cardHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    marginTop: 8
+    marginBottom: 10
   },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800'
-  },
-  badge: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2
-  },
-  badgeText: {
-    color: '#92400e',
-    fontSize: 11,
-    fontWeight: '800'
-  },
-  clearBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 6
-  },
-  clearBtnText: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '600'
-  },
-  syncNowBtn: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 8,
+  refreshBtn: {
     flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4
   },
-  syncNowBtnText: {
-    color: '#fff',
-    fontSize: 13,
+  refreshBtnText: {
+    color: colors.primary,
+    fontSize: 11,
     fontWeight: '800'
   },
   btnDisabled: {
     opacity: 0.5
   },
-  emptyCard: {
+  cacheStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 6
+  },
+  cacheStat: {
+    alignItems: 'center'
+  },
+  cacheStatNumber: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900'
+  },
+  cacheStatLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2
+  },
+  cacheDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: colors.borderLight
+  },
+  lastSyncText: {
+    color: colors.muted,
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 8
+  },
+  queueHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 8
+  },
+  queueTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800'
+  },
+  syncAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  syncAllBtnText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '800'
+  },
+  clearBtn: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6
+  },
+  clearBtnText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700'
+  },
+  emptyWrap: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    padding: 32
+    padding: 24,
+    marginTop: 8,
+    gap: 6
   },
   emptyTitle: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    marginTop: 12
-  },
-  emptySub: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center'
-  },
-  quoteCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 14
-  },
-  quoteHeader: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  quoteCustomer: {
-    color: colors.text,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800'
   },
-  quoteSub: {
+  emptySubtitle: {
+    color: colors.muted,
+    fontSize: 11,
+    textAlign: 'center'
+  },
+  queueCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+    padding: 12
+  },
+  queueTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start'
+  },
+  queueCustomer: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  queueDate: {
     color: colors.muted,
     fontSize: 11,
     marginTop: 2
   },
-  statusWrap: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8
-  },
-  statusBadge: {
-    alignItems: 'center',
-    borderRadius: 6,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3
-  },
-  statusSynced: {
-    backgroundColor: '#dcfce7'
-  },
-  statusSyncedText: {
-    color: '#166534',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  statusError: {
-    backgroundColor: '#fee2e2'
-  },
-  statusErrorText: {
-    color: '#991b1b',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  statusSyncing: {
-    backgroundColor: '#dbeafe'
-  },
-  statusSyncingText: {
-    color: '#1d4ed8',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  statusPending: {
-    backgroundColor: '#fef3c7'
-  },
-  statusPendingText: {
-    color: '#854d0e',
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  deleteBtn: {
-    padding: 4
-  },
-  errorBanner: {
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
-    borderRadius: 6,
-    borderWidth: 1,
-    marginTop: 8,
-    padding: 8
-  },
-  errorText: {
-    color: '#be123c',
-    fontSize: 11,
-    fontWeight: '600'
-  },
-  quoteBody: {
-    borderBottomColor: colors.border,
-    borderTopColor: colors.border,
-    borderBottomWidth: 1,
-    borderTopWidth: 1,
-    marginVertical: 10,
-    paddingVertical: 8
-  },
-  quoteItemsCount: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 4
-  },
-  quoteLineItem: {
-    color: colors.text,
-    fontSize: 12,
-    marginVertical: 1
-  },
-  quoteFooter: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  quoteLocalId: {
-    color: colors.muted,
-    fontSize: 10
-  },
-  quoteTotal: {
-    color: colors.primaryDark,
-    fontSize: 16,
+  queueTotal: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '900'
   },
-  loadingWrap: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    padding: 32
+  queueErrorBox: {
+    backgroundColor: colors.dangerBg,
+    borderColor: colors.dangerBorder,
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 6,
+    marginTop: 6
   },
-  loadingText: {
+  queueErrorText: {
+    color: colors.danger,
+    fontSize: 11
+  },
+  queueBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopColor: colors.borderLight,
+    borderTopWidth: 1,
+    marginTop: 8,
+    paddingTop: 6
+  },
+  queueItemsCount: {
     color: colors.muted,
-    fontSize: 14,
-    marginTop: 12
+    fontSize: 11,
+    fontWeight: '600'
   }
 });
 

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import {
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { reportService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import Screen from '../components/Screen';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { useAuth } from '../context/AuthContext';
@@ -23,10 +24,10 @@ import { colors } from '../theme/colors';
 import { formatDate, formatMoney } from '../utils/formatters';
 
 const TABS = [
-  { key: 'gst', label: 'GST Summary', icon: FileSpreadsheet },
-  { key: 'aging', label: 'Aging Schedule', icon: Clock },
+  { key: 'gst', label: 'GST Tax', icon: FileSpreadsheet },
+  { key: 'aging', label: 'Aging', icon: Clock },
   { key: 'deadStock', label: 'Dead Stock', icon: Archive },
-  { key: 'margins', label: 'Brand Margins', icon: TrendingUp }
+  { key: 'margins', label: 'Margins', icon: TrendingUp }
 ];
 
 const KpiCard = ({ title, value, subtitle, highlight }) => (
@@ -37,7 +38,7 @@ const KpiCard = ({ title, value, subtitle, highlight }) => (
   </View>
 );
 
-const ReportsScreen = () => {
+const ReportsScreen = ({ navigation }) => {
   const { user } = useAuth();
   const isAuthorized = ['ADMIN', 'MANAGER'].includes(user?.role);
 
@@ -83,7 +84,8 @@ const ReportsScreen = () => {
 
   if (!isAuthorized) {
     return (
-      <Screen>
+      <Screen padded={false}>
+        <AppHeader title="Reports & Analytics" onBack={() => navigation?.goBack()} />
         <EmptyView
           icon={AlertTriangle}
           title="Access Restricted"
@@ -176,69 +178,45 @@ const ReportsScreen = () => {
       >
         <View style={styles.kpiGrid}>
           <KpiCard
-            title="Total Outstanding"
+            title="Total Receivables"
             value={formatMoney(agingData.totalOutstanding)}
-            subtitle={`${agingData.totalCustomers || 0} customers with dues`}
+            subtitle="All aging buckets"
             highlight
           />
           <KpiCard
-            title="0-30 Days"
-            value={formatMoney(agingData.bucket0To30)}
-            subtitle="Current"
+            title="Current (0-30 d)"
+            value={formatMoney(agingData.currentBucket)}
+            subtitle="Within terms"
           />
           <KpiCard
-            title="31-60 Days"
-            value={formatMoney(agingData.bucket31To60)}
-            subtitle="Moderate"
-          />
-          <KpiCard
-            title="61-90 Days"
-            value={formatMoney(agingData.bucket61To90)}
-            subtitle="Overdue"
-          />
-          <KpiCard
-            title="90+ Days"
-            value={formatMoney(agingData.bucket90Plus)}
-            subtitle="Critical overdue"
-            highlight
+            title="Critical Overdue"
+            value={formatMoney(agingData.over90Days)}
+            subtitle="&gt;90 days overdue"
           />
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeader}>Customer Aging Breakdown</Text>
-          {agingData.items?.length ? (
-            agingData.items.map((cust) => (
-              <View key={cust.customerId} style={styles.agingCustomerCard}>
+          <Text style={styles.sectionHeader}>Outstanding Aging by Customer</Text>
+          {agingData.customers?.length ? (
+            agingData.customers.map((c, idx) => (
+              <View key={`${c.customerId}-${idx}`} style={styles.agingCustomerCard}>
                 <View style={styles.customerHeader}>
                   <View style={styles.customerHeaderInfo}>
-                    <Text style={styles.customerName}>{cust.customerName}</Text>
-                    <Text style={styles.customerType}>{cust.customerType || 'RETAIL'} • {cust.phoneNumber || 'No Phone'}</Text>
+                    <Text style={styles.customerName}>{c.customerName}</Text>
+                    <Text style={styles.customerType}>{c.customerType || 'Customer'}</Text>
                   </View>
-                  <Text style={styles.customerTotalDue}>{formatMoney(cust.totalOutstanding)}</Text>
+                  <Text style={styles.customerTotalDue}>{formatMoney(c.totalDue)}</Text>
                 </View>
-
                 <View style={styles.bucketRow}>
-                  <View style={styles.bucketCol}>
-                    <Text style={styles.bucketLabel}>0-30d</Text>
-                    <Text style={styles.bucketVal}>{formatMoney(cust.bucket0To30)}</Text>
-                  </View>
-                  <View style={styles.bucketCol}>
-                    <Text style={styles.bucketLabel}>31-60d</Text>
-                    <Text style={styles.bucketVal}>{formatMoney(cust.bucket31To60)}</Text>
-                  </View>
-                  <View style={styles.bucketCol}>
-                    <Text style={styles.bucketLabel}>61-90d</Text>
-                    <Text style={styles.bucketVal}>{formatMoney(cust.bucket61To90)}</Text>
-                  </View>
-                  <View style={styles.bucketCol}>
-                    <Text style={[styles.bucketLabel, styles.bucketLabelOverdue]}>90+d</Text>
-                    <Text style={[styles.bucketVal, styles.bucketValOverdue]}>{formatMoney(cust.bucket90Plus)}</Text>
-                  </View>
+                  <View style={styles.bucketCol}><Text style={styles.bucketLabel}>0-30d</Text><Text style={styles.bucketVal}>{formatMoney(c.bucket0to30)}</Text></View>
+                  <View style={styles.bucketCol}><Text style={styles.bucketLabel}>31-60d</Text><Text style={styles.bucketVal}>{formatMoney(c.bucket31to60)}</Text></View>
+                  <View style={styles.bucketCol}><Text style={styles.bucketLabel}>61-90d</Text><Text style={styles.bucketVal}>{formatMoney(c.bucket61to90)}</Text></View>
+                  <View style={styles.bucketCol}><Text style={[styles.bucketLabel, styles.bucketLabelOverdue]}>&gt;90d</Text><Text style={[styles.bucketVal, styles.bucketValOverdue]}>{formatMoney(c.bucketOver90)}</Text></View>
                 </View>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyNotice}>No outstanding customer balances.</Text>
+            <Text style={styles.emptyNotice}>No outstanding receivables recorded.</Text>
           )}
         </View>
       </ScrollView>
@@ -256,43 +234,36 @@ const ReportsScreen = () => {
       >
         <View style={styles.kpiGrid}>
           <KpiCard
-            title="Dormant SKUs"
-            value={String(deadStockData.totalDormantProducts || 0)}
-            subtitle="No sales in 60+ days"
+            title="Dormant Items"
+            value={deadStockData.totalDeadStockItems ?? 0}
+            subtitle="60+ days without sales"
+          />
+          <KpiCard
+            title="Blocked Capital"
+            value={formatMoney(deadStockData.totalBlockedCapital)}
+            subtitle="Cost of dormant units"
             highlight
-          />
-          <KpiCard
-            title="Tied-up Capital"
-            value={formatMoney(deadStockData.totalDormantValue)}
-            subtitle="Inventory at cost"
-          />
-          <KpiCard
-            title="Dormant Units"
-            value={String(deadStockData.totalDormantStock || 0)}
-            subtitle="Total units in warehouse"
           />
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeader}>Dormant Inventory Items</Text>
+          <Text style={styles.sectionHeader}>Dead Stock Items</Text>
           {deadStockData.items?.length ? (
-            deadStockData.items.map((item) => (
-              <View key={item.productId} style={styles.tableRow}>
+            deadStockData.items.map((item, idx) => (
+              <View key={`${item.productId}-${idx}`} style={styles.tableRow}>
                 <View style={styles.tableColMain}>
                   <Text style={styles.tableItemTitle}>{item.productName}</Text>
-                  <Text style={styles.tableItemSub}>{item.brandName} • SKU: {item.sku || 'N/A'}</Text>
-                  <Text style={styles.tableItemDate}>
-                    Last sold: {formatDate(item.lastSaleDate)} ({item.daysDormant} days ago)
-                  </Text>
+                  <Text style={styles.tableItemSub}>SKU: {item.sku} • {item.brandName}</Text>
+                  <Text style={styles.tableItemDate}>Dormant for {item.dormantDays} days</Text>
                 </View>
                 <View style={styles.tableColRight}>
-                  <Text style={styles.tableItemAmount}>{formatMoney(item.stockValue)}</Text>
-                  <Text style={styles.tableItemRate}>{item.currentStock} units in stock</Text>
+                  <Text style={styles.tableItemAmount}>{item.stockQuantity} {item.unit || 'pcs'}</Text>
+                  <Text style={styles.tableItemRate}>Value: {formatMoney(item.blockedValue)}</Text>
                 </View>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyNotice}>No dead stock identified. Inventory is turning actively!</Text>
+            <Text style={styles.emptyNotice}>No dead stock items found.</Text>
           )}
         </View>
       </ScrollView>
@@ -310,43 +281,35 @@ const ReportsScreen = () => {
       >
         <View style={styles.kpiGrid}>
           <KpiCard
-            title="Total Revenue"
-            value={formatMoney(marginsData.totalRevenue)}
-            subtitle="Gross sales"
-          />
-          <KpiCard
-            title="Gross Margin"
-            value={formatMoney(marginsData.totalGrossMargin)}
-            subtitle={`${marginsData.overallMarginPercentage || 0}% overall`}
+            title="Avg Margin"
+            value={`${marginsData.averageMarginPercentage ?? 0}%`}
+            subtitle="Portfolio gross margin"
             highlight
           />
           <KpiCard
-            title="Cost of Goods"
-            value={formatMoney(marginsData.totalCost)}
-            subtitle="Purchases cost"
+            title="Tracked Brands"
+            value={marginsData.brandMargins?.length ?? 0}
+            subtitle="Active supplier lines"
           />
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeader}>Brand-Wise Margin Breakdown</Text>
-          {marginsData.items?.length ? (
-            marginsData.items.map((brand) => (
-              <View key={brand.brandId} style={styles.tableRow}>
+          <Text style={styles.sectionHeader}>Gross Margin by Brand</Text>
+          {marginsData.brandMargins?.length ? (
+            marginsData.brandMargins.map((b, idx) => (
+              <View key={`${b.brandId}-${idx}`} style={styles.tableRow}>
                 <View style={styles.tableColMain}>
-                  <Text style={styles.tableItemTitle}>{brand.brandName}</Text>
-                  <Text style={styles.tableItemSub}>{brand.unitsSold || 0} units sold</Text>
-                  <Text style={styles.tableItemDate}>COGS: {formatMoney(brand.costOfGoodsSold)}</Text>
+                  <Text style={styles.tableItemTitle}>{b.brandName}</Text>
+                  <Text style={styles.tableItemSub}>{b.totalProducts} products</Text>
                 </View>
                 <View style={styles.tableColRight}>
-                  <Text style={styles.tableItemAmount}>{formatMoney(brand.grossMargin)}</Text>
-                  <Text style={styles.tableItemMargin}>
-                    {brand.marginPercentage || 0}% margin ({formatMoney(brand.revenue)} rev)
-                  </Text>
+                  <Text style={[styles.tableItemAmount, { color: colors.primary }]}>{b.grossMarginPercentage}%</Text>
+                  <Text style={styles.tableItemRate}>Revenue: {formatMoney(b.totalRevenue)}</Text>
                 </View>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyNotice}>No brand margin records available.</Text>
+            <Text style={styles.emptyNotice}>No brand margin metrics available.</Text>
           )}
         </View>
       </ScrollView>
@@ -355,108 +318,89 @@ const ReportsScreen = () => {
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>Reports & Analytics</Text>
-        <Text style={styles.screenSubtitle}>Financial summaries, GST, aging & stock health</Text>
+      <AppHeader
+        title="Reports & Analytics"
+        subtitle="GST, Aging, Dead Stock & Margins"
+        onBack={() => navigation?.goBack()}
+      />
+
+      {/* Tab Navigation */}
+      <View style={styles.tabsRow}>
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              onPress={() => setActiveTab(tab.key)}
+              style={[styles.tabButton, isActive && styles.tabButtonActive]}
+              activeOpacity={0.8}
+            >
+              <Icon size={14} color={isActive ? colors.primary : colors.muted} />
+              <Text style={[styles.tabButtonText, isActive && styles.tabButtonTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabBar}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarScroll}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            const Icon = tab.icon;
-            return (
-              <Pressable
-                key={tab.key}
-                style={[styles.tabBtn, active && styles.tabBtnActive]}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <Icon size={14} color={active ? '#ffffff' : colors.muted} />
-                <Text style={[styles.tabBtnText, active && styles.tabBtnTextActive]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {loading && !refreshing ? (
-        <LoadingView label="Calculating report metrics..." />
+      {loading ? (
+        <LoadingView label="Loading analytics..." />
       ) : error ? (
         <ErrorView message={error} onRetry={loadTabData} />
+      ) : activeTab === 'gst' ? (
+        renderGstTab()
+      ) : activeTab === 'aging' ? (
+        renderAgingTab()
+      ) : activeTab === 'deadStock' ? (
+        renderDeadStockTab()
       ) : (
-        <>
-          {activeTab === 'gst' && renderGstTab()}
-          {activeTab === 'aging' && renderAgingTab()}
-          {activeTab === 'deadStock' && renderDeadStockTab()}
-          {activeTab === 'margins' && renderMarginsTab()}
-        </>
+        renderMarginsTab()
       )}
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8
-  },
-  screenTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900'
-  },
-  screenSubtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 2
-  },
-  tabBar: {
+  tabsRow: {
     backgroundColor: colors.surface,
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     paddingVertical: 8
   },
-  tabBarScroll: {
-    gap: 8,
-    paddingHorizontal: 16
-  },
-  tabBtn: {
+  tabButton: {
     alignItems: 'center',
-    backgroundColor: colors.background,
-    borderColor: colors.border,
     borderRadius: 8,
-    borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6
   },
-  tabBtnActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
+  tabButtonActive: {
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1
   },
-  tabBtnText: {
+  tabButtonText: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: '700'
   },
-  tabBtnTextActive: {
-    color: '#ffffff'
+  tabButtonTextActive: {
+    color: colors.primary,
+    fontWeight: '800'
   },
   tabContent: {
-    padding: 16,
-    paddingBottom: 32
+    padding: 12,
+    paddingBottom: 28
   },
   kpiGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16
+    gap: 8,
+    marginBottom: 12
   },
   kpiCard: {
     backgroundColor: colors.surface,
@@ -464,30 +408,30 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     flex: 1,
-    minWidth: '45%',
-    padding: 12
+    padding: 10
   },
   kpiCardHighlight: {
-    borderColor: colors.primaryLight || '#99f6e4'
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySubtle
   },
   kpiTitle: {
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    marginBottom: 4,
     textTransform: 'uppercase'
   },
   kpiValue: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '900'
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 2
   },
   kpiValueHighlight: {
-    color: colors.primaryDark
+    color: colors.primary
   },
   kpiSubtitle: {
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 2
   },
   sectionCard: {
@@ -495,121 +439,116 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 14,
-    padding: 14
+    padding: 12,
+    marginBottom: 12
   },
   sectionHeader: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 12
+    marginBottom: 8
   },
   tableRow: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+    borderTopColor: colors.borderLight,
+    borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10
+    paddingVertical: 8
   },
   tableColMain: {
     flex: 1,
     marginRight: 8
   },
-  tableColRight: {
-    alignItems: 'flex-end'
-  },
   tableItemTitle: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '700'
+    fontSize: 13,
+    fontWeight: '800'
   },
   tableItemSub: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2
-  },
-  tableItemDate: {
     color: colors.muted,
     fontSize: 11,
     marginTop: 2
   },
+  tableItemDate: {
+    color: colors.muted,
+    fontSize: 10,
+    marginTop: 2
+  },
+  tableColRight: {
+    alignItems: 'flex-end'
+  },
   tableItemAmount: {
-    color: colors.primaryDark,
-    fontSize: 14,
-    fontWeight: '800'
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900'
   },
   tableItemRate: {
     color: colors.muted,
     fontSize: 11,
     marginTop: 2
   },
-  tableItemMargin: {
-    color: '#16a34a',
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 2
-  },
   agingCustomerCard: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    paddingVertical: 12
+    borderTopColor: colors.borderLight,
+    borderTopWidth: 1,
+    paddingVertical: 8
   },
   customerHeader: {
-    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8
+    alignItems: 'center',
+    marginBottom: 6
   },
   customerHeaderInfo: {
     flex: 1
   },
   customerName: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800'
   },
   customerType: {
     color: colors.muted,
-    fontSize: 11,
-    marginTop: 1
+    fontSize: 10
   },
   customerTotalDue: {
-    color: '#ef4444',
-    fontSize: 15,
+    color: colors.danger,
+    fontSize: 14,
     fontWeight: '900'
   },
   bucketRow: {
     backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 6,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 6
+    paddingVertical: 4
   },
   bucketCol: {
     alignItems: 'center'
   },
   bucketLabel: {
     color: colors.muted,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700'
   },
   bucketVal: {
     color: colors.text,
     fontSize: 11,
-    fontWeight: '700',
-    marginTop: 2
+    fontWeight: '800',
+    marginTop: 1
   },
   bucketLabelOverdue: {
-    color: '#ef4444'
+    color: colors.danger
   },
   bucketValOverdue: {
-    color: '#ef4444'
+    color: colors.danger
   },
   emptyNotice: {
     color: colors.muted,
-    fontSize: 13,
-    paddingVertical: 12,
-    textAlign: 'center'
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: 8
   }
 });
 

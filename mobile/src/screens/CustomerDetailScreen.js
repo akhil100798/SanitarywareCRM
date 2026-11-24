@@ -1,12 +1,15 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Edit3, FileText, ShoppingCart, User } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { customerService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import DetailSection from '../components/DetailSection';
 import FieldRow from '../components/FieldRow';
 import PrimaryActionBar from '../components/PrimaryActionBar';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
 import { formatDate, formatMoney, joinAddress } from '../utils/formatters';
@@ -17,8 +20,10 @@ const MiniCard = ({ title, subtitle, amount, badge, onPress }) => (
       <Text style={styles.miniTitle} numberOfLines={2}>{title}</Text>
       {amount ? <Text style={styles.amount}>{amount}</Text> : null}
     </View>
-    {subtitle ? <Text style={styles.miniSubtitle}>{subtitle}</Text> : null}
-    {badge ? <Text style={styles.badge}>{badge}</Text> : null}
+    <View style={styles.miniFooter}>
+      {subtitle ? <Text style={styles.miniSubtitle}>{subtitle}</Text> : <View />}
+      {badge ? <StatusPill status={badge} size="sm" /> : null}
+    </View>
   </Pressable>
 );
 
@@ -61,6 +66,14 @@ const CustomerDetailScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
+      <AppHeader
+        title={customer?.name || 'Customer Details'}
+        subtitle={customer?.customerType ? `${customer.customerType} Account` : 'Showroom Client'}
+        onBack={() => navigation.goBack()}
+        rightIcon={Edit3}
+        onRightPress={() => navigation.navigate('CustomerForm', { id: customer?.id })}
+      />
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -73,67 +86,84 @@ const CustomerDetailScreen = ({ route, navigation }) => {
           />
         }
       >
-        <View style={styles.hero}>
-          <Text style={styles.title}>{customer?.name}</Text>
-          <Text style={styles.subtitle}>{customer?.company || customer?.phoneNumber || 'Customer'}</Text>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatarWrap}>
+            <User color={colors.primary} size={28} strokeWidth={2.2} />
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.title}>{customer?.name}</Text>
+            <Text style={styles.subtitle}>{customer?.company || customer?.phoneNumber || 'Customer'}</Text>
+            <View style={styles.badgeRow}>
+              <StatusPill
+                label={customer?.customerType || 'RETAIL'}
+                type="info"
+                size="sm"
+              />
+              <StatusPill
+                label={customer?.isActive === false ? 'Inactive' : 'Active'}
+                type={customer?.isActive === false ? 'danger' : 'success'}
+                size="sm"
+              />
+            </View>
+          </View>
         </View>
 
-          <DetailSection
-            title="Customer Details"
-            action={
-              <Pressable
-                style={styles.editBtn}
-                onPress={() => navigation.navigate('CustomerForm', { id: customer?.id })}
-              >
-                <Text style={styles.editBtnText}>Edit</Text>
-              </Pressable>
-            }
-          >
-            <FieldRow label="Company" value={customer?.company} />
-            <FieldRow label="Phone" value={customer?.phoneNumber} />
-            <FieldRow label="Email" value={customer?.email} />
-            <FieldRow label="GSTIN" value={customer?.gstNumber} />
-            <FieldRow label="State" value={customer?.state} />
-            <FieldRow label="Address" value={joinAddress(customer)} />
-            <FieldRow label="City" value={customer?.city} />
-            <FieldRow label="Type" value={customer?.customerType} />
-            <FieldRow label="Status" value={customer?.isActive === false ? 'Inactive' : 'Active'} />
-          </DetailSection>
+        <DetailSection title="Contact & Billing Information">
+          <FieldRow label="Company" value={customer?.company} />
+          <FieldRow label="Phone" value={customer?.phoneNumber} />
+          <FieldRow label="Email" value={customer?.email} />
+          <FieldRow label="GSTIN" value={customer?.gstNumber} />
+          <FieldRow label="State" value={customer?.state} />
+          <FieldRow label="Address" value={joinAddress(customer)} />
+          <FieldRow label="City" value={customer?.city} />
+        </DetailSection>
 
-          <DetailSection title="Recent Quotations">
-            {quotations.length ? (
-              quotations.map((quotation) => (
-                <MiniCard
-                  key={quotation.id}
-                  title={quotation.quotationNumber || `Quotation #${quotation.id}`}
-                  subtitle={formatDate(quotation.quotationDate)}
-                  amount={formatMoney(quotation.total)}
-                  badge={quotation.status}
-                  onPress={() => navigation.navigate('QuotationDetail', { id: quotation.id })}
-                />
-              ))
-            ) : (
-              <EmptyView title="No quotations yet" message="Create the first quotation for this customer." />
-            )}
-          </DetailSection>
+        <DetailSection
+          title={`Recent Quotations (${quotations.length})`}
+          action={
+            <FileText size={16} color={colors.primary} />
+          }
+        >
+          {quotations.length ? (
+            quotations.map((quotation) => (
+              <MiniCard
+                key={quotation.id}
+                title={quotation.quotationNumber || `Quotation #${quotation.id}`}
+                subtitle={formatDate(quotation.quotationDate)}
+                amount={formatMoney(quotation.total)}
+                badge={quotation.status}
+                onPress={() => navigation.navigate('QuotationDetail', { id: quotation.id })}
+              />
+            ))
+          ) : (
+            <EmptyView title="No quotations yet" message="Create the first quotation for this customer." />
+          )}
+        </DetailSection>
 
-          <DetailSection title="Recent Orders">
-            {orders.length ? (
-              orders.map((order) => (
-                <MiniCard
-                  key={order.id}
-                  title={order.orderNumber || `Order #${order.id}`}
-                  subtitle={formatDate(order.orderDate)}
-                  amount={formatMoney(order.total)}
-                  badge={order.paymentStatus || order.status}
-                  onPress={() => navigation.navigate('OrderDetail', { id: order.id })}
-                />
-              ))
-            ) : (
-              <EmptyView title="No orders yet" message="Converted quotations will appear here." />
-            )}
-          </DetailSection>
+        <DetailSection
+          title={`Recent Orders (${orders.length})`}
+          action={
+            <ShoppingCart size={16} color={colors.primary} />
+          }
+        >
+          {orders.length ? (
+            orders.map((order) => (
+              <MiniCard
+                key={order.id}
+                title={order.orderNumber || `Order #${order.id}`}
+                subtitle={formatDate(order.orderDate)}
+                amount={formatMoney(order.total)}
+                badge={order.paymentStatus || order.status}
+                onPress={() => navigation.navigate('OrderDetail', { id: order.id })}
+              />
+            ))
+          ) : (
+            <EmptyView title="No orders yet" message="Converted quotations will appear here." />
+          )}
+        </DetailSection>
       </ScrollView>
+
       <PrimaryActionBar
         secondaryLabel="Create Order"
         onSecondaryPress={() =>
@@ -156,24 +186,51 @@ const CustomerDetailScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 28
   },
-  hero: {
-    marginBottom: 14
+  profileCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 14,
+    padding: 14
+  },
+  avatarWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderRadius: 24,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 48
+  },
+  profileInfo: {
+    flex: 1
   },
   title: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: '900'
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.2
   },
   subtitle: {
     color: colors.muted,
-    fontSize: 14,
-    marginTop: 4
+    fontSize: 12,
+    marginTop: 2
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6
   },
   miniCard: {
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
     paddingVertical: 10
   },
@@ -188,34 +245,23 @@ const styles = StyleSheet.create({
   miniTitle: {
     color: colors.text,
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800'
+  },
+  miniFooter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4
   },
   miniSubtitle: {
     color: colors.muted,
-    fontSize: 12,
-    marginTop: 4
+    fontSize: 11
   },
   amount: {
-    color: colors.primaryDark,
-    fontWeight: '900'
-  },
-  badge: {
-    color: colors.accent,
-    fontSize: 12,
-    fontWeight: '800',
-    marginTop: 4
-  },
-  editBtn: {
-    backgroundColor: '#ccfbf1',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4
-  },
-  editBtnText: {
     color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800'
+    fontSize: 14,
+    fontWeight: '900'
   }
 });
 
