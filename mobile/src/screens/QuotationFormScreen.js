@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Camera, Plus, Trash2 } from 'lucide-react-native';
 import { getErrorMessage } from '../api/client';
 import { quotationService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import AppTextInput from '../components/AppTextInput';
 import ContractorNoteScannerModal from '../components/ContractorNoteScannerModal';
 import DetailSection from '../components/DetailSection';
@@ -175,10 +176,13 @@ const QuotationFormScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
+      <AppHeader
+        title="New Quotation"
+        subtitle={customerName || 'Select Customer & Estimate'}
+        onBack={() => navigation.goBack()}
+      />
       <OfflineSyncBanner navigation={navigation} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>New Quotation</Text>
-        <Text style={styles.subtitle}>{customerName}</Text>
         <FormErrorBanner message={error} />
 
         <DetailSection title="Quote Info">
@@ -199,12 +203,12 @@ const QuotationFormScreen = ({ route, navigation }) => {
           action={
             <View style={styles.headerActions}>
               <Pressable style={styles.scanButton} onPress={() => setShowScannerModal(true)}>
-                <Camera color="#fff" size={14} />
-                <Text style={styles.scanText}>Scan Note (OCR)</Text>
+                <Camera color={colors.white} size={14} />
+                <Text style={styles.scanText}>OCR Scan</Text>
               </Pressable>
               <Pressable style={styles.addButton} onPress={() => navigation.navigate('ProductPicker')}>
                 <Plus color={colors.primary} size={15} />
-                <Text style={styles.addText}>Product</Text>
+                <Text style={styles.addText}>Add Item</Text>
               </Pressable>
             </View>
           }
@@ -218,7 +222,7 @@ const QuotationFormScreen = ({ route, navigation }) => {
                     <Text style={styles.itemSku}>{item.productSku || 'No SKU'}</Text>
                   </View>
                   <Pressable onPress={() => removeItem(index)} style={styles.deleteButton}>
-                    <Trash2 color={colors.danger} size={18} />
+                    <Trash2 color={colors.danger} size={16} />
                   </Pressable>
                 </View>
                 <View style={styles.itemGrid}>
@@ -253,11 +257,11 @@ const QuotationFormScreen = ({ route, navigation }) => {
               </View>
             ))
           ) : (
-            <Text style={styles.emptyText}>Add a product line to start the quotation.</Text>
+            <Text style={styles.emptyText}>Add a product line or scan contractor notes to start the quotation.</Text>
           )}
         </DetailSection>
 
-        <DetailSection title="Totals">
+        <DetailSection title="Totals Breakdown">
           <AppTextInput
             label="Tax / GST %"
             keyboardType="numeric"
@@ -270,21 +274,21 @@ const QuotationFormScreen = ({ route, navigation }) => {
             value={String(form.discount)}
             onChangeText={(discount) => setForm({ ...form, discount })}
           />
-          <View style={styles.totalRow}><Text>Subtotal</Text><Text>{formatMoney(totals.subtotal)}</Text></View>
-          <View style={styles.totalRow}><Text>Tax</Text><Text>{formatMoney(totals.taxAmount)}</Text></View>
-          <View style={styles.totalRow}><Text>Discount</Text><Text>{formatMoney(totals.discount)}</Text></View>
+          <View style={styles.totalRow}><Text style={styles.breakdownLabel}>Subtotal</Text><Text style={styles.breakdownVal}>{formatMoney(totals.subtotal)}</Text></View>
+          <View style={styles.totalRow}><Text style={styles.breakdownLabel}>Tax</Text><Text style={styles.breakdownVal}>{formatMoney(totals.taxAmount)}</Text></View>
+          <View style={styles.totalRow}><Text style={styles.breakdownLabel}>Discount</Text><Text style={styles.breakdownVal}>{formatMoney(totals.discount)}</Text></View>
           <View style={styles.grandRow}><Text style={styles.grandText}>Grand Total</Text><Text style={styles.grandText}>{formatMoney(totals.total)}</Text></View>
         </DetailSection>
 
-        <DetailSection title="Notes">
+        <DetailSection title="Notes & Terms">
           <AppTextInput
-            label="Notes"
+            label="Internal Notes"
             multiline
             value={form.notes}
             onChangeText={(notes) => setForm({ ...form, notes })}
           />
           <AppTextInput
-            label="Terms"
+            label="Terms & Conditions"
             multiline
             value={form.termsAndConditions}
             onChangeText={(termsAndConditions) => setForm({ ...form, termsAndConditions })}
@@ -303,18 +307,8 @@ const QuotationFormScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 28
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900'
-  },
-  subtitle: {
-    color: colors.muted,
-    marginBottom: 14,
-    marginTop: 4
   },
   headerActions: {
     alignItems: 'center',
@@ -331,23 +325,31 @@ const styles = StyleSheet.create({
     paddingVertical: 5
   },
   scanText: {
-    color: '#fff',
-    fontSize: 12,
+    color: colors.white,
+    fontSize: 11,
     fontWeight: '800'
   },
   addButton: {
     alignItems: 'center',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
+    borderRadius: 6,
     flexDirection: 'row',
-    gap: 4
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5
   },
   addText: {
     color: colors.primary,
-    fontWeight: '900'
+    fontSize: 11,
+    fontWeight: '800'
   },
   itemCard: {
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
-    paddingTop: 12
+    paddingTop: 10,
+    marginTop: 6
   },
   itemHeader: {
     alignItems: 'flex-start',
@@ -359,51 +361,63 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900'
   },
   itemSku: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2
   },
   deleteButton: {
-    padding: 8
+    padding: 6
   },
   itemGrid: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 10
+    marginTop: 8
   },
   gridInput: {
     flex: 1
   },
   lineTotal: {
-    color: colors.primaryDark,
+    color: colors.primary,
+    fontSize: 13,
     fontWeight: '900',
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'right'
   },
   emptyText: {
     color: colors.muted,
+    fontSize: 12,
     paddingVertical: 8
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 7
+    paddingVertical: 6
+  },
+  breakdownLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  breakdownVal: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800'
   },
   grandRow: {
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 6,
-    paddingTop: 10
+    paddingTop: 8
   },
   grandText: {
-    color: colors.primaryDark,
-    fontSize: 17,
+    color: colors.primary,
+    fontSize: 16,
     fontWeight: '900'
   }
 });

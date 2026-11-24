@@ -5,6 +5,7 @@ import { getErrorMessage } from '../api/client';
 import { paymentService, orderService } from '../api/services';
 import { useAuth } from '../context/AuthContext';
 import { createPaymentIntentStore, paymentErrorMessage } from '../utils/paymentIntent';
+import AppHeader from '../components/AppHeader';
 import AppSelect from '../components/AppSelect';
 import AppTextInput from '../components/AppTextInput';
 import DetailSection from '../components/DetailSection';
@@ -17,7 +18,7 @@ import { formatMoney, todayIso } from '../utils/formatters';
 const paymentMethods = [
   { label: 'Cash', value: 'CASH' },
   { label: 'UPI', value: 'UPI' },
-  { label: 'Bank', value: 'BANK_TRANSFER' },
+  { label: 'Bank Transfer (NEFT/RTGS)', value: 'BANK_TRANSFER' },
   { label: 'Cheque', value: 'CHEQUE' },
   { label: 'Credit Card', value: 'CREDIT_CARD' },
   { label: 'Debit Card', value: 'DEBIT_CARD' }
@@ -101,83 +102,92 @@ const PaymentFormScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
+      <AppHeader
+        title="Record Payment"
+        subtitle={orderNumber ? `Order #${orderNumber}` : orderId ? `Order #${orderId}` : 'Customer Payment Entry'}
+        onBack={() => navigation.goBack()}
+      />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Record Payment</Text>
-        <Text style={styles.subtitle}>{orderNumber || `Order #${orderId}`}</Text>
         <FormErrorBanner message={error} />
 
-        <DetailSection title="Order Balance">
-          <View style={styles.balanceBox}>
-            <Text style={styles.balanceLabel}>Balance Due</Text>
-            <Text style={styles.balanceValue}>{formatMoney(currentBalance)}</Text>
-          </View>
-        </DetailSection>
+        {currentBalance !== undefined && (
+          <DetailSection title="Order Balance">
+            <View style={styles.balanceBox}>
+              <Text style={styles.balanceLabel}>Outstanding Balance Due</Text>
+              <Text style={styles.balanceValue}>{formatMoney(currentBalance)}</Text>
+            </View>
+          </DetailSection>
+        )}
 
         <DetailSection title="Payment Details">
           <AppTextInput
-            label="Amount"
+            label="Payment Amount *"
+            placeholder="INR 0.00"
             keyboardType="numeric"
             value={String(form.amount)}
             onChangeText={(amount) => setForm({ ...form, amount })}
           />
           <AppTextInput
-            label="Payment Date"
+            label="Payment Date *"
             value={form.paymentDate}
             onChangeText={(paymentDate) => setForm({ ...form, paymentDate })}
           />
           <AppSelect
-            label="Payment Method"
+            label="Payment Mode *"
             options={paymentMethods}
             value={form.paymentMethod}
             onChange={(paymentMethod) => setForm({ ...form, paymentMethod })}
           />
           <AppTextInput
-            label="Reference Number"
+            label="UTR / Reference Number"
+            placeholder="Bank UTR, Cheque No., or UPI Transaction ID"
             value={form.referenceNumber}
             onChangeText={(referenceNumber) => setForm({ ...form, referenceNumber })}
           />
           <AppTextInput
-            label="Notes"
+            label="Internal Notes"
+            placeholder="Payer details, bank name, branch..."
             multiline
             value={form.notes}
             onChangeText={(notes) => setForm({ ...form, notes })}
           />
         </DetailSection>
       </ScrollView>
-      <PrimaryActionBar label="Record Payment" onPress={submitPayment} loading={saving || restoring} disabled={saving || restoring} />
+      <PrimaryActionBar
+        label="Record Payment"
+        onPress={submitPayment}
+        loading={saving || restoring}
+        disabled={saving || restoring}
+      />
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 28
   },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900'
-  },
-  subtitle: {
-    color: colors.muted,
-    marginBottom: 14,
-    marginTop: 4
-  },
   balanceBox: {
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
     borderRadius: 10,
-    padding: 16
+    padding: 14,
+    alignItems: 'center'
   },
   balanceLabel: {
     color: colors.primaryDark,
-    fontWeight: '800'
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   balanceValue: {
-    color: colors.primaryDark,
+    color: colors.primary,
     fontSize: 24,
     fontWeight: '900',
+    letterSpacing: -0.5,
     marginTop: 4
   }
 });

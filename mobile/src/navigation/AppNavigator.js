@@ -97,8 +97,9 @@ const MainTabs = () => {
 const MoreNavigator = () => (
   <MoreStack.Navigator
     screenOptions={{
-      headerTintColor: colors.text,
-      headerTitleStyle: { fontWeight: '800' }
+      headerStyle: { backgroundColor: colors.primary },
+      headerTintColor: colors.white,
+      headerTitleStyle: { fontWeight: '900', color: colors.white }
     }}
   >
     <MoreStack.Screen name="MoreMenu" component={ModuleMenuScreen} options={{ headerShown: false }} />

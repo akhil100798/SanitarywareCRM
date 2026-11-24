@@ -19,7 +19,7 @@ const VENDOR_CATALOGS = [
   {
     id: 'ashirwad',
     name: 'Ashirwad CPVC & Fixtures Catalogue',
-    fileName: '【Split】 DOC-20260724-WA0015.pdf',
+    fileName: '[Split] DOC-20260724-WA0015.pdf',
     size: '9.4 MB',
     type: 'Sanitary & CPVC Pipes'
   },

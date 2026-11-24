@@ -10,7 +10,6 @@ import {
   View
 } from 'react-native';
 import {
-  ArrowLeft,
   Calendar,
   Download,
   FileText,
@@ -21,8 +20,10 @@ import {
 import { getErrorMessage } from '../api/client';
 import { API_BASE_URL } from '../api/config';
 import { brandService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import AttachCatalogModal from '../components/AttachCatalogModal';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { colors, spacing } from '../theme/colors';
 
@@ -87,36 +88,28 @@ const BrandDetailScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
-      {/* App Bar */}
-      <View style={styles.appBar}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-          accessibilityLabel="Go back"
-        >
-          <ArrowLeft color={colors.text} size={22} />
-        </TouchableOpacity>
-        <Text style={styles.appBarTitle} numberOfLines={1}>
-          {brand.name}
-        </Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader
+        title={brand.name}
+        subtitle="Catalog & Brand Portfolio"
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Brand Summary Card */}
         <View style={styles.sectionCard}>
           <View style={styles.brandHeader}>
             <View style={styles.brandIconWrap}>
-              <Tag color={colors.primary} size={28} />
+              <Tag color={colors.primary} size={24} strokeWidth={2.2} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.brandTitle}>{brand.name}</Text>
-              <Text style={styles.brandStatus}>
-                Status:{' '}
-                <Text style={{ color: brand.isActive ? '#047857' : '#dc2626', fontWeight: '700' }}>
-                  {brand.isActive ? 'Active' : 'Inactive'}
-                </Text>
-              </Text>
+              <View style={styles.statusRow}>
+                <StatusPill
+                  label={brand.isActive ? 'Active' : 'Inactive'}
+                  type={brand.isActive ? 'success' : 'danger'}
+                  size="sm"
+                />
+              </View>
             </View>
           </View>
 
@@ -135,7 +128,7 @@ const BrandDetailScreen = ({ route, navigation }) => {
           {brand.catalogFileName ? (
             <View style={styles.catalogBox}>
               <View style={styles.catalogInfo}>
-                <FileText color={colors.muted} size={24} />
+                <FileText color={colors.muted} size={22} />
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.catalogFileName} numberOfLines={2}>
                     {brand.catalogFileName}
@@ -150,16 +143,16 @@ const BrandDetailScreen = ({ route, navigation }) => {
                   style={[styles.downloadButton, { flex: 1 }]}
                   activeOpacity={0.8}
                 >
-                  <Download color="#ffffff" size={16} />
+                  <Download color={colors.white} size={15} />
                   <Text style={styles.downloadButtonText}>Open PDF</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => setShowAttachModal(true)}
-                  style={[styles.downloadButton, { flex: 1, backgroundColor: '#0f766e' }]}
+                  style={[styles.downloadButton, { flex: 1, backgroundColor: colors.primaryDark }]}
                   activeOpacity={0.8}
                 >
-                  <UploadCloud color="#ffffff" size={16} />
+                  <UploadCloud color={colors.white} size={15} />
                   <Text style={styles.downloadButtonText}>Update Catalog</Text>
                 </TouchableOpacity>
               </View>
@@ -172,7 +165,7 @@ const BrandDetailScreen = ({ route, navigation }) => {
                 style={[styles.downloadButton, { marginTop: 12, backgroundColor: colors.primary }]}
                 activeOpacity={0.8}
               >
-                <UploadCloud color="#ffffff" size={16} />
+                <UploadCloud color={colors.white} size={15} />
                 <Text style={styles.downloadButtonText}>Attach Vendor Catalog</Text>
               </TouchableOpacity>
             </View>
@@ -196,27 +189,11 @@ const BrandDetailScreen = ({ route, navigation }) => {
                 <View key={ver.id} style={styles.versionItem}>
                   <View style={styles.versionTop}>
                     <Text style={styles.versionTag}>{ver.versionTag}</Text>
-                    <View
-                      style={[
-                        styles.statusPill,
-                        {
-                          backgroundColor:
-                            ver.status === 'ACTIVE' ? '#ecfdf5' : '#f1f5f9'
-                        }
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusPillText,
-                          {
-                            color:
-                              ver.status === 'ACTIVE' ? '#047857' : '#475569'
-                          }
-                        ]}
-                      >
-                        {ver.status}
-                      </Text>
-                    </View>
+                    <StatusPill
+                      label={ver.status}
+                      type={ver.status === 'ACTIVE' ? 'success' : 'neutral'}
+                      size="sm"
+                    />
                   </View>
 
                   <View style={styles.versionMetaRow}>
@@ -252,37 +229,17 @@ const BrandDetailScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  appBar: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12
-  },
-  backBtn: {
-    padding: 6
-  },
-  appBarTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    flex: 1,
-    textAlign: 'center'
-  },
   scrollContent: {
-    padding: spacing.lg,
+    padding: spacing.md,
     paddingBottom: 40
   },
   sectionCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     marginBottom: spacing.md,
-    padding: spacing.lg
+    padding: spacing.md
   },
   brandHeader: {
     alignItems: 'center',
@@ -291,28 +248,28 @@ const styles = StyleSheet.create({
   },
   brandIconWrap: {
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    height: 52,
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
+    borderRadius: 10,
+    height: 48,
     justifyContent: 'center',
-    width: 52
+    width: 48
   },
   brandTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900'
   },
-  brandStatus: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2
+  statusRow: {
+    marginTop: 4
   },
   brandDescription: {
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
     color: colors.muted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: spacing.md,
     paddingTop: spacing.sm
   },
@@ -324,13 +281,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800'
   },
   catalogBox: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     padding: spacing.md
   },
@@ -341,7 +298,7 @@ const styles = StyleSheet.create({
   },
   catalogFileName: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700'
   },
   catalogSubtitle: {
@@ -352,30 +309,30 @@ const styles = StyleSheet.create({
   downloadButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 10,
+    borderRadius: 8,
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-    paddingVertical: 10
+    paddingVertical: 9
   },
   downloadButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700'
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '800'
   },
   emptyCatalogBox: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
+    backgroundColor: colors.background,
+    borderRadius: 8,
     padding: spacing.md
   },
   emptyCatalogText: {
     color: colors.muted,
-    fontSize: 13,
+    fontSize: 12,
     textAlign: 'center'
   },
   noVersionsText: {
     color: colors.muted,
-    fontSize: 13,
+    fontSize: 12,
     paddingVertical: 8,
     textAlign: 'center'
   },
@@ -384,11 +341,11 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   versionItem: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    padding: 12
+    padding: 10
   },
   versionTop: {
     alignItems: 'center',
@@ -397,18 +354,9 @@ const styles = StyleSheet.create({
   },
   versionTag: {
     color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     flex: 1
-  },
-  statusPill: {
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2
-  },
-  statusPillText: {
-    fontSize: 10,
-    fontWeight: '700'
   },
   versionMetaRow: {
     alignItems: 'center',
@@ -428,7 +376,7 @@ const styles = StyleSheet.create({
   versionStats: {
     color: colors.primary,
     fontSize: 11,
-    fontWeight: '600'
+    fontWeight: '700'
   }
 });
 

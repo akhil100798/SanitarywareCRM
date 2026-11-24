@@ -5,6 +5,7 @@ import {
   Bell,
   Boxes,
   Building2,
+  ChevronRight,
   CloudOff,
   CreditCard,
   FileText,
@@ -15,7 +16,9 @@ import {
   Truck,
   UserCheck
 } from 'lucide-react-native';
+import AppHeader from '../components/AppHeader';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { offlineSyncManager } from '../utils/offlineSyncManager';
@@ -107,10 +110,10 @@ const ModuleMenuScreen = ({ navigation }) => {
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>More Modules</Text>
-        <Text style={styles.subtitle}>Open the remaining CRM areas.</Text>
-      </View>
+      <AppHeader
+        title="Modules & Operations"
+        subtitle="Sanitaryware CRM Workflows"
+      />
       <FlatList
         contentContainerStyle={styles.list}
         data={visibleModules}
@@ -132,19 +135,18 @@ const ModuleMenuScreen = ({ navigation }) => {
               style={styles.card}
             >
               <View style={[styles.iconWrap, isOfflineItem && pendingCount > 0 && styles.iconWrapPending]}>
-                <Icon color={isOfflineItem && pendingCount > 0 ? '#d97706' : colors.primary} size={22} />
+                <Icon color={isOfflineItem && pendingCount > 0 ? colors.warning : colors.primary} size={20} strokeWidth={2.2} />
               </View>
               <View style={styles.textWrap}>
                 <View style={styles.titleRow}>
                   <Text style={styles.cardTitle}>{item.title}</Text>
                   {isOfflineItem && pendingCount > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{pendingCount} queued</Text>
-                    </View>
+                    <StatusPill status={`${pendingCount} queued`} type="warning" size="sm" />
                   )}
                 </View>
                 <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
               </View>
+              <ChevronRight size={18} color={colors.muted} />
             </TouchableOpacity>
           );
         }}
@@ -154,47 +156,34 @@ const ModuleMenuScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    padding: 16
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900'
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4
-  },
   list: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 28
   },
   card: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
-    padding: 14
+    marginBottom: 10,
+    padding: 12
   },
   iconWrap: {
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderRadius: 10,
-    height: 44,
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.infoBorder,
+    borderWidth: 1,
+    borderRadius: 8,
+    height: 40,
     justifyContent: 'center',
-    width: 44
+    width: 40
   },
   iconWrapPending: {
-    backgroundColor: '#fef3c7'
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder
   },
   textWrap: {
     flex: 1
@@ -202,30 +191,18 @@ const styles = StyleSheet.create({
   titleRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    gap: 8
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800'
   },
   cardSubtitle: {
     color: colors.muted,
     fontSize: 12,
     marginTop: 2
-  },
-  badge: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fde047',
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 2
-  },
-  badgeText: {
-    color: '#92400e',
-    fontSize: 11,
-    fontWeight: '800'
   }
 });
 

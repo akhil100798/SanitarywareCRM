@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getErrorMessage } from '../api/client';
 import { customerService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import AppTextInput from '../components/AppTextInput';
 import DetailSection from '../components/DetailSection';
 import FormErrorBanner from '../components/FormErrorBanner';
@@ -127,14 +128,13 @@ const CustomerFormScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.screenTitle}>{isEditing ? 'Edit Customer' : 'New Customer'}</Text>
-          <Text style={styles.screenSubtitle}>
-            {isEditing ? 'Update profile, GSTIN, and address details' : 'Register a new customer or contractor profile'}
-          </Text>
-        </View>
+      <AppHeader
+        title={isEditing ? 'Edit Customer' : 'New Customer'}
+        subtitle={isEditing ? 'Update Profile & Tax Details' : 'Register Customer or Contractor'}
+        onBack={() => navigation.goBack()}
+      />
 
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <FormErrorBanner message={error} />
 
         <DetailSection title="Basic Information">
@@ -292,27 +292,16 @@ const CustomerFormScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 32
-  },
-  header: {
-    marginBottom: 16
-  },
-  screenTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900'
-  },
-  screenSubtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4
   },
   fieldLabel: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    marginBottom: 8
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3
   },
   typeRow: {
     flexDirection: 'row',
@@ -321,7 +310,7 @@ const styles = StyleSheet.create({
     marginBottom: 14
   },
   typePill: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
@@ -334,11 +323,11 @@ const styles = StyleSheet.create({
   },
   typePillText: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700'
   },
   typePillTextSelected: {
-    color: '#ffffff'
+    color: colors.white
   },
   twoCol: {
     flexDirection: 'row',
@@ -359,14 +348,14 @@ const styles = StyleSheet.create({
   copyLinkText: {
     color: colors.primary,
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '800'
   },
   inputErrorWrap: {
-    borderColor: colors.danger || '#ef4444'
+    borderColor: colors.danger
   },
   fieldErrorText: {
-    color: colors.danger || '#ef4444',
-    fontSize: 12,
+    color: colors.danger,
+    fontSize: 11,
     fontWeight: '600',
     marginTop: -8,
     marginBottom: 8

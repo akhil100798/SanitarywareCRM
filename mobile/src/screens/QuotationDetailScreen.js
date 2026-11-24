@@ -11,14 +11,17 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { MessageSquare, Share2 } from 'lucide-react-native';
 import { API_BASE_URL } from '../api/config';
 import { getErrorMessage } from '../api/client';
 import { orderService, quotationService } from '../api/services';
+import AppHeader from '../components/AppHeader';
 import DetailSection from '../components/DetailSection';
 import FieldRow from '../components/FieldRow';
 import FormErrorBanner from '../components/FormErrorBanner';
 import PrimaryActionBar from '../components/PrimaryActionBar';
 import Screen from '../components/Screen';
+import StatusPill from '../components/StatusPill';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
 import { formatDate, formatMoney } from '../utils/formatters';
@@ -133,6 +136,14 @@ const QuotationDetailScreen = ({ route, navigation }) => {
 
   return (
     <Screen padded={false}>
+      <AppHeader
+        title={quotation.quotationNumber || `Quotation #${quotation.id}`}
+        subtitle={quotation.customerName}
+        onBack={() => navigation.goBack()}
+        rightIcon={Share2}
+        onRightPress={handleSharePortal}
+      />
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -145,15 +156,27 @@ const QuotationDetailScreen = ({ route, navigation }) => {
           />
         }
       >
-        <Text style={styles.title}>{quotation.quotationNumber || `Quotation #${quotation.id}`}</Text>
-        <Text style={styles.subtitle}>{quotation.customerName}</Text>
         <FormErrorBanner message={actionError} />
+
+        {/* Status & Summary Card */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryTop}>
+            <View>
+              <Text style={styles.quoteTitle}>{quotation.quotationNumber || `Quotation #${quotation.id}`}</Text>
+              <Text style={styles.customerName}>{quotation.customerName}</Text>
+            </View>
+            <StatusPill status={quotation.status} size="sm" />
+          </View>
+          <View style={styles.grandTotalWrap}>
+            <Text style={styles.grandTotalLabel}>Quotation Grand Total</Text>
+            <Text style={styles.grandTotalAmount}>{formatMoney(quotation.total)}</Text>
+          </View>
+        </View>
 
         <DetailSection title="Quotation Details">
           <FieldRow label="Customer" value={quotation.customerName} />
           <FieldRow label="Quotation Date" value={formatDate(quotation.quotationDate)} />
           <FieldRow label="Valid Until" value={formatDate(quotation.validUntil)} />
-          <FieldRow label="Status" value={quotation.status} />
         </DetailSection>
 
         <DetailSection title="Customer Portal & WhatsApp">
@@ -176,6 +199,7 @@ const QuotationDetailScreen = ({ route, navigation }) => {
                 style={styles.shareButton}
                 onPress={handleSharePortal}
               >
+                <Share2 color={colors.white} size={15} />
                 <Text style={styles.shareButtonText}>Share Portal Link</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -186,9 +210,12 @@ const QuotationDetailScreen = ({ route, navigation }) => {
                 disabled={sendingWhatsApp}
               >
                 {sendingWhatsApp ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
-                  <Text style={styles.whatsappButtonText}>Send WhatsApp</Text>
+                  <>
+                    <MessageSquare color={colors.white} size={15} />
+                    <Text style={styles.whatsappButtonText}>Send WhatsApp</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </View>
@@ -215,13 +242,14 @@ const QuotationDetailScreen = ({ route, navigation }) => {
           ))}
         </DetailSection>
 
-        <DetailSection title="Totals">
-          <View style={styles.totalRow}><Text>Subtotal</Text><Text>{formatMoney(quotation.subtotal)}</Text></View>
-          <View style={styles.totalRow}><Text>Tax</Text><Text>{formatMoney(quotation.taxAmount)}</Text></View>
-          <View style={styles.totalRow}><Text>Discount</Text><Text>{formatMoney(quotation.discount)}</Text></View>
+        <DetailSection title="Price Breakdown">
+          <View style={styles.totalRow}><Text style={styles.breakdownLabel}>Subtotal</Text><Text style={styles.breakdownVal}>{formatMoney(quotation.subtotal)}</Text></View>
+          <View style={styles.totalRow}><Text style={styles.breakdownLabel}>Tax</Text><Text style={styles.breakdownVal}>{formatMoney(quotation.taxAmount)}</Text></View>
+          <View style={styles.totalRow}><Text style={styles.breakdownLabel}>Discount</Text><Text style={styles.breakdownVal}>{formatMoney(quotation.discount)}</Text></View>
           <View style={styles.grandRow}><Text style={styles.grandText}>Total</Text><Text style={styles.grandText}>{formatMoney(quotation.total)}</Text></View>
         </DetailSection>
       </ScrollView>
+
       {!isConverted ? (
         <PrimaryActionBar
           label="Convert To Order"
@@ -236,79 +264,119 @@ const QuotationDetailScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 28
   },
-  title: {
+  summaryCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12
+  },
+  summaryTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between'
+  },
+  quoteTitle: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '900'
   },
-  subtitle: {
+  customerName: {
     color: colors.muted,
-    marginBottom: 14,
-    marginTop: 4
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 2
+  },
+  grandTotalWrap: {
+    borderTopColor: colors.borderLight,
+    borderTopWidth: 1,
+    marginTop: 12,
+    paddingTop: 10
+  },
+  grandTotalLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4
+  },
+  grandTotalAmount: {
+    color: colors.primary,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    marginTop: 2
   },
   shareCard: {
     gap: 10
   },
   shareDescription: {
     color: colors.muted,
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 18
   },
   tokenBox: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 8,
-    padding: 10
+    padding: 8
   },
   tokenLabel: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
     textTransform: 'uppercase'
   },
   tokenValue: {
     color: colors.text,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontFamily: 'monospace',
     marginTop: 2
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 10
+    gap: 8
   },
   shareButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
     borderRadius: 8,
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
     justifyContent: 'center',
-    minHeight: 42,
+    minHeight: 40,
     paddingHorizontal: 12
   },
   shareButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700'
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '800'
   },
   whatsappButton: {
     alignItems: 'center',
-    backgroundColor: '#16a34a',
+    backgroundColor: '#059669',
     borderRadius: 8,
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
     justifyContent: 'center',
-    minHeight: 42,
+    minHeight: 40,
     paddingHorizontal: 12
   },
   whatsappButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700'
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '800'
   },
   directWhatsAppButton: {
     alignItems: 'center',
-    borderColor: '#16a34a',
+    borderColor: '#059669',
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: 'center',
@@ -316,29 +384,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12
   },
   directWhatsAppText: {
-    color: '#16a34a',
-    fontSize: 13,
-    fontWeight: '700'
+    color: '#059669',
+    fontSize: 12,
+    fontWeight: '800'
   },
   buttonDisabled: {
     opacity: 0.6
   },
   itemRow: {
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
     paddingVertical: 10
   },
   itemName: {
     color: colors.text,
+    fontSize: 13,
     fontWeight: '900'
   },
   itemMeta: {
     color: colors.muted,
-    fontSize: 12,
-    marginTop: 4
+    fontSize: 11,
+    marginTop: 3
   },
   itemTotal: {
-    color: colors.primaryDark,
+    color: colors.primary,
+    fontSize: 13,
     fontWeight: '900',
     marginTop: 4,
     textAlign: 'right'
@@ -346,19 +416,29 @@ const styles = StyleSheet.create({
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 7
+    paddingVertical: 6
+  },
+  breakdownLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  breakdownVal: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800'
   },
   grandRow: {
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderLight,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 6,
-    paddingTop: 10
+    paddingTop: 8
   },
   grandText: {
-    color: colors.primaryDark,
-    fontSize: 17,
+    color: colors.primary,
+    fontSize: 16,
     fontWeight: '900'
   }
 });
