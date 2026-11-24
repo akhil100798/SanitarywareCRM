@@ -9,6 +9,14 @@ updates:
         patterns:
           - "org.springframework*"
           - "com.fasterxml.jackson*"
+      jjwt:
+        patterns:
+          - "io.jsonwebtoken*"
+    ignore:
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.apache.poi:poi-ooxml"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -18,6 +26,9 @@ updates:
       frontend-deps:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/mobile"
@@ -27,6 +38,9 @@ updates:
       mobile-deps:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/automation-tests"
@@ -36,6 +50,9 @@ updates:
       automation-deps:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "dotenv"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/"
